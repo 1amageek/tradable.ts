@@ -1,0 +1,67 @@
+{
+  "private": false,
+  "name": "tradable.ts",
+  "version": "0.1.0",
+  "scripts": {
+    "lint": "./node_modules/.bin/tslint -p tslint.json",
+    "build": "./node_modules/.bin/tsc -d",
+    "serve": "npm run build && firebase serve --only functions",
+    "shell": "npm run build && firebase experimental:functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "description": "Cloud Firestore model framework for TypeScript - Google",
+  "contributors": [
+    {
+      "name": "Norikazu Muramoto",
+      "email": "tmy0x3@icloud.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1amageek/tradable.ts.git"
+  },
+  "keywords": [
+    "firestore",
+    "firebase",
+    "orderable",
+    "model",
+    "typescript",
+    "stripe"
+  ],
+  "author": "1amageek",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/1amageek/tradable.ts/issues"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "~5.8.1",    
+    "firebase-functions": "^0.8.1",
+    "@google-cloud/firestore": "^0.11.1",
+    "@1amageek/flow": "^0.2.1",
+    "pring": "^0.6.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^21.1.9",
+    "jest": "^22.0.3",
+    "ts-jest": "^22.0.0",
+    "tslint": "^5.8.0",
+    "typescript": "^2.5.3"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
+  }
+}
