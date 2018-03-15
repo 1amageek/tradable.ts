@@ -8,10 +8,9 @@ import "reflect-metadata";
 
 const property = Pring.property
 
-export class User extends Pring.Base implements tradable.UserProtocol<SKU, Product, OrderItem, Order> {
-    @property name: string
-    @property isAvailabled: boolean
-    @property products: Pring.ReferenceCollection<Product>
-    @property skus: Pring.ReferenceCollection<SKU>
-    @property orders: Pring.ReferenceCollection<Order>
+export class User extends Pring.Base implements tradable.Tradable<SKU, Product, OrderItem, Order> {
+    @property isAvailabled: boolean = false
+    @property products: Pring.ReferenceCollection<Product> = new Pring.ReferenceCollection(this)
+    @property skus: Pring.ReferenceCollection<SKU> = new Pring.ReferenceCollection(this)
+    @property orders: Pring.ReferenceCollection<Order> = new Pring.ReferenceCollection(this)
 }

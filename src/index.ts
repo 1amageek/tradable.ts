@@ -1,22 +1,28 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as Pring from "pring"
-import { OrderItem } from '../test/orderItem';
+import { Currency } from './currency'
+import { Query } from '@google-cloud/firestore';
 
 const property = Pring.property
 
-export interface UserProtocol
+export { Currency }
+
+export interface Tradable
     <
     SKU extends SKUProtocol,
     Product extends ProductProtocol<SKU>,
     OrderItem extends OrderItemProtocol,
     Order extends OrderProtocol<OrderItem>
     > extends Pring.Base {
-    name: string
     isAvailabled: boolean
     products: Pring.ReferenceCollection<Product>
     skus: Pring.ReferenceCollection<SKU>
     orders: Pring.ReferenceCollection<Order>
+}
+
+export interface UserProtocol extends Pring.Base {
+    orders: Query    
 }
 
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
@@ -27,18 +33,18 @@ export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
 }
 
 export enum StockType {
-    Unknown = 'unknown',
-    Finite = 'finite',
-    Infinite = 'infinite'
+    unknown = 'unknown',
+    finite = 'finite',
+    infinite = 'infinite'
 }
 
 export enum StockValue {
-    InStock = 'in_stock',
-    Limited = 'limited',
-    OutOfStock = 'out_of_stock'
+    inStock = 'in_stock',
+    limited = 'limited',
+    outOfStock = 'out_of_stock'
 }
 
-export class Inventory {
+export type Inventory = {
     type: StockType
     quantity?: number
     value?: StockValue
@@ -47,7 +53,7 @@ export class Inventory {
 export interface SKUProtocol extends Pring.Base {
     selledBy: string
     createdBy: string
-    currency: string
+    currency: Currency
     product: string
     name: string
     price: number
@@ -67,11 +73,12 @@ export enum OrderItemType {
 }
 
 export enum OrderStatus {
-    Unknown = 0,
-    Created = 1,
-    PaymentRequested = 2,
-    WaitingForPayment = 3,
-    Paid = 4
+    unknown = 'unknown',
+    created = 'created',
+    received = 'received',
+    paid = 'paid',    
+    canceled = 'canceled',
+    waitingForPayment = 'waitingForPayment'
 }
 
 export interface OrderItemProtocol extends Pring.Base {
@@ -91,9 +98,10 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     shippingTo: { [key: string]: string }
     paidAt?: Date
     expirationDate: Date
-    currency: string
+    currency: Currency
     amount: number
     items: Pring.NestedCollection<OrderItem>
+    status: OrderStatus
 }
 
 export type Options = {
@@ -113,7 +121,7 @@ export class Manager
     Product extends ProductProtocol<SKU>,
     OrderItem extends OrderItemProtocol,
     Order extends OrderProtocol<OrderItem>,
-    User extends UserProtocol<SKU, Product, OrderItem, Order>
+    User extends Tradable<SKU, Product, OrderItem, Order>
     > {
 
     private _SKU: { new(id: string, value: { [key: string]: any }): SKU }
@@ -124,7 +132,7 @@ export class Manager
 
     async execute(order: Order) {
         await Pring.firestore.runTransaction(async (transaction) => {
-            return new Promise(async (resolve, reject) => {
+            return new Promise<Order>(async (resolve, reject) => {
 
                 const items: OrderItem[] = await order.items.get(this._OrderItem)
 
@@ -135,7 +143,7 @@ export class Manager
                     const sku: SKU = new this._SKU(skuID, {})
                     await sku.fetch()
                     switch (sku.inventory.type) {
-                        case StockType.Finite: {
+                        case StockType.finite: {
                             const newQty: number = sku.inventory.quantity - quantity
                             if (newQty < 0) {
                                 return reject(`[Failure] ORDER/${order.id}, SKU/:${sku.name} has no stock.`)
@@ -143,12 +151,13 @@ export class Manager
                             transaction.update(sku.reference, { inventory: { quantity: newQty } })
                             break
                         }
-                        case StockType.Infinite: break
+                        case StockType.infinite: break
                         default: break
                     }
                 }
 
-                return resolve(`[Success] ORDER/${order.id}, USER/${order.buyer}`)
+                transaction.update(order.reference, { status: OrderStatus.received })
+                return resolve(order)
             })
         })
     }

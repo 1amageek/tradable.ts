@@ -6,12 +6,12 @@ const property = Pring.property
 
 export class SKU extends Pring.Base implements tradable.SKUProtocol  {
     @property selledBy: string
-    @property createdBy: string;
-    @property currency: string;
-    @property product: string;
-    @property name: string;
-    @property price: number;
-    @property inventory: tradable.Inventory;
-    @property isPublished: boolean;
-    @property isActive: boolean;
+    @property createdBy: string
+    @property currency: tradable.Currency = tradable.Currency.USD
+    @property product: string
+    @property name: string
+    @property price: number = 0
+    @property inventory: tradable.Inventory = { type: tradable.StockType.finite, quantity: 1 }
+    @property isPublished: boolean = false
+    @property isActive: boolean = false
 }

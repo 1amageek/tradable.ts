@@ -9,5 +9,5 @@ export class Product extends Pring.Base implements tradable.ProductProtocol<SKU>
     @property title: string
     @property selledBy: string
     @property createdBy: string
-    @property skus: Pring.ReferenceCollection<SKU>
+    @property skus: Pring.ReferenceCollection<SKU> = new Pring.ReferenceCollection(this)
 }

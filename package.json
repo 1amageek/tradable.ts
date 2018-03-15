@@ -41,11 +41,11 @@
     "@google-cloud/firestore": "^0.13.0",
     "firebase-admin": "^5.10.0",
     "firebase-functions": "^0.8.1",
-    "pring": "^0.7.25",
+    "pring": "^0.8.2",
     "reflect-metadata": "^0.1.12"
   },
   "devDependencies": {
-    "@types/jest": "^21.1.9",
+    "@types/jest": "^22.2.0",
     "@types/node": "^9.4.6",
     "jest": "^22.4.2",
     "ts-jest": "^22.4.1",
