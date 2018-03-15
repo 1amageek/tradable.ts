@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin'
 import * as Pring from "pring"
 import { Currency } from './currency'
 import { Query } from '@google-cloud/firestore';
+import { OrderItem } from '../test/orderItem';
 
 const property = Pring.property
 
@@ -22,7 +23,7 @@ export interface Tradable
 }
 
 export interface UserProtocol extends Pring.Base {
-    orders: Query    
+    orders: Query
 }
 
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
@@ -76,7 +77,7 @@ export enum OrderStatus {
     unknown = 'unknown',
     created = 'created',
     received = 'received',
-    paid = 'paid',    
+    paid = 'paid',
     canceled = 'canceled',
     waitingForPayment = 'waitingForPayment'
 }
@@ -124,15 +125,28 @@ export class Manager
     User extends Tradable<SKU, Product, OrderItem, Order>
     > {
 
-    private _SKU: { new(id: string, value: { [key: string]: any }): SKU }
-    private _Product: { new(): Product }
-    private _OrderItem: { new(): OrderItem }
-    private _Order: { new(): Order }
+    private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
+    private _Product: { new(id?: string, value?: { [key: string]: any }): Product }
+    private _OrderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem }
+    private _Order: { new(id?: string, value?: { [key: string]: any }): Order }
+
+    constructor(
+        sku: { new(id?: string, value?: { [key: string]: any }): SKU },
+        product: { new(id?: string, value?: { [key: string]: any }): Product },
+        orderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem },
+        order: { new(id?: string, value?: { [key: string]: any }): Order }
+    ) {
+        this._SKU = sku
+        this._Product = product
+        this._OrderItem = orderItem
+        this._Order = order
+    }
 
 
     async execute(order: Order) {
+
         await Pring.firestore.runTransaction(async (transaction) => {
-            return new Promise<Order>(async (resolve, reject) => {
+            return new Promise(async (resolve, reject) => {
 
                 const items: OrderItem[] = await order.items.get(this._OrderItem)
 
@@ -157,7 +171,7 @@ export class Manager
                 }
 
                 transaction.update(order.reference, { status: OrderStatus.received })
-                return resolve(order)
+                resolve(`[Success] ORDER/${order.id}, USER/${order.selledBy}`)
             })
         })
     }

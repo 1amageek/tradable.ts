@@ -4,7 +4,7 @@ import "reflect-metadata";
 
 const property = Pring.property
 
-export class SKU extends Pring.Base implements tradable.SKUProtocol  {
+export class SKU extends Pring.Base implements tradable.SKUProtocol {
     @property selledBy: string
     @property createdBy: string
     @property currency: tradable.Currency = tradable.Currency.USD

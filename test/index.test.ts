@@ -73,24 +73,32 @@ describe("Tradable", () => {
 
             await order.save()
 
-            const manager = new Tradable.Manager()
-
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
                 await manager.execute(order)
+                
+                const received: Order = await Order.get(order.id, Order)
+                const status: Tradable.OrderStatus = received.status
+                expect(status).toEqual(Tradable.OrderStatus.received)
+
+                const changedSKU: SKU = await SKU.get(finiteSKU.id, SKU)
+                const inventory: Tradable.Inventory = changedSKU.inventory
+                expect(inventory.quantity).toEqual(0)
+
             } catch (error) {
                 console.log(error)
             }
             
         }, 10000)
 
-        test("Inventory Infinite quantity failure", async () => {
+        // test("Inventory Infinite quantity failure", async () => {
             
 
-        }, 10000)
+        // }, 10000)
 
-        test("Inventory Infinite quantity success", async () => {
+        // test("Inventory Infinite quantity success", async () => {
             
 
-        }, 10000)
+        // }, 10000)
     })
 })
