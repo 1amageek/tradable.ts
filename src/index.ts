@@ -75,11 +75,27 @@ export enum OrderItemType {
 
 export enum OrderStatus {
     unknown = 'unknown',
+
+    /// Immediately after the order made
     created = 'created',
+
+    /// Inventory processing was done, but it was rejected
+    rejected = 'rejected',
+
+    /// Inventory processing was successful
     received = 'received',
+
+    /// Payment was successful
     paid = 'paid',
+
+    /// Successful inventory processing but payment failed.
+    waitingForPayment = 'waitingForPayment',
+
+    /// If payment was made, I failed in refunding.
+    waitingForRefund = 'waitingForRefund',
+
+    /// Everything including refunds was canceled. Inventory processing is not canceled
     canceled = 'canceled',
-    waitingForPayment = 'waitingForPayment'
 }
 
 export interface OrderItemProtocol extends Pring.Base {
@@ -144,36 +160,39 @@ export class Manager
 
 
     async execute(order: Order) {
+        try {
+            await Pring.firestore.runTransaction(async (transaction) => {
+                return new Promise(async (resolve, reject) => {
 
-        await Pring.firestore.runTransaction(async (transaction) => {
-            return new Promise(async (resolve, reject) => {
+                    const items: OrderItem[] = await order.items.get(this._OrderItem)
 
-                const items: OrderItem[] = await order.items.get(this._OrderItem)
+                    // Stock control
+                    for (const item of items) {
+                        const skuID: string = item.sku
+                        const quantity: number = item.quantity
+                        const sku: SKU = new this._SKU(skuID, {})
 
-                // Stock control
-                for (const item of items) {
-                    const skuID: string = item.sku
-                    const quantity: number = item.quantity
-                    const sku: SKU = new this._SKU(skuID, {})
-                    await sku.fetch()
-                    switch (sku.inventory.type) {
-                        case StockType.finite: {
-                            const newQty: number = sku.inventory.quantity - quantity
-                            if (newQty < 0) {
-                                return reject(`[Failure] ORDER/${order.id}, SKU/:${sku.name} has no stock.`)
+                        await sku.fetch()
+                        switch (sku.inventory.type) {
+                            case StockType.finite: {
+                                const newQty: number = sku.inventory.quantity - quantity
+                                if (newQty < 0) {
+                                    return reject(`[Failure] ORDER/${order.id}, SKU/:${sku.name} has no stock.`)
+                                }
+                                transaction.update(sku.reference, { inventory: { quantity: newQty } })
+                                break
                             }
-                            transaction.update(sku.reference, { inventory: { quantity: newQty } })
-                            break
+                            case StockType.infinite: break
+                            default: break
                         }
-                        case StockType.infinite: break
-                        default: break
                     }
-                }
 
-                transaction.update(order.reference, { status: OrderStatus.received })
-                resolve(`[Success] ORDER/${order.id}, USER/${order.selledBy}`)
+                    transaction.update(order.reference, { status: OrderStatus.received })
+                    resolve(`[Success] ORDER/${order.id}, USER/${order.selledBy}`)
+                })
             })
-        })
+        } catch (error) {
+            order.status = OrderStatus.
+        }
     }
-
 }

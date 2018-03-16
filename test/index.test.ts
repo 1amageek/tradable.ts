@@ -21,6 +21,7 @@ describe("Tradable", () => {
     const user: User = new User()
     const product: Product = new Product()
     const finiteSKU: SKU = new SKU()
+    const finiteSKUFailure: SKU = new SKU()
     const infiniteSKU: SKU = new SKU()
 
     beforeAll(async () => {
@@ -35,6 +36,11 @@ describe("Tradable", () => {
         finiteSKU.createdBy = shop.id
         finiteSKU.product = product.id
 
+        finiteSKUFailure.name = "FiniteSKU failure"        
+        finiteSKUFailure.selledBy = shop.id
+        finiteSKUFailure.createdBy = shop.id
+        finiteSKUFailure.product = product.id
+
         infiniteSKU.name = "InfiniteSKU"        
         infiniteSKU.selledBy = shop.id
         infiniteSKU.createdBy = shop.id
@@ -45,6 +51,7 @@ describe("Tradable", () => {
         }
 
         shop.skus.insert(finiteSKU)
+        shop.skus.insert(finiteSKUFailure)
         shop.skus.insert(infiniteSKU)
         shop.products.insert(product)
 
@@ -54,15 +61,16 @@ describe("Tradable", () => {
 
     describe("Manager", async () => {
 
-        test("Inventory Infinite quantity success", async () => {
+        test("Inventory finite quantity success", async () => {
 
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-
+            
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
+            orderItem.sku = finiteSKU.id
             orderItem.quantity = 1
 
             order.selledBy = shop.id
@@ -76,7 +84,7 @@ describe("Tradable", () => {
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
                 await manager.execute(order)
-                
+
                 const received: Order = await Order.get(order.id, Order)
                 const status: Tradable.OrderStatus = received.status
                 expect(status).toEqual(Tradable.OrderStatus.received)
@@ -91,14 +99,82 @@ describe("Tradable", () => {
             
         }, 10000)
 
-        // test("Inventory Infinite quantity failure", async () => {
+        test("Inventory finite quantity failure", async () => {
+
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+            
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.buyer = user.id
+            orderItem.sku = finiteSKUFailure.id
+            orderItem.quantity = 2
+
+            order.selledBy = shop.id
+            order.buyer = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+
+            await order.save()
+
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            try {
+                await manager.execute(order)
+            } catch (error) {
+                const received: Order = await Order.get(order.id, Order)
+                const status: Tradable.OrderStatus = received.status
+                expect(status).toEqual(Tradable.OrderStatus.received)
+
+                const changedSKU: SKU = await SKU.get(finiteSKUFailure.id, SKU)
+                const inventory: Tradable.Inventory = changedSKU.inventory
+                expect(inventory.quantity).toEqual(1)
+            }
+            
+        }, 10000)
+
+        test("Inventory Infinite stock success", async () => {
+            
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+            
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.buyer = user.id
+            orderItem.sku = infiniteSKU.id
+            orderItem.quantity = 1
+
+            order.selledBy = shop.id
+            order.buyer = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+
+            await order.save()
+
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            try {
+                await manager.execute(order)
+
+                const received: Order = await Order.get(order.id, Order)
+                const status: Tradable.OrderStatus = received.status
+                expect(status).toEqual(Tradable.OrderStatus.received)
+
+                const changedSKU: SKU = await SKU.get(infiniteSKU.id, SKU)
+                const inventory: Tradable.Inventory = changedSKU.inventory
+                expect(inventory.type).toEqual(Tradable.StockType.infinite)
+
+            } catch (error) {
+                console.log(error)
+            }
+
+        }, 10000)
+
+        test("Inventory Infinite quantity success", async () => {
             
 
-        // }, 10000)
-
-        // test("Inventory Infinite quantity success", async () => {
-            
-
-        // }, 10000)
+        }, 10000)
     })
 })

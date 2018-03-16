@@ -14,6 +14,6 @@ export class Order extends Pring.Base implements tradable.OrderProtocol<OrderIte
     @property expirationDate: Date
     @property currency: tradable.Currency = tradable.Currency.USD
     @property amount: number = 0
-    @property items: Pring.ReferenceCollection<OrderItem> = new Pring.ReferenceCollection(this)
+    @property items: Pring.NestedCollection<OrderItem> = new Pring.NestedCollection(this)
     @property status: tradable.OrderStatus = tradable.OrderStatus.created
 }
