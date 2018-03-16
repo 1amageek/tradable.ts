@@ -22,7 +22,10 @@ describe("Tradable", () => {
     const product: Product = new Product()
     const finiteSKU: SKU = new SKU()
     const finiteSKUFailure: SKU = new SKU()
-    const infiniteSKU: SKU = new SKU()
+    const infiniteSKU: SKU = new SKU()    
+    const inStockSKU: SKU = new SKU()
+    const limitedSKU: SKU = new SKU()
+    const outOfStockSKU: SKU = new SKU()
 
     beforeAll(async () => {
 
@@ -46,13 +49,22 @@ describe("Tradable", () => {
         infiniteSKU.createdBy = shop.id
         infiniteSKU.product = product.id
         infiniteSKU.inventory = {
-            type: Tradable.StockType.infinite,
+            type: Tradable.StockType.infinite
+        }
+
+        inStockSKU.name = "InStockSKU"        
+        inStockSKU.selledBy = shop.id
+        inStockSKU.createdBy = shop.id
+        inStockSKU.product = product.id
+        inStockSKU.inventory = {
+            type: Tradable.StockType.bucket,
             value: Tradable.StockValue.inStock
         }
 
         shop.skus.insert(finiteSKU)
         shop.skus.insert(finiteSKUFailure)
         shop.skus.insert(infiniteSKU)
+        shop.skus.insert(inStockSKU)
         shop.products.insert(product)
 
         await shop.save()

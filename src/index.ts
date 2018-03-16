@@ -34,11 +34,12 @@ export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
 }
 
 export enum StockType {
-    unknown = 'unknown',
+    bucket = 'bucket',
     finite = 'finite',
     infinite = 'infinite'
 }
 
+/// StockValue is used when StockType is Bucket.
 export enum StockValue {
     inStock = 'in_stock',
     limited = 'limited',
@@ -177,10 +178,19 @@ export class Manager
                             case StockType.finite: {
                                 const newQty: number = sku.inventory.quantity - quantity
                                 if (newQty < 0) {
-                                    return reject(`[Failure] ORDER/${order.id}, SKU/:${sku.name} has no stock.`)
+                                    reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/:${sku.name} is out of stock.`)
                                 }
                                 transaction.update(sku.reference, { inventory: { quantity: newQty } })
                                 break
+                            }
+                            case StockType.bucket: {
+                                switch (sku.inventory.value) {                                
+                                    case StockValue.outOfStock: {
+                                        reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/:${sku.name} is out of stock.`)
+                                        break
+                                    }
+                                    default: break
+                                }
                             }
                             case StockType.infinite: break
                             default: break
@@ -192,7 +202,8 @@ export class Manager
                 })
             })
         } catch (error) {
-            order.status = OrderStatus.
+            order.status = OrderStatus.rejected
+            await order.update()
         }
     }
 }
