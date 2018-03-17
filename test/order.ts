@@ -5,15 +5,28 @@ import { } from "reflect-metadata";
 
 const property = Pring.property
 
+const isUndefined = (value: any): boolean => {
+    return (value === null || value === undefined || value == NaN)
+}
+
 export class Order extends Pring.Base implements tradable.OrderProtocol<OrderItem> {
     @property parentID?: string
     @property buyer: string
     @property selledBy: string
-    @property shippingTo: { [key: string]: string; }
+    @property shippingTo?: { [key: string]: string; }
     @property paidAt?: Date
     @property expirationDate: Date
     @property currency: tradable.Currency = tradable.Currency.USD
     @property amount: number = 0
     @property items: Pring.NestedCollection<OrderItem> = new Pring.NestedCollection(this)
     @property status: tradable.OrderStatus = tradable.OrderStatus.created
+
+    validate() {
+        if (isUndefined(this.buyer)) throw Error(`[Tradable] Error: validation error, buyer is required`)
+        if (isUndefined(this.selledBy)) throw Error(`[Tradable] Error: validation error, selledBy is required`)
+        if (isUndefined(this.expirationDate)) throw Error(`[Tradable] Error: validation error, expirationDate is required`)
+        if (isUndefined(this.currency)) throw Error(`[Tradable] Error: validation error, currency is required`)
+        if (isUndefined(this.amount)) throw Error(`[Tradable] Error: validation error, amount is required`)
+        if (this.items.objects.length === 0) throw Error(`[Tradable] Error: validation error, items is required`)
+    }
 }
