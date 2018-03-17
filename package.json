@@ -1,6 +1,6 @@
 {
   "private": false,
-  "name": "tradable.ts",
+  "name": "@1amageek/tradable",
   "version": "0.1.0",
   "scripts": {
     "lint": "./node_modules/.bin/tslint -p tslint.json",
@@ -36,6 +36,7 @@
     "url": "https://github.com/1amageek/tradable.ts/issues"
   },
   "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "dependencies": {
     "@1amageek/flow": "^0.2.1",
     "@google-cloud/firestore": "^0.13.0",

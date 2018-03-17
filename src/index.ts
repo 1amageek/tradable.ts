@@ -92,7 +92,7 @@ export enum OrderStatus {
     waitingForRefund = 'waitingForRefund',
 
     /// Everything including refunds was canceled. Inventory processing is not canceled
-    canceled = 'canceled',
+    canceled = 'canceled'
 }
 
 export interface OrderItemProtocol extends Pring.Base {
