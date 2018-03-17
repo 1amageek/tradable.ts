@@ -178,7 +178,7 @@ export class Manager
                             case StockType.finite: {
                                 const newQty: number = sku.inventory.quantity - quantity
                                 if (newQty < 0) {
-                                    reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/:${sku.name} is out of stock.`)
+                                    reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                                 }
                                 transaction.update(sku.reference, { inventory: { quantity: newQty } })
                                 break
@@ -186,8 +186,7 @@ export class Manager
                             case StockType.bucket: {
                                 switch (sku.inventory.value) {                                
                                     case StockValue.outOfStock: {
-                                        reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/:${sku.name} is out of stock.`)
-                                        break
+                                        reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                                     }
                                     default: break
                                 }
@@ -204,6 +203,7 @@ export class Manager
         } catch (error) {
             order.status = OrderStatus.rejected
             await order.update()
+            throw error
         }
     }
 }

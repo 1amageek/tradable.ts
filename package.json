@@ -41,7 +41,7 @@
     "@google-cloud/firestore": "^0.13.0",
     "firebase-admin": "^5.11.0",
     "firebase-functions": "^0.8.1",
-    "pring": "^0.8.7",
+    "pring": "^0.9.1",
     "reflect-metadata": "^0.1.12"
   },
   "devDependencies": {

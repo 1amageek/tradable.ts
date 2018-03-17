@@ -1,7 +1,7 @@
 import * as Pring from 'pring'
 import * as tradable from '../src/index'
 import { OrderItem } from './orderItem'
-import "reflect-metadata";
+import { } from "reflect-metadata";
 
 const property = Pring.property
 
