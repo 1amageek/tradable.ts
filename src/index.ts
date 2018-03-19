@@ -118,6 +118,11 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     status: OrderStatus
 }
 
+export interface PaymentDelegate {
+
+    payment(): Promise<OrderStatus>
+}
+
 // export type Options = {
 
 // }

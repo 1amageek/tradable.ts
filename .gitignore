@@ -9,6 +9,7 @@ yarn-error.log*
 !tsconfig.json
 !package.json
 !tslint.json
+test/config.*
 
 # Runtime data
 pids
