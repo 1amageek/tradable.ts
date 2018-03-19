@@ -7,8 +7,8 @@ import { options } from './config'
 import { User } from './user'
 import { Product } from './product'
 import { SKU } from './sku'
-import { Order } from './order';
-import { OrderItem } from './orderItem';
+import { Order } from './order'
+import { OrderItem } from './orderItem'
 
 Pring.initialize({
     projectId: 'salada-f825d',
@@ -156,9 +156,6 @@ describe("Tradable", () => {
             } catch (error) {
                 console.log(error)
             }
-
-            order.status = Tradable.OrderStatus.rejected
-            await order.update()
 
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
