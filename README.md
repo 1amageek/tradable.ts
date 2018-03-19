@@ -1,1 +1,46 @@
 # tradable.ts
+
+## Installation
+
+```
+npm add @1amageek/tradable
+```
+
+
+## Usage
+
+You need to implement Tradable Inteface in the object associated with the user.Also, you prepare objects that implement other protocols.
+
+### Inventory processing
+The tradable.ts do inventory processing by the Manager. The manager processes the inventory in the transaction.
+
+
+```typescript
+// Initialize the Manager.
+const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+
+try {
+    await manager.execute(order)
+} catch (error) {
+    console.log(error)
+}
+```
+
+#### Tradable
+Request implementation of protocol required for trading.
+
+#### UserProtocol
+Request implementation of the protocol of the user who can place an order.
+
+#### ProductProtocol
+Request implementation of protocol of product information.
+
+#### SKUProtocol
+Request implementation of SKU protocol.
+
+#### OrderProtocol
+Request implementation of Order protocol.
+
+#### OrderItemProtocol
+Request implementation of OrderItem protocol.
+
