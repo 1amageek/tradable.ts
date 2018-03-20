@@ -28,7 +28,11 @@ const orderItem: OrderItem = new OrderItem()
 
 try {
     manager.validate()
-    await manager.execute(order)
+    await manager.inventoryControl(order)
+    await manager.payment(order, {
+                    customer: Config.STRIPE_CUS_TOKEN,
+                    vendorType: 'stripe'
+                })
 } catch (error) {
     console.log(error)
 }
