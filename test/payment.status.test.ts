@@ -49,8 +49,8 @@ describe("Tradable", () => {
         await user.save()
     })
 
-    describe("Payment Test", async () => {
-        test("Stripe Payment use customer success, when set customer", async () => {
+    describe("Payment status Test", async () => {
+        test("Stripe Payment success, when OrderStatus received", async () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
@@ -70,21 +70,20 @@ describe("Tradable", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
-
-            await order.save()
             order.status = Tradable.OrderStatus.received
+            await order.save()
+
             try {
                 await manager.execute(order, async (order) => {
                     await manager.payment(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
-                })                
+                })
             } catch (error) {
                 // console.log(error)
-                expect(error).not.toBeNull()
             }
-            await order.update()
+
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
@@ -93,47 +92,7 @@ describe("Tradable", () => {
             await orderItem.delete()
         }, 10000)
 
-        // test("Stripe Payment use customer success, when set source", async () => {
-        //     const order: Order = new Order()
-        //     const date: Date = new Date()
-        //     const orderItem: OrderItem = new OrderItem()
-        //     const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
-
-        //     manager.delegate = new StripePaymentDelegate()
-
-        //     orderItem.order = order.id
-        //     orderItem.selledBy = shop.id
-        //     orderItem.buyer = user.id
-        //     orderItem.sku = sku.id
-        //     orderItem.quantity = 1
-
-        //     order.amount = 100
-        //     order.selledBy = shop.id
-        //     order.buyer = user.id
-        //     order.shippingTo = { address: "address" }
-        //     order.expirationDate = new Date(date.setDate(date.getDate() + 14))
-        //     order.items.insert(orderItem)
-
-        //     await order.save()
-        //     order.status = Tradable.OrderStatus.received
-        //     try {
-        //         await manager.payment(order, {
-        //             source: Config.STRIPE_CORD_TOKEN,
-        //             vendorType: 'stripe'
-        //         })
-        //     } catch (error) {
-        //         console.log(error)
-        //     }
-        //     await order.update()
-        //     const received: Order = await Order.get(order.id, Order)
-        //     const status: Tradable.OrderStatus = received.status
-        //     expect(status).toEqual(Tradable.OrderStatus.waitingForPayment)
-        //     expect(received.paymentInformation['stripe']).not.toBeNull()
-        //     await order.delete()
-        //     await orderItem.delete()
-        // }, 10000)
-
-        test("Stripe Payment use customer failure, customer and source are not set", async () => {
+        test("Stripe Payment success, when OrderStatus waitingForPayment", async () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
@@ -153,99 +112,64 @@ describe("Tradable", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
-            order.status = Tradable.OrderStatus.received
+            order.status = Tradable.OrderStatus.waitingForPayment
             await order.save()
 
             try {
                 await manager.execute(order, async (order) => {
                     await manager.payment(order, {
+                        customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
-                })                
-            } catch (error) {
-                expect(error).not.toBeNull()
-            }
-            const received: Order = await Order.get(order.id, Order)
-            const status: Tradable.OrderStatus = received.status
-            expect(status).toEqual(Tradable.OrderStatus.received)
-            expect(received.paymentInformation).toBeUndefined()
-            await order.delete()
-            await orderItem.delete()
-        }, 10000)
-
-        test("Stripe Payment use customer failure, stripe error", async () => {
-            const order: Order = new Order()
-            const date: Date = new Date()
-            const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
-
-            manager.delegate = new StripePaymentDelegate()
-
-            orderItem.order = order.id
-            orderItem.selledBy = shop.id
-            orderItem.buyer = user.id
-            orderItem.sku = sku.id
-            orderItem.quantity = 1
-
-            order.amount = 100
-            order.selledBy = shop.id
-            order.buyer = user.id
-            order.shippingTo = { address: "address" }
-            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
-            order.items.insert(orderItem)
-            order.status = Tradable.OrderStatus.received
-            await order.save()
-
-            try {
-                await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
-                        customer: "cus_xxxxxxxxxx",
-                        vendorType: 'stripe'
-                    })
-                })                
-            } catch (error) {
-                expect(error).not.toBeNull()
-            }
-            const received: Order = await Order.get(order.id, Order)
-            const status: Tradable.OrderStatus = received.status
-            expect(status).toEqual(Tradable.OrderStatus.waitingForPayment)
-            expect(received.paymentInformation).toBeUndefined()
-            await order.delete()
-            await orderItem.delete()
-        }, 10000)
-
-        test("Stripe Payment use customer failure, when Order is not a payable status.", async () => {
-            const order: Order = new Order()
-            const date: Date = new Date()
-            const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
-
-            manager.delegate = new StripePaymentDelegate()
-
-            orderItem.order = order.id
-            orderItem.selledBy = shop.id
-            orderItem.buyer = user.id
-            orderItem.sku = sku.id
-            orderItem.quantity = 1
-
-            order.amount = 100
-            order.selledBy = shop.id
-            order.buyer = user.id
-            order.shippingTo = { address: "address" }
-            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
-            order.items.insert(orderItem)
-            await order.save()
-
-            try {
-                await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
-                        vendorType: 'stripe'
-                    })
-                })                
+                })
             } catch (error) {
                 // console.log(error)
-                expect(error).not.toBeNull()
             }
+
+            const received: Order = await Order.get(order.id, Order)
+            const status: Tradable.OrderStatus = received.status
+            expect(status).toEqual(Tradable.OrderStatus.paid)
+            expect(received.paymentInformation['stripe']).not.toBeNull()
+            await order.delete()
+            await orderItem.delete()
+        }, 10000)
+
+        test("Stripe Payment failure, when OrderStatus created", async () => {
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+
+            manager.delegate = new StripePaymentDelegate()
+
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.buyer = user.id
+            orderItem.sku = sku.id
+            orderItem.quantity = 1
+
+            order.amount = 100
+            order.selledBy = shop.id
+            order.buyer = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            await order.save()
+
+            order.status = Tradable.OrderStatus.created
+
+            try {
+                await manager.execute(order, async (order) => {
+                    await manager.payment(order, {
+                        customer: Config.STRIPE_CUS_TOKEN,
+                        vendorType: 'stripe'
+                    })
+                })
+            } catch (error) {
+                expect(error).not.toBeNull()
+                // console.log(error)
+            }
+            
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.created)
@@ -254,7 +178,50 @@ describe("Tradable", () => {
             await orderItem.delete()
         }, 10000)
 
-        test("Stripe Payment use customer failure, when Order already paid.", async () => {
+        test("Stripe Payment failure, when OrderStatus rejected", async () => {
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+
+            manager.delegate = new StripePaymentDelegate()
+
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.buyer = user.id
+            orderItem.sku = sku.id
+            orderItem.quantity = 1
+
+            order.amount = 100
+            order.selledBy = shop.id
+            order.buyer = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            await order.save()
+
+            order.status = Tradable.OrderStatus.rejected
+            try {
+                await manager.execute(order, async (order) => {
+                    await manager.payment(order, {
+                        customer: Config.STRIPE_CUS_TOKEN,
+                        vendorType: 'stripe'
+                    })
+                })
+            } catch (error) {
+                expect(error).not.toBeNull()
+                // console.log(error)
+            }
+
+            const received: Order = await Order.get(order.id, Order)
+            const status: Tradable.OrderStatus = received.status
+            expect(status).toEqual(Tradable.OrderStatus.created)
+            expect(received.paymentInformation).toBeUndefined()
+            await order.delete()
+            await orderItem.delete()
+        }, 10000)
+
+        test("Stripe Payment failure, when OrderStatus paid", async () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
@@ -276,17 +243,19 @@ describe("Tradable", () => {
             order.items.insert(orderItem)
             order.status = Tradable.OrderStatus.paid
             await order.save()
-
+        
             try {
                 await manager.execute(order, async (order) => {
                     await manager.payment(order, {
+                        customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
-                })                
+                })
             } catch (error) {
-                // console.log(error)
                 expect(error).not.toBeNull()
+                // console.log(error)
             }
+
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
@@ -295,7 +264,7 @@ describe("Tradable", () => {
             await orderItem.delete()
         }, 10000)
 
-        test("Stripe Payment use customer success, when multiple charges", async () => {
+        test("Stripe Payment failure, when OrderStatus waitingForRefund", async () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
@@ -315,7 +284,50 @@ describe("Tradable", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
-            order.status = Tradable.OrderStatus.received
+            order.status = Tradable.OrderStatus.waitingForRefund
+            await order.save()
+        
+            try {
+                await manager.execute(order, async (order) => {
+                    await manager.payment(order, {
+                        customer: Config.STRIPE_CUS_TOKEN,
+                        vendorType: 'stripe'
+                    })
+                })
+            } catch (error) {
+                expect(error).not.toBeNull()
+                // console.log(error)
+            }
+
+            const received: Order = await Order.get(order.id, Order)
+            const status: Tradable.OrderStatus = received.status
+            expect(status).toEqual(Tradable.OrderStatus.waitingForRefund)
+            expect(received.paymentInformation).toBeUndefined()
+            await order.delete()
+            await orderItem.delete()
+        }, 10000)
+
+        test("Stripe Payment failure, when OrderStatus refunded", async () => {
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+
+            manager.delegate = new StripePaymentDelegate()
+
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.buyer = user.id
+            orderItem.sku = sku.id
+            orderItem.quantity = 1
+
+            order.amount = 100
+            order.selledBy = shop.id
+            order.buyer = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            order.status = Tradable.OrderStatus.refunded
             await order.save()
             
             try {
@@ -324,20 +336,59 @@ describe("Tradable", () => {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
-                    order.status = Tradable.OrderStatus.received
+                })
+            } catch (error) {
+                expect(error).not.toBeNull()
+                // console.log(error)
+            }
+
+            const received: Order = await Order.get(order.id, Order)
+            const status: Tradable.OrderStatus = received.status
+            expect(status).toEqual(Tradable.OrderStatus.refunded)
+            expect(received.paymentInformation).toBeUndefined()
+            await order.delete()
+            await orderItem.delete()
+        }, 10000)
+
+        test("Stripe Payment failure, when OrderStatus canceled", async () => {
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+
+            manager.delegate = new StripePaymentDelegate()
+
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.buyer = user.id
+            orderItem.sku = sku.id
+            orderItem.quantity = 1
+
+            order.amount = 100
+            order.selledBy = shop.id
+            order.buyer = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            order.status = Tradable.OrderStatus.canceled
+            await order.save()
+            
+            try {
+                await manager.execute(order, async (order) => {
                     await manager.payment(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
                 })
             } catch (error) {
+                expect(error).not.toBeNull()
                 // console.log(error)
             }
 
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
-            expect(status).toEqual(Tradable.OrderStatus.paid)
-            expect(received.paymentInformation['stripe']).not.toBeNull()
+            expect(status).toEqual(Tradable.OrderStatus.canceled)
+            expect(received.paymentInformation).toBeUndefined()
             await order.delete()
             await orderItem.delete()
         }, 10000)

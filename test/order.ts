@@ -21,13 +21,4 @@ export class Order extends Pring.Base implements tradable.OrderProtocol<OrderIte
     @property items: Pring.NestedCollection<OrderItem> = new Pring.NestedCollection(this)
     @property status: tradable.OrderStatus = tradable.OrderStatus.created
     @property paymentInformation: { [key: string]: any }
-
-    validate() {
-        if (isUndefined(this.buyer)) throw Error(`[Tradable] Error: validation error, buyer is required`)
-        if (isUndefined(this.selledBy)) throw Error(`[Tradable] Error: validation error, selledBy is required`)
-        if (isUndefined(this.expirationDate)) throw Error(`[Tradable] Error: validation error, expirationDate is required`)
-        if (isUndefined(this.currency)) throw Error(`[Tradable] Error: validation error, currency is required`)
-        if (isUndefined(this.amount)) throw Error(`[Tradable] Error: validation error, amount is required`)
-        if (this.items.objects.length === 0) throw Error(`[Tradable] Error: validation error, items is required`)
-    }
 }

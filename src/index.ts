@@ -71,8 +71,6 @@ export enum OrderItemType {
 }
 
 export enum OrderStatus {
-    unknown = 'unknown',
-
     /// Immediately after the order made
     created = 'created',
 
@@ -90,6 +88,9 @@ export enum OrderStatus {
 
     /// If payment was made, I failed in refunding.
     waitingForRefund = 'waitingForRefund',
+
+    /// Payment has been refunded.
+    refunded = 'refunded',
 
     /// Everything including refunds was canceled. Inventory processing is not canceled
     canceled = 'canceled'

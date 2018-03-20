@@ -53,8 +53,9 @@ describe("Order validation test", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                order.validate()
+                await manager.execute(order, async (order) => {})
             } catch (error) {
                 expect(error).not.toBeNull()
             }
@@ -68,8 +69,9 @@ describe("Order validation test", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                order.validate()
+                await manager.execute(order, async (order) => {})
             } catch (error) {
                 expect(error).not.toBeNull()
             }
@@ -83,8 +85,9 @@ describe("Order validation test", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = null
             order.items.insert(orderItem)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                order.validate()
+                await manager.execute(order, async (order) => {})
             } catch (error) {
                 expect(error).not.toBeNull()
             }
@@ -99,8 +102,9 @@ describe("Order validation test", () => {
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
             order.currency = null
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                order.validate()
+                await manager.execute(order, async (order) => {})
             } catch (error) {
                 expect(error).not.toBeNull()
             }
@@ -115,41 +119,12 @@ describe("Order validation test", () => {
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
             order.amount = null
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                order.validate()
+                await manager.execute(order, async (order) => {})
             } catch (error) {
                 expect(error).not.toBeNull()
             }
         }, 10000)
-
-        test("items is required", async () => {
-            const order: Order = new Order()
-            orderItem.order = order.id
-            order.selledBy = shop.id
-            order.buyer = user.id
-            order.shippingTo = { address: "address" }
-            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
-            try {
-                order.validate()
-            } catch (error) {
-                expect(error).not.toBeNull()
-            }
-        }, 10000)
-
-        test("success", async () => {
-            const order: Order = new Order()
-            orderItem.order = order.id
-            order.selledBy = shop.id
-            order.buyer = user.id
-            order.shippingTo = { address: "address" }
-            order.expirationDate = new Date(date.setDate(date.getDate() + 14))            
-            order.items.insert(orderItem)
-            try {
-                order.validate()
-            } catch (error) {
-                expect(error).toBeNull()
-            }
-        }, 10000)
-
     })
 })

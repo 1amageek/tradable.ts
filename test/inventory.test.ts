@@ -115,9 +115,11 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                await manager.inventoryControl(order)
+                await manager.execute(order, async (order) => {
+                    await manager.inventoryControl(order)
+                })                
             } catch (error) {
-                console.log(error)
+                // console.log(error)
             }
 
             const received: Order = await Order.get(order.id, Order)
@@ -152,9 +154,11 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                await manager.inventoryControl(order)
+                await manager.execute(order, async (order) => {
+                    await manager.inventoryControl(order)
+                })                
             } catch (error) {
-                console.log(error)
+                // console.log(error)
             }
 
             const received: Order = await Order.get(order.id, Order)
@@ -189,9 +193,11 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                await manager.inventoryControl(order)
+                await manager.execute(order, async (order) => {
+                    await manager.inventoryControl(order)
+                })                
             } catch (error) {
-                console.log(error)
+                // console.log(error)
             }
 
             const received: Order = await Order.get(order.id, Order)
@@ -226,14 +232,15 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                await manager.inventoryControl(order)
+                await manager.execute(order, async (order) => {
+                    await manager.inventoryControl(order)
+                })                
             } catch (error) {
-                console.log(error)
+                // console.log(error)
             }
 
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
-            console.log(status)
             expect(status).toEqual(Tradable.OrderStatus.received)
 
             const changedSKU: SKU = await SKU.get(inStockSKU.id, SKU)
@@ -260,18 +267,15 @@ describe("Tradable", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
-
-            try {
-                await order.save()
-            } catch (error) {
-                console.log(error)
-            }
+            await order.save()
             
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                await manager.inventoryControl(order)
+                await manager.execute(order, async (order) => {
+                    await manager.inventoryControl(order)
+                })                
             } catch (error) {
-                console.log(error)
+                // console.log(error)
             }
 
             const received: Order = await Order.get(order.id, Order)
@@ -307,9 +311,11 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                await manager.inventoryControl(order)
+                await manager.execute(order, async (order) => {
+                    await manager.inventoryControl(order)
+                })                
             } catch (error) {
-                console.error(error)
+                // console.log(error)
             }
 
             const received: Order = await Order.get(order.id, Order)
@@ -317,7 +323,6 @@ describe("Tradable", () => {
             expect(status).toEqual(Tradable.OrderStatus.rejected)
 
             const changedSKU: SKU = await SKU.get(outOfStockSKU.id, SKU)
-            console.log(changedSKU.inventory)
             const inventory: Tradable.Inventory = changedSKU.inventory
             expect(inventory.type).toEqual(Tradable.StockType.bucket)
             expect(inventory.value).toEqual(Tradable.StockValue.outOfStock)

@@ -1,6 +1,10 @@
 import * as Pring from "pring"
 import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, Tradable, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions } from "./index"
+import { Order } from "../test/order";
 
+const isUndefined = (value: any): boolean => {
+    return (value === null || value === undefined || value == NaN)
+}
 
 // 在庫の増減
 // StripeAPIに接続
@@ -30,18 +34,35 @@ export class Manager
         this._Order = order
     }
 
-    // async execute(order: Order, transaction: (Order) => () {
-    //     try {
-    //         await transaction(order)
-    //     } catch (error) {
-    //         console.error(error)
-    //     }
-    // }
+    async execute(order: Order, transaction: (order: Order) => void) {
+        try {
+            if (isUndefined(order.buyer)) throw Error(`[Tradable] Error: validation error, buyer is required`)
+            if (isUndefined(order.selledBy)) throw Error(`[Tradable] Error: validation error, selledBy is required`)
+            if (isUndefined(order.expirationDate)) throw Error(`[Tradable] Error: validation error, expirationDate is required`)
+            if (isUndefined(order.currency)) throw Error(`[Tradable] Error: validation error, currency is required`)
+            if (isUndefined(order.amount)) throw Error(`[Tradable] Error: validation error, amount is required`)
+            await transaction(order)
+            await order.update()
+        } catch (error) {
+            throw error
+        }
+    }
 
     public delegate?: PaymentDelegate
 
     async inventoryControl(order: Order) {
         try {
+
+            // Skip
+            if (order.status == OrderStatus.received ||
+                order.status == OrderStatus.waitingForRefund ||
+                order.status == OrderStatus.paid ||
+                order.status == OrderStatus.waitingForPayment ||
+                order.status == OrderStatus.canceled
+            ) {
+                return
+            }
+
             order.status = OrderStatus.received
             await Pring.firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
@@ -94,8 +115,15 @@ export class Manager
 
     async payment(order: Order, options: PaymentOptions) {
 
+        // Skip for paid, waitingForRefund, refunded
+        if (order.status === OrderStatus.paid ||
+            order.status === OrderStatus.waitingForRefund ||
+            order.status === OrderStatus.refunded
+        ) {
+            return
+        }
         if (!(order.status === OrderStatus.received || order.status === OrderStatus.waitingForPayment)) {
-            throw new Error(`[Failure] ORDER/${order.id}, Order is not a payable status.`) 
+            throw new Error(`[Failure] ORDER/${order.id}, Order is not a payable status.`)
         }
         if (!options.customer && !options.source) {
             throw new Error(`[Failure] ORDER/${order.id}, PaymentOptions required customer or source`)
