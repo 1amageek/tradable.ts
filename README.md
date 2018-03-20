@@ -36,6 +36,7 @@ try {
 
 ### PaymentDelegate
 In order to process payment with tradabe it is necessary to implement delegate.
+This is an example of paying with Stripe.
 
 ```typescript
 export class StripePaymentDelegate implements tradable.PaymentDelegate {
