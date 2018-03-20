@@ -1,7 +1,4 @@
 import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, Tradable, PaymentDelegate, PaymentOptions } from "./index";
-export interface Process {
-    <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U): Promise<void>;
-}
 export declare class Manager<SKU extends SKUProtocol, Product extends ProductProtocol<SKU>, OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>, User extends Tradable<SKU, Product, OrderItem, Order>> {
     private _SKU;
     private _Product;
@@ -24,7 +21,7 @@ export declare class Manager<SKU extends SKUProtocol, Product extends ProductPro
             [key: string]: any;
         }): Order;
     });
-    execute(order: Order, process: Process): Promise<void>;
+    execute(order: Order, transaction: (order: Order) => void): Promise<void>;
     delegate?: PaymentDelegate;
     inventoryControl(order: Order): Promise<void>;
     payment(order: Order, options: PaymentOptions): Promise<void>;

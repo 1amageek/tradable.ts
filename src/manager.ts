@@ -1,9 +1,12 @@
 import * as Pring from "pring"
 import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, Tradable, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions } from "./index"
-import { Order } from "../test/order";
 
 const isUndefined = (value: any): boolean => {
-    return (value === null || value === undefined || value == NaN)
+    return (value === null || value === undefined || value === NaN)
+}
+
+export interface Process {
+    <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U): Promise<void>
 }
 
 // 在庫の増減
@@ -34,14 +37,14 @@ export class Manager
         this._Order = order
     }
 
-    async execute(order: Order, transaction: (order: Order) => void) {
+    async execute(order: Order, process: Process) {
         try {
             if (isUndefined(order.buyer)) throw Error(`[Tradable] Error: validation error, buyer is required`)
             if (isUndefined(order.selledBy)) throw Error(`[Tradable] Error: validation error, selledBy is required`)
             if (isUndefined(order.expirationDate)) throw Error(`[Tradable] Error: validation error, expirationDate is required`)
             if (isUndefined(order.currency)) throw Error(`[Tradable] Error: validation error, currency is required`)
             if (isUndefined(order.amount)) throw Error(`[Tradable] Error: validation error, amount is required`)
-            await transaction(order)
+            await process(order)
             await order.update()
         } catch (error) {
             throw error
@@ -54,11 +57,11 @@ export class Manager
         try {
 
             // Skip
-            if (order.status == OrderStatus.received ||
-                order.status == OrderStatus.waitingForRefund ||
-                order.status == OrderStatus.paid ||
-                order.status == OrderStatus.waitingForPayment ||
-                order.status == OrderStatus.canceled
+            if (order.status === OrderStatus.received ||
+                order.status === OrderStatus.waitingForRefund ||
+                order.status === OrderStatus.paid ||
+                order.status === OrderStatus.waitingForPayment ||
+                order.status === OrderStatus.canceled
             ) {
                 return
             }
