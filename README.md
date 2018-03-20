@@ -16,13 +16,56 @@ The tradable.ts do inventory processing by the Manager. The manager processes th
 
 
 ```typescript
+
 // Initialize the Manager.
 const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+manager.delegate = new StripePaymentDelegate()
+
+const order: Order = new Order()
+const orderItem: OrderItem = new OrderItem()
+
+// set required properties
 
 try {
+    manager.validate()
     await manager.execute(order)
 } catch (error) {
     console.log(error)
+}
+```
+
+### PaymentDelegate
+In order to process payment with tradabe it is necessary to implement delegate.
+
+```typescript
+export class StripePaymentDelegate implements tradable.PaymentDelegate {
+
+    async payment<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.PaymentOptions): Promise<any> {
+
+        const idempotency_key = order.id
+        const data: Stripe.charges.IChargeCreationOptions = {
+            amount: order.amount,
+            currency: order.currency,
+            description: `Charge for user/${order.buyer}`
+        }
+
+        if (options.customer) {
+            data.customer = options.customer
+        }
+
+        if (options.source) {
+            data.source = options.source
+        }        
+
+        try {
+            const charge = await stripe.charges.create(data, {
+                idempotency_key: idempotency_key
+            })
+            return charge
+        } catch (error) {
+            throw error
+        }
+    }
 }
 ```
 
