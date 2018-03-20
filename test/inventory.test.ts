@@ -3,7 +3,7 @@ process.env.NODE_ENV = 'test';
 import * as Pring from 'pring'
 import * as Tradable from '../src/index'
 import * as UUID from 'uuid'
-import { options } from './config'
+import * as Config from './config'
 import { User } from './user'
 import { Product } from './product'
 import { SKU } from './sku'
@@ -115,7 +115,7 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                await manager.execute(order)
+                await manager.inventoryControl(order)
             } catch (error) {
                 console.log(error)
             }
@@ -152,7 +152,7 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                await manager.execute(order)
+                await manager.inventoryControl(order)
             } catch (error) {
                 console.log(error)
             }
@@ -189,7 +189,7 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                await manager.execute(order)
+                await manager.inventoryControl(order)
             } catch (error) {
                 console.log(error)
             }
@@ -226,7 +226,7 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                await manager.execute(order)
+                await manager.inventoryControl(order)
             } catch (error) {
                 console.log(error)
             }
@@ -269,7 +269,7 @@ describe("Tradable", () => {
             
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                await manager.execute(order)
+                await manager.inventoryControl(order)
             } catch (error) {
                 console.log(error)
             }
@@ -307,7 +307,7 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
             try {
-                await manager.execute(order)
+                await manager.inventoryControl(order)
             } catch (error) {
                 console.error(error)
             }
@@ -324,5 +324,17 @@ describe("Tradable", () => {
 
         }, 10000)
         
+    })
+
+    afterAll(async () => {
+        await shop.delete()
+        await user.delete()
+        await product.delete()
+        await finiteSKU.delete()
+        await finiteSKUFailure.delete()
+        await infiniteSKU.delete()
+        await inStockSKU.delete()
+        await limitedSKU.delete()
+        await outOfStockSKU.delete()
     })
 })

@@ -3,7 +3,6 @@ process.env.NODE_ENV = 'test';
 import * as Pring from 'pring'
 import * as Tradable from '../src/index'
 import * as UUID from 'uuid'
-import { options } from './config'
 import { User } from './user'
 import { Product } from './product'
 import { SKU } from './sku'

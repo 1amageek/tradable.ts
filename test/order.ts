@@ -20,6 +20,7 @@ export class Order extends Pring.Base implements tradable.OrderProtocol<OrderIte
     @property amount: number = 0
     @property items: Pring.NestedCollection<OrderItem> = new Pring.NestedCollection(this)
     @property status: tradable.OrderStatus = tradable.OrderStatus.created
+    @property paymentInformation: { [key: string]: any }
 
     validate() {
         if (isUndefined(this.buyer)) throw Error(`[Tradable] Error: validation error, buyer is required`)

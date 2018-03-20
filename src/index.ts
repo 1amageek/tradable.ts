@@ -116,18 +116,17 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     amount: number
     items: Pring.NestedCollection<OrderItem>
     status: OrderStatus
+    paymentInformation: { [key: string]: any }
+}
+
+export type PaymentOptions = {
+    source?: string
+    customer?: string
+    vendorType: string
 }
 
 export interface PaymentDelegate {
 
-    payment(): Promise<OrderStatus>
+    /// This function will make payment. The payment result is saved in the VendorType set in PaymentOptions.
+    payment<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>
 }
-
-// export type Options = {
-
-// }
-
-// /// Tradable initialize
-// export const initialize = (options?: Options) => {
-
-// }

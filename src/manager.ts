@@ -1,5 +1,6 @@
 import * as Pring from "pring"
-import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, Tradable, StockType, StockValue, OrderStatus } from "./index"
+import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, Tradable, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions } from "./index"
+import { Order } from "../test/order";
 
 
 // 在庫の増減
@@ -30,8 +31,19 @@ export class Manager
         this._Order = order
     }
 
-    async execute(order: Order) {
+    async execute(order: Order, transaction: (Order) => void) {
         try {
+            await transaction(order)
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    public delegate?: PaymentDelegate
+
+    async inventoryControl(order: Order) {
+        try {
+            order.status = OrderStatus.received
             await Pring.firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
 
@@ -54,7 +66,7 @@ export class Manager
                                 break
                             }
                             case StockType.bucket: {
-                                switch (sku.inventory.value) {                                
+                                switch (sku.inventory.value) {
                                     case StockValue.outOfStock: {
                                         reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                                     }
@@ -72,6 +84,38 @@ export class Manager
             })
         } catch (error) {
             order.status = OrderStatus.rejected
+            try {
+                await order.update()
+            } catch (error) {
+                throw error
+            }
+            throw error
+        }
+    }
+
+    async payment(order: Order, options: PaymentOptions) {
+
+        if (!(order.status === OrderStatus.received || order.status === OrderStatus.waitingForPayment)) {
+            throw new Error(`[Failure] ORDER/${order.id}, Order is not a payable status.`) 
+        }
+        if (!options.customer && !options.source) {
+            throw new Error(`[Failure] ORDER/${order.id}, PaymentOptions required customer or source`)
+        }
+        if (!options.vendorType) {
+            throw new Error(`[Failure] ORDER/${order.id}, PaymentOptions required vendorType`)
+        }
+        if (!this.delegate) {
+            throw new Error(`[Failure] ORDER/${order.id}, Manager required delegate`)
+        }
+
+        try {
+            const result = await this.delegate.payment(order, options)
+            order.paymentInformation = {
+                [options.vendorType]: result
+            }
+            order.status = OrderStatus.paid
+        } catch (error) {
+            order.status = OrderStatus.waitingForPayment
             try {
                 await order.update()
             } catch (error) {
