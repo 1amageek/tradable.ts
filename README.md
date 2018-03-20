@@ -27,12 +27,13 @@ const orderItem: OrderItem = new OrderItem()
 // set required properties
 
 try {
-    manager.validate()
-    await manager.inventoryControl(order)
-    await manager.payment(order, {
-                    customer: Config.STRIPE_CUS_TOKEN,
-                    vendorType: 'stripe'
-                })
+    await manager.execute(order, async (order) => {
+        await manager.inventoryControl(order)
+        await manager.payment(order, {
+            customer: user.stripe.customerID,
+            vendorType: 'stripe'
+        })
+    })
 } catch (error) {
     console.log(error)
 }
