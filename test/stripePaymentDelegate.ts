@@ -11,7 +11,6 @@ export class StripePaymentDelegate implements tradable.PaymentDelegate {
 
         const amount = order.amount
         const currency = order.currency
-        const customer = options["customer"]
         const idempotency_key = order.id
         const data: Stripe.charges.IChargeCreationOptions = {
             amount: order.amount,

@@ -1,6 +1,5 @@
 import * as Pring from "pring"
 import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, Tradable, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions } from "./index"
-import { Order } from "../test/order";
 
 
 // 在庫の増減
@@ -31,13 +30,13 @@ export class Manager
         this._Order = order
     }
 
-    async execute(order: Order, transaction: (Order) => void) {
-        try {
-            await transaction(order)
-        } catch (error) {
-            console.error(error)
-        }
-    }
+    // async execute(order: Order, transaction: (Order) => () {
+    //     try {
+    //         await transaction(order)
+    //     } catch (error) {
+    //         console.error(error)
+    //     }
+    // }
 
     public delegate?: PaymentDelegate
 

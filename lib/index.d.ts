@@ -82,4 +82,15 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     amount: number;
     items: Pring.NestedCollection<OrderItem>;
     status: OrderStatus;
+    paymentInformation: {
+        [key: string]: any;
+    };
+}
+export declare type PaymentOptions = {
+    source?: string;
+    customer?: string;
+    vendorType: string;
+};
+export interface PaymentDelegate {
+    payment<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>;
 }
