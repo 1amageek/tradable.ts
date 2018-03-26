@@ -130,7 +130,6 @@ describe("Tradable", () => {
             const changedSKU: SKU = new SKU(finiteSKU.id, {})            
             changedSKU.setParent(product.skus)
             await changedSKU.fetch()
-            console.log(changedSKU.inventory)
             const inventory: Tradable.Inventory = changedSKU.inventory
             expect(inventory.quantity).toEqual(0)
 
