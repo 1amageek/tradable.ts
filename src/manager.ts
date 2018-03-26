@@ -78,9 +78,7 @@ export class Manager
                         const skuID: string = item.sku
                         const quantity: number = item.quantity
                         const product: Product = new this._Product(productID, {})
-                        const sku: SKU = new this._SKU(skuID, {})
-                        sku.setParent(product.skus)
-                        await sku.fetch()
+                        const sku: SKU = await product.skus.doc(skuID, this._SKU)
                         switch (sku.inventory.type) {
                             case StockType.finite: {
                                 const newQty: number = sku.inventory.quantity - quantity
