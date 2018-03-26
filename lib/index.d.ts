@@ -6,8 +6,8 @@ export { Currency, Manager };
 export interface Tradable<SKU extends SKUProtocol, Product extends ProductProtocol<SKU>, OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>> extends Pring.Base {
     isAvailabled: boolean;
     products: Pring.ReferenceCollection<Product>;
-    skus: Pring.ReferenceCollection<SKU>;
-    orders: Pring.ReferenceCollection<Order>;
+    skus: Query;
+    orders: Pring.NestedCollection<Order>;
 }
 export interface UserProtocol extends Pring.Base {
     orders: Query;
@@ -16,7 +16,7 @@ export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
     title: string;
     selledBy: string;
     createdBy: string;
-    skus: Pring.ReferenceCollection<SKU>;
+    skus: Pring.NestedCollection<SKU>;
 }
 export declare enum StockType {
     bucket = "bucket",
@@ -65,7 +65,8 @@ export interface OrderItemProtocol extends Pring.Base {
     buyer: string;
     selledBy: string;
     type: OrderItemType;
-    sku: string;
+    product?: string;
+    sku?: string;
     quantity: number;
     amount: number;
 }
