@@ -9,7 +9,8 @@ export class OrderItem extends Pring.Base implements tradable.OrderItemProtocol 
     @property buyer: string
     @property selledBy: string
     @property type: tradable.OrderItemType = tradable.OrderItemType.sku
-    @property sku: string
+    @property product?: string
+    @property sku?: string
     @property quantity: number = 0
     @property amount: number = 0
 }

@@ -29,7 +29,6 @@ describe("Tradable", () => {
 
     beforeAll(async () => {
 
-        product.skus.insert(finiteSKU)
         product.title = "PRODUCT"
         product.createdBy = shop.id
         product.selledBy = shop.id
@@ -79,16 +78,17 @@ describe("Tradable", () => {
             value: Tradable.StockValue.outOfStock
         }
 
-        shop.skus.insert(finiteSKU)
-        shop.skus.insert(finiteSKUFailure)
-        shop.skus.insert(infiniteSKU)
-        shop.skus.insert(inStockSKU)
-        shop.skus.insert(limitedSKU)
-        shop.skus.insert(outOfStockSKU)
+        product.skus.insert(finiteSKU)
+        product.skus.insert(finiteSKUFailure)
+        product.skus.insert(infiniteSKU)
+        product.skus.insert(inStockSKU)
+        product.skus.insert(limitedSKU)
+        product.skus.insert(outOfStockSKU)
         shop.products.insert(product)
-
+        
         await shop.save()
         await user.save()
+        await product.save()
     })
 
     describe("Manager", async () => {
@@ -102,6 +102,7 @@ describe("Tradable", () => {
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
+            orderItem.product = product.id
             orderItem.sku = finiteSKU.id
             orderItem.quantity = 1
 
@@ -126,7 +127,10 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.received)
 
-            const changedSKU: SKU = await SKU.get(finiteSKU.id, SKU)
+            const changedSKU: SKU = new SKU(finiteSKU.id, {})            
+            changedSKU.setParent(product.skus)
+            await changedSKU.fetch()
+            console.log(changedSKU.inventory)
             const inventory: Tradable.Inventory = changedSKU.inventory
             expect(inventory.quantity).toEqual(0)
 
@@ -141,6 +145,7 @@ describe("Tradable", () => {
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
+            orderItem.product = product.id
             orderItem.sku = finiteSKUFailure.id
             orderItem.quantity = 2
 
@@ -165,7 +170,9 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.rejected)
 
-            const changedSKU: SKU = await SKU.get(finiteSKUFailure.id, SKU)
+            const changedSKU: SKU = new SKU(finiteSKUFailure.id, {})            
+            changedSKU.setParent(product.skus)
+            await changedSKU.fetch()
             const inventory: Tradable.Inventory = changedSKU.inventory
             expect(inventory.quantity).toEqual(1)
 
@@ -180,6 +187,7 @@ describe("Tradable", () => {
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
+            orderItem.product = product.id
             orderItem.sku = infiniteSKU.id
             orderItem.quantity = 1
 
@@ -204,7 +212,9 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.received)
 
-            const changedSKU: SKU = await SKU.get(infiniteSKU.id, SKU)
+            const changedSKU: SKU = new SKU(infiniteSKU.id, {})            
+            changedSKU.setParent(product.skus)
+            await changedSKU.fetch()
             const inventory: Tradable.Inventory = changedSKU.inventory
             expect(inventory.type).toEqual(Tradable.StockType.infinite)
 
@@ -219,6 +229,7 @@ describe("Tradable", () => {
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
+            orderItem.product = product.id
             orderItem.sku = inStockSKU.id
             orderItem.quantity = 1
 
@@ -243,7 +254,9 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.received)
 
-            const changedSKU: SKU = await SKU.get(inStockSKU.id, SKU)
+            const changedSKU: SKU = new SKU(inStockSKU.id, {})            
+            changedSKU.setParent(product.skus)
+            await changedSKU.fetch()
             const inventory: Tradable.Inventory = changedSKU.inventory
             expect(inventory.type).toEqual(Tradable.StockType.bucket)
             expect(inventory.value).toEqual(Tradable.StockValue.inStock)
@@ -259,6 +272,7 @@ describe("Tradable", () => {
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
+            orderItem.product = product.id
             orderItem.sku = limitedSKU.id
             orderItem.quantity = 1
 
@@ -282,7 +296,9 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.received)
 
-            const changedSKU: SKU = await SKU.get(limitedSKU.id, SKU)
+            const changedSKU: SKU = new SKU(limitedSKU.id, {})            
+            changedSKU.setParent(product.skus)
+            await changedSKU.fetch()
             const inventory: Tradable.Inventory = changedSKU.inventory
             expect(inventory.type).toEqual(Tradable.StockType.bucket)
             expect(inventory.value).toEqual(Tradable.StockValue.limited)
@@ -298,6 +314,7 @@ describe("Tradable", () => {
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
+            orderItem.product = product.id
             orderItem.sku = outOfStockSKU.id
             orderItem.quantity = 1
 
@@ -322,7 +339,9 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.rejected)
 
-            const changedSKU: SKU = await SKU.get(outOfStockSKU.id, SKU)
+            const changedSKU: SKU = new SKU(outOfStockSKU.id, {})            
+            changedSKU.setParent(product.skus)
+            await changedSKU.fetch()
             const inventory: Tradable.Inventory = changedSKU.inventory
             expect(inventory.type).toEqual(Tradable.StockType.bucket)
             expect(inventory.value).toEqual(Tradable.StockValue.outOfStock)

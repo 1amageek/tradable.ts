@@ -14,8 +14,8 @@ export interface Tradable
     > extends Pring.Base {
     isAvailabled: boolean
     products: Pring.ReferenceCollection<Product>
-    skus: Pring.ReferenceCollection<SKU>
-    orders: Pring.ReferenceCollection<Order>
+    skus: Query
+    orders: Pring.NestedCollection<Order>
 }
 
 export interface UserProtocol extends Pring.Base {
@@ -26,7 +26,7 @@ export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
     title: string
     selledBy: string
     createdBy: string
-    skus: Pring.ReferenceCollection<SKU>
+    skus: Pring.NestedCollection<SKU>
 }
 
 export enum StockType {
@@ -56,9 +56,6 @@ export interface SKUProtocol extends Pring.Base {
     name: string
     price: number
     inventory: Inventory
-    // stockType: StockType
-    // stockQuantity: number
-    // stockValue: StockValue
     isPublished: boolean
     isActive: boolean
 }
@@ -101,7 +98,8 @@ export interface OrderItemProtocol extends Pring.Base {
     buyer: string
     selledBy: string
     type: OrderItemType
-    sku: string
+    product?: string
+    sku?: string
     quantity: number
     amount: number
 }

@@ -1,5 +1,5 @@
 import * as Pring from "pring"
-import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, Tradable, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions } from "./index"
+import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, Tradable, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions, Inventory } from "./index"
 
 const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
@@ -74,10 +74,12 @@ export class Manager
 
                     // Stock control
                     for (const item of items) {
+                        const productID: string = item.product
                         const skuID: string = item.sku
                         const quantity: number = item.quantity
+                        const product: Product = new this._Product(productID, {})
                         const sku: SKU = new this._SKU(skuID, {})
-
+                        sku.setParent(product.skus)
                         await sku.fetch()
                         switch (sku.inventory.type) {
                             case StockType.finite: {
@@ -85,7 +87,11 @@ export class Manager
                                 if (newQty < 0) {
                                     reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                                 }
-                                transaction.update(sku.reference, { inventory: { quantity: newQty } })
+                                const inventory: Inventory = {
+                                    type: StockType.finite,
+                                    quantity: newQty
+                                }
+                                transaction.update(sku.reference, { inventory: inventory })
                                 break
                             }
                             case StockType.bucket: {

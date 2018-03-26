@@ -42,9 +42,9 @@ describe("Tradable", () => {
             type: Tradable.StockType.infinite
         }
 
-        shop.skus.insert(sku)
+        // shop.skus.insert(sku)
         shop.products.insert(product)
-
+        await product.save()
         await shop.save()
         await user.save()
     })
@@ -70,7 +70,6 @@ describe("Tradable", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
-
             await order.save()
             order.status = Tradable.OrderStatus.received
             try {
