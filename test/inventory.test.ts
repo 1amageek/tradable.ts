@@ -37,6 +37,10 @@ describe("Tradable", () => {
         finiteSKU.selledBy = shop.id
         finiteSKU.createdBy = shop.id
         finiteSKU.product = product.id
+        finiteSKU.inventory = {
+            type: Tradable.StockType.finite,
+            quantity: 2
+        }
 
         finiteSKUFailure.name = "FiniteSKU failure"
         finiteSKUFailure.selledBy = shop.id
@@ -104,7 +108,7 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.product = product.id
             orderItem.sku = finiteSKU.id
-            orderItem.quantity = 1
+            orderItem.quantity = 2
 
             order.selledBy = shop.id
             order.buyer = user.id
@@ -130,8 +134,9 @@ describe("Tradable", () => {
             const changedSKU: SKU = new SKU(finiteSKU.id, {})            
             changedSKU.setParent(product.skus)
             await changedSKU.fetch()
+            expect(changedSKU.unitSales).toEqual(2)
             const inventory: Tradable.Inventory = changedSKU.inventory
-            expect(inventory.quantity).toEqual(0)
+            expect(inventory.quantity).toEqual(2)
 
         }, 10000)
 
@@ -172,6 +177,7 @@ describe("Tradable", () => {
             const changedSKU: SKU = new SKU(finiteSKUFailure.id, {})            
             changedSKU.setParent(product.skus)
             await changedSKU.fetch()
+            expect(changedSKU.unitSales).toEqual(0)
             const inventory: Tradable.Inventory = changedSKU.inventory
             expect(inventory.quantity).toEqual(1)
 
@@ -214,6 +220,7 @@ describe("Tradable", () => {
             const changedSKU: SKU = new SKU(infiniteSKU.id, {})            
             changedSKU.setParent(product.skus)
             await changedSKU.fetch()
+            expect(changedSKU.unitSales).toEqual(1)
             const inventory: Tradable.Inventory = changedSKU.inventory
             expect(inventory.type).toEqual(Tradable.StockType.infinite)
 
@@ -256,6 +263,7 @@ describe("Tradable", () => {
             const changedSKU: SKU = new SKU(inStockSKU.id, {})            
             changedSKU.setParent(product.skus)
             await changedSKU.fetch()
+            expect(changedSKU.unitSales).toEqual(1)
             const inventory: Tradable.Inventory = changedSKU.inventory
             expect(inventory.type).toEqual(Tradable.StockType.bucket)
             expect(inventory.value).toEqual(Tradable.StockValue.inStock)
@@ -298,6 +306,7 @@ describe("Tradable", () => {
             const changedSKU: SKU = new SKU(limitedSKU.id, {})            
             changedSKU.setParent(product.skus)
             await changedSKU.fetch()
+            expect(changedSKU.unitSales).toEqual(1)
             const inventory: Tradable.Inventory = changedSKU.inventory
             expect(inventory.type).toEqual(Tradable.StockType.bucket)
             expect(inventory.value).toEqual(Tradable.StockValue.limited)
@@ -341,6 +350,7 @@ describe("Tradable", () => {
             const changedSKU: SKU = new SKU(outOfStockSKU.id, {})            
             changedSKU.setParent(product.skus)
             await changedSKU.fetch()
+            expect(changedSKU.unitSales).toEqual(0)
             const inventory: Tradable.Inventory = changedSKU.inventory
             expect(inventory.type).toEqual(Tradable.StockType.bucket)
             expect(inventory.value).toEqual(Tradable.StockValue.outOfStock)

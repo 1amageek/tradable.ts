@@ -79,16 +79,13 @@ export class Manager
                         const product: Product = new this._Product(productID, {})
                         const sku: SKU = await product.skus.doc(skuID, this._SKU)
                         switch (sku.inventory.type) {
-                            case StockType.finite: {                                
-                                const newQty: number = sku.inventory.quantity - quantity
-                                if (newQty < 0) {
+                            case StockType.finite: {
+                                const remaining: number = sku.inventory.quantity - (sku.unitSales + quantity)
+                                if (remaining < 0) {
                                     reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                                 }
-                                const inventory: Inventory = {
-                                    type: StockType.finite,
-                                    quantity: newQty
-                                }
-                                transaction.update(sku.reference, { inventory: inventory })
+                                const newUnitSales = sku.unitSales + quantity
+                                transaction.update(sku.reference, { unitSales: newUnitSales })
                                 break
                             }
                             case StockType.bucket: {
@@ -96,11 +93,16 @@ export class Manager
                                     case StockValue.outOfStock: {
                                         reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                                     }
-                                    default: break
+                                    default: {
+                                        const newUnitSales = sku.unitSales + quantity
+                                        transaction.update(sku.reference, { unitSales: newUnitSales })
+                                    }
                                 }
                             }
-                            case StockType.infinite: break
-                            default: break
+                            case StockType.infinite: {
+                                const newUnitSales = sku.unitSales + quantity
+                                transaction.update(sku.reference, { unitSales: newUnitSales })
+                            }
                         }
                     }
 
