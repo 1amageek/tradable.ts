@@ -3,14 +3,12 @@ import { Manager } from './manager';
 import { Currency } from './currency';
 import { Query } from '@google-cloud/firestore';
 export { Currency, Manager };
-export interface Tradable<SKU extends SKUProtocol, Product extends ProductProtocol<SKU>, OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>> extends Pring.Base {
+export interface UserProtocol<SKU extends SKUProtocol, Product extends ProductProtocol<SKU>, OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>> extends Pring.Base {
     isAvailabled: boolean;
     products: Pring.ReferenceCollection<Product>;
     skus: Query;
-    orders: Pring.NestedCollection<Order>;
-}
-export interface UserProtocol extends Pring.Base {
     orders: Query;
+    orderings: Query;
 }
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
     title: string;

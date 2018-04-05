@@ -1,8 +1,8 @@
-import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, Tradable, PaymentDelegate, PaymentOptions } from "./index";
+import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, PaymentDelegate, PaymentOptions } from "./index";
 export interface Process {
     <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U): Promise<void>;
 }
-export declare class Manager<SKU extends SKUProtocol, Product extends ProductProtocol<SKU>, OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>, User extends Tradable<SKU, Product, OrderItem, Order>> {
+export declare class Manager<SKU extends SKUProtocol, Product extends ProductProtocol<SKU>, OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>> {
     private _SKU;
     private _Product;
     private _OrderItem;
