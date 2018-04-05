@@ -1,5 +1,5 @@
 import * as Pring from "pring"
-import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions, Inventory } from "./index"
+import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions } from "./index"
 
 const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
