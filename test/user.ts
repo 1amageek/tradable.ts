@@ -9,9 +9,10 @@ import { Query } from '@google-cloud/firestore';
 
 const property = Pring.property
 
-export class User extends Pring.Base implements tradable.Tradable<SKU, Product, OrderItem, Order> {
+export class User extends Pring.Base implements tradable.UserProtocol<SKU, Product, OrderItem, Order> {
     @property isAvailabled: boolean = false
     @property products: Pring.ReferenceCollection<Product> = new Pring.ReferenceCollection(this)
     @property skus: Query
-    @property orders: Pring.NestedCollection<Order> = new Pring.NestedCollection(this)
+    @property orders: Query
+    @property orderings: Query
 }

@@ -5,7 +5,7 @@ import { Query } from '@google-cloud/firestore'
 
 export { Currency, Manager }
 
-export interface Tradable
+export interface UserProtocol
     <
     SKU extends SKUProtocol,
     Product extends ProductProtocol<SKU>,
@@ -15,11 +15,8 @@ export interface Tradable
     isAvailabled: boolean
     products: Pring.ReferenceCollection<Product>
     skus: Query
-    orders: Pring.NestedCollection<Order>
-}
-
-export interface UserProtocol extends Pring.Base {
     orders: Query
+    orderings: Query
 }
 
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {

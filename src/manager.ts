@@ -1,5 +1,5 @@
 import * as Pring from "pring"
-import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, Tradable, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions, Inventory } from "./index"
+import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, UserProtocol, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions, Inventory } from "./index"
 
 const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
@@ -16,8 +16,7 @@ export class Manager
     SKU extends SKUProtocol,
     Product extends ProductProtocol<SKU>,
     OrderItem extends OrderItemProtocol,
-    Order extends OrderProtocol<OrderItem>,
-    User extends Tradable<SKU, Product, OrderItem, Order>
+    Order extends OrderProtocol<OrderItem>
     > {
 
     private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
@@ -80,7 +79,7 @@ export class Manager
                         const product: Product = new this._Product(productID, {})
                         const sku: SKU = await product.skus.doc(skuID, this._SKU)
                         switch (sku.inventory.type) {
-                            case StockType.finite: {
+                            case StockType.finite: {                                
                                 const newQty: number = sku.inventory.quantity - quantity
                                 if (newQty < 0) {
                                     reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
