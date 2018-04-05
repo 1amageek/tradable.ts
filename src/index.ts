@@ -13,10 +13,15 @@ export interface UserProtocol
     Order extends OrderProtocol<OrderItem>
     > extends Pring.Base {
     isAvailabled: boolean
+    country: string
     products: Pring.ReferenceCollection<Product>
     skus: Query
     orders: Query
     orderings: Query
+}
+
+export interface AccountProtocol {
+
 }
 
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
