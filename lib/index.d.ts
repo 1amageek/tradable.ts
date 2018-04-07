@@ -5,10 +5,21 @@ import { Query } from '@google-cloud/firestore';
 export { Currency, Manager };
 export interface UserProtocol<SKU extends SKUProtocol, Product extends ProductProtocol<SKU>, OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>> extends Pring.Base {
     isAvailabled: boolean;
+    country: string;
     products: Pring.ReferenceCollection<Product>;
     skus: Query;
     orders: Query;
     orderings: Query;
+}
+export interface BalanceProtocol extends Pring.Base {
+    currency: string;
+    amount: number;
+}
+export interface AccountProtocol<Balance extends BalanceProtocol> extends Pring.Base {
+    country: string;
+    isRejected: boolean;
+    isSigned: boolean;
+    balance: Pring.NestedCollection<Balance>;
 }
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
     title: string;
@@ -59,6 +70,8 @@ export declare enum OrderStatus {
     refunded = "refunded",
     canceled = "canceled",
 }
+export declare enum TransferStatus {
+}
 export interface OrderItemProtocol extends Pring.Base {
     order: string;
     buyer: string;
@@ -91,6 +104,12 @@ export declare type PaymentOptions = {
     customer?: string;
     vendorType: string;
 };
+export declare type TransferOptions = {
+    source?: string;
+    customer?: string;
+    vendorType: string;
+};
 export interface PaymentDelegate {
-    payment<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>;
+    pay<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>;
+    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options?: TransferOptions): Promise<any>;
 }
