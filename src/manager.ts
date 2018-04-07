@@ -192,31 +192,35 @@ export class Manager
             throw new Error(`[Failure] ORDER/${order.id}, Manager required delegate`)
         }
 
-        if (order.amount > 0) {
-            try {
-                await Pring.firestore.runTransaction(async (transaction) => {
-                    return new Promise(async (resolve, reject) => {
-                        const account: Account = new this._Account(order.selledBy, {})
-                        try {
-                            await account.fetch()
-                        } catch (error) {
-                            reject(`[Failure] pay ORDER/${order.id}, Account could not be fetched.`)
-                        }
-
-                        const currency: string = order.currency
-                        const balance: { [currency: string]: number } = account.balance || {}
-                        const amount: number = balance[order.currency] || 0
-                        const newAmount: number = amount + order.amount
-                        transaction.set(account.reference, { balance: { [currency]: amount } }, { merge: true })
-
-                        resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
-                    })
-                })
-            } catch (error) {
-                throw error
-            }
+        if (order.amount === 0) {
+            order.status = OrderStatus.paid
+            const _batch = order.pack(Pring.BatchType.update, null, batch)
+            return _batch
         }
 
+        try {
+            await Pring.firestore.runTransaction(async (transaction) => {
+                return new Promise(async (resolve, reject) => {
+                    const account: Account = new this._Account(order.selledBy, {})
+                    try {
+                        await account.fetch()
+                    } catch (error) {
+                        reject(`[Failure] pay ORDER/${order.id}, Account could not be fetched.`)
+                    }
+
+                    const currency: string = order.currency
+                    const balance: { [currency: string]: number } = account.balance || {}
+                    const amount: number = balance[order.currency] || 0
+                    const newAmount: number = amount + order.amount
+                    transaction.set(account.reference, { balance: { [currency]: amount } }, { merge: true })
+
+                    resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
+                })
+            })
+        } catch (error) {
+            throw error
+        }
+        
         try {
             const result = await this.delegate.pay(order, options)
             order.paymentInformation = {

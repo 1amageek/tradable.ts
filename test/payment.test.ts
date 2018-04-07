@@ -26,35 +26,23 @@ describe("Tradable", () => {
     const shop: User = new User()
     const user: User = new User()
     const product: Product = new Product()
-    const jpySKU: SKU = new SKU()
-    const usdSKU: SKU = new SKU()
+    const sku: SKU = new SKU()
 
 
     beforeAll(async () => {
 
-        product.skus.insert(jpySKU)
-        product.skus.insert(usdSKU)
+        product.skus.insert(sku)
         product.title = "PRODUCT"
         product.createdBy = shop.id
         product.selledBy = shop.id
 
-        jpySKU.name = "InfiniteJPYSKU"
-        jpySKU.selledBy = shop.id
-        jpySKU.createdBy = shop.id
-        jpySKU.product = product.id
-        jpySKU.price = 500
-        jpySKU.currency = Tradable.Currency.JPY
-        jpySKU.inventory = {
-            type: Tradable.StockType.infinite
-        }
-
-        usdSKU.name = "InfiniteUSDSKU"
-        usdSKU.selledBy = shop.id
-        usdSKU.createdBy = shop.id
-        usdSKU.product = product.id
-        usdSKU.price = 5
-        usdSKU.currency = Tradable.Currency.USD
-        usdSKU.inventory = {
+        sku.name = "InfiniteSKU"
+        sku.selledBy = shop.id
+        sku.createdBy = shop.id
+        sku.product = product.id
+        sku.price = 100
+        sku.currency = Tradable.Currency.JPY
+        sku.inventory = {
             type: Tradable.StockType.infinite
         }
 
@@ -77,11 +65,13 @@ describe("Tradable", () => {
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
-            orderItem.sku = jpySKU.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.price
             orderItem.quantity = 1
 
-            order.amount = 100
-            order.currency = Tradable.Currency.JPY
+            order.amount = sku.price
+            order.currency = sku.currency
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -97,7 +87,7 @@ describe("Tradable", () => {
                     })
                 })                
             } catch (error) {
-                // console.log(error)
+                console.log(error)
                 expect(error).not.toBeNull()
             }
             await order.update()
@@ -120,11 +110,13 @@ describe("Tradable", () => {
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
-            orderItem.sku = jpySKU.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.price
             orderItem.quantity = 1
 
-            order.amount = 100
-            order.currency = Tradable.Currency.JPY
+            order.amount = sku.price
+            order.currency = sku.currency
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -161,11 +153,13 @@ describe("Tradable", () => {
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
-            orderItem.sku = jpySKU.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.price
             orderItem.quantity = 1
 
-            order.amount = 100
-            order.currency = Tradable.Currency.JPY
+            order.amount = sku.price
+            order.currency = sku.currency
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -203,11 +197,13 @@ describe("Tradable", () => {
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
-            orderItem.sku = jpySKU.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.price
             orderItem.quantity = 1
 
-            order.amount = 100
-            order.currency = Tradable.Currency.JPY
+            order.amount = sku.price
+            order.currency = sku.currency
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -244,11 +240,13 @@ describe("Tradable", () => {
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
-            orderItem.sku = jpySKU.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.price
             orderItem.quantity = 1
 
-            order.amount = 100
-            order.currency = Tradable.Currency.JPY
+            order.amount = sku.price
+            order.currency = sku.currency
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -275,64 +273,12 @@ describe("Tradable", () => {
             await orderItem.delete()
         }, 10000)
 
-        test("Stripe Payment failure, when OrderItem contains more than one Currency.", async () => {
-            const order: Order = new Order()
-            const date: Date = new Date()
-            
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
-
-            manager.delegate = new StripePaymentDelegate()
-
-            const jpyOrderItem: OrderItem = new OrderItem()
-            jpyOrderItem.order = order.id
-            jpyOrderItem.selledBy = shop.id
-            jpyOrderItem.buyer = user.id
-            jpyOrderItem.sku = jpySKU.id
-            jpyOrderItem.quantity = 1
-
-            const usdOrderItem: OrderItem = new OrderItem()
-            usdOrderItem.order = order.id
-            usdOrderItem.selledBy = shop.id
-            usdOrderItem.buyer = user.id
-            usdOrderItem.sku = usdOrderItem.id
-            usdOrderItem.quantity = 1
-
-            order.amount = 100
-            order.currency = Tradable.Currency.JPY
-            order.selledBy = shop.id
-            order.buyer = user.id
-            order.shippingTo = { address: "address" }
-            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
-            order.items.insert(jpyOrderItem)
-            order.items.insert(usdOrderItem)
-            order.status = Tradable.OrderStatus.paid
-            await order.save()
-
-            try {
-                await manager.execute(order, async (order) => {
-                    return await manager.pay(order, {
-                        vendorType: 'stripe'
-                    })
-                })                
-            } catch (error) {
-                // console.log(error)
-                expect(error).not.toBeNull()
-            }
-            const received: Order = await Order.get(order.id, Order)
-            const status: Tradable.OrderStatus = received.status
-            expect(status).toEqual(Tradable.OrderStatus.paid)
-            expect(received.paymentInformation).toBeUndefined()
-            await order.delete()
-            await jpyOrderItem.delete()
-            await usdOrderItem.delete()
-        }, 10000)
     })
 
     afterAll(async () => {
         await shop.delete()
         await user.delete()
         await product.delete()
-        await jpySKU.delete()
-        await usdSKU.delete()
+        await sku.delete()
     })
 })

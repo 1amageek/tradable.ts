@@ -40,6 +40,7 @@ describe("Tradable", () => {
         sku.selledBy = shop.id
         sku.createdBy = shop.id
         sku.product = product.id
+        sku.price = 100
         sku.inventory = {
             type: Tradable.StockType.infinite
         }
@@ -64,9 +65,11 @@ describe("Tradable", () => {
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
             orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.price
             orderItem.quantity = 1
 
-            order.amount = 100
+            order.amount = sku.price
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -83,7 +86,7 @@ describe("Tradable", () => {
                     })
                 })
             } catch (error) {
-                // console.log(error)
+                console.log(error)
             }
 
             const received: Order = await Order.get(order.id, Order)
@@ -106,9 +109,11 @@ describe("Tradable", () => {
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
             orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.price
             orderItem.quantity = 1
 
-            order.amount = 100
+            order.amount = sku.price
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -147,9 +152,11 @@ describe("Tradable", () => {
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
             orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.price
             orderItem.quantity = 1
 
-            order.amount = 100
+            order.amount = sku.price
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -191,9 +198,11 @@ describe("Tradable", () => {
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
             orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.price
             orderItem.quantity = 1
 
-            order.amount = 100
+            order.amount = sku.price
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -234,9 +243,11 @@ describe("Tradable", () => {
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
             orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.price
             orderItem.quantity = 1
 
-            order.amount = 100
+            order.amount = sku.price
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -277,9 +288,11 @@ describe("Tradable", () => {
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
             orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.price
             orderItem.quantity = 1
 
-            order.amount = 100
+            order.amount = sku.price
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -320,9 +333,11 @@ describe("Tradable", () => {
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
             orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.price
             orderItem.quantity = 1
 
-            order.amount = 100
+            order.amount = sku.price
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -363,9 +378,11 @@ describe("Tradable", () => {
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
             orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.price
             orderItem.quantity = 1
 
-            order.amount = 100
+            order.amount = sku.price
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
