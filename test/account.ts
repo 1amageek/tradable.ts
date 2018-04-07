@@ -1,15 +1,16 @@
 import * as Pring from 'pring'
 import * as tradable from '../src/index'
-import { Balance } from './balance'
+import { Transaction } from './balance'
 import "reflect-metadata"
 
 const property = Pring.property
 
-export class Account extends Pring.Base implements tradable.AccountProtocol<Balance> {
+export class Account extends Pring.Base implements tradable.AccountProtocol<Transaction> {
     @property stripeID?: string
     @property country: string = "JP"
     @property isRejected: boolean = false
     @property isSigned: boolean = false
     @property balance: { [currency: string]: number }
+    @property transactions: Pring.NestedCollection<Transaction> = new Pring.NestedCollection(this)
     // @property balance: Pring.NestedCollection<Balance> = new Pring.NestedCollection(this)
 }

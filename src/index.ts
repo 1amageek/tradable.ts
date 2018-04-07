@@ -21,18 +21,32 @@ export interface UserProtocol
     orderings: Query
 }
 
-export interface BalanceProtocol extends Pring.Base {
+export enum TransactionType {
+    payment = 'payment',
+    paymentRefund = 'payment_refund',
+    transfer = 'transfer',
+    transferRefund = 'transfer_refund',
+    payout = 'payout',
+    payoutCancel = 'payout_cancel'
+}
+
+export interface TransactionProtocol extends Pring.Base {
+    type: TransactionType
     currency: string
     amount: number
+    order?: string
+    transfer?: string
+    payout?: string
 }
 
 /// AccountProtocol must have the same ID as UserProtocol.
 /// AccountPtotocol holds information that can not be accessed except for principals with a protocol with a high security level.
-export interface AccountProtocol<Balance extends BalanceProtocol> extends Pring.Base {
+export interface AccountProtocol<Transaction extends TransactionProtocol> extends Pring.Base {
     country: string
     isRejected: boolean
     isSigned: boolean
     balance: { [currency: string]: number }
+    transactions: Pring.NestedCollection<Transaction>
 }
 
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {

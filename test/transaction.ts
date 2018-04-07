@@ -4,7 +4,8 @@ import "reflect-metadata";
 
 const property = Pring.property
 
-export class Balance extends Pring.Base implements tradable.BalanceProtocol {
+export class Transaction extends Pring.Base implements tradable.TransactionProtocol {
     @property currency: string
     @property amount: number
+    @property type: tradable.TransactionType
 }

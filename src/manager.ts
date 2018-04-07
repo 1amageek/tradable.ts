@@ -1,5 +1,5 @@
 import * as Pring from "pring"
-import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, BalanceProtocol, AccountProtocol, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions, TransferOptions, Currency } from "./index"
+import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, TransactionProtocol, AccountProtocol, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions, TransferOptions, Currency, TransactionType } from "./index"
 
 const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
@@ -17,15 +17,15 @@ export class Manager
     Product extends ProductProtocol<SKU>,
     OrderItem extends OrderItemProtocol,
     Order extends OrderProtocol<OrderItem>,
-    Balance extends BalanceProtocol,
-    Account extends AccountProtocol<Balance>
+    Transaction extends TransactionProtocol,
+    Account extends AccountProtocol<Transaction>
     > {
 
     private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
     private _Product: { new(id?: string, value?: { [key: string]: any }): Product }
     private _OrderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem }
     private _Order: { new(id?: string, value?: { [key: string]: any }): Order }
-    private _Balance: { new(id?: string, value?: { [key: string]: any }): Balance }
+    private _Transaction: { new(id?: string, value?: { [key: string]: any }): Transaction }
     private _Account: { new(id?: string, value?: { [key: string]: any }): Account }
 
     constructor(
@@ -33,14 +33,14 @@ export class Manager
         product: { new(id?: string, value?: { [key: string]: any }): Product },
         orderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem },
         order: { new(id?: string, value?: { [key: string]: any }): Order },
-        balance: { new(id?: string, value?: { [key: string]: any }): Balance },
+        transaction: { new(id?: string, value?: { [key: string]: any }): Transaction },
         account: { new(id?: string, value?: { [key: string]: any }): Account },
     ) {
         this._SKU = sku
         this._Product = product
         this._OrderItem = orderItem
         this._Order = order
-        this._Balance = balance
+        this._Transaction = transaction
         this._Account = account
     }
 
@@ -243,18 +243,22 @@ export class Manager
         }
 
         order.status = OrderStatus.paid  
-        return order.pack(Pring.BatchType.update, null, batch)
+        const _batch = order.pack(Pring.BatchType.update, null, batch)
+        if (_batch) {
+            return this.transaction(order, _batch)
+        }
     }
 
-    // async recode(order: Order, batch: FirebaseFirestore.WriteBatch) {
-    //     const account: Account = new this._Account(order.selledBy, {})
-    //     const balance: Balance = new this._Balance()
-    //     balance.amount = order.amount
-    //     balance.currency = order.currency
-    //     balance.setParent(account.balance)
-    //     batch.set(balance.reference, balance.value())
-    //     return batch
-    // }
+    async transaction(order: Order, batch: FirebaseFirestore.WriteBatch) {
+        const account: Account = new this._Account(order.selledBy, {})
+        const transaction: Transaction = new this._Transaction()
+        transaction.amount = order.amount
+        transaction.currency = order.currency
+        transaction.type = TransactionType.payment
+        transaction.setParent(account.transactions)
+        batch.set(transaction.reference, transaction.value())
+        return batch
+    }
 
     async transfer(order: Order, options: TransferOptions) {
         // Skip for paid, waitingForRefund, refunded

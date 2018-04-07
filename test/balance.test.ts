@@ -124,6 +124,54 @@ describe("Tradable", () => {
             await orderItem.delete()
         }, 10000)
 
+        test("Added to Balance after payment is successful", async () => {
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
+
+            manager.delegate = new StripePaymentDelegate()
+
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.buyer = user.id
+            orderItem.sku = jpySKU.id
+            orderItem.currency = jpySKU.currency
+            orderItem.amount = jpySKU.price
+            orderItem.quantity = 1
+
+            order.amount = jpySKU.price
+            order.currency = jpySKU.currency
+            order.selledBy = shop.id
+            order.buyer = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            await order.save()
+            order.status = Tradable.OrderStatus.received
+            try {
+                await manager.execute(order, async (order) => {
+                    return await manager.pay(order, {
+                        customer: Config.STRIPE_CUS_TOKEN,
+                        vendorType: 'stripe'
+                    })
+                })                
+            } catch (error) {
+                console.log(error)
+                expect(error).not.toBeNull()
+            }
+            await order.update()
+            const received: Order = await Order.get(order.id, Order)
+            const status: Tradable.OrderStatus = received.status
+            expect(status).toEqual(Tradable.OrderStatus.paid)
+            expect(received.paymentInformation['stripe']).not.toBeNull()
+            const account: Account = await Account.get(order.selledBy, Account)
+            expect(account.balance[Tradable.Currency.JPY]).toEqual(jpySKU.price * 2)
+            
+            await order.delete()
+            await orderItem.delete()
+        }, 10000)
+
         test("Balance changes after payment is successful", async () => {
             const order: Order = new Order()
             const date: Date = new Date()
@@ -214,7 +262,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation).toBeUndefined()
             const account: Account = await Account.get(order.selledBy, Account)
             expect(account.balance[Tradable.Currency.USD]).toEqual(usdSKU.price)
-            expect(account.balance[Tradable.Currency.JPY]).toEqual(jpySKU.price)
+            expect(account.balance[Tradable.Currency.JPY]).toEqual(jpySKU.price * 2)
             
             await order.delete()
             await orderItem.delete()
