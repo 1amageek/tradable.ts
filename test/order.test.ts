@@ -165,6 +165,45 @@ describe("Tradable", () => {
             await orderItem0.delete()
             await orderItem1.delete()
         }, 10000)
+
+        test("Amount is below the lower limit.", async () => {
+            const order: Order = new Order()
+            const date: Date = new Date()
+            
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
+
+            manager.delegate = new StripePaymentDelegate()
+
+            const orderItem: OrderItem = new OrderItem()
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.buyer = user.id
+            orderItem.sku = usdSKU.id
+            orderItem.amount = usdSKU.price
+            orderItem.currency = usdSKU.currency
+            orderItem.quantity = 1
+
+            order.amount = usdSKU.price
+            order.currency = usdSKU.currency
+            order.selledBy = shop.id
+            order.buyer = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            await order.save()
+
+            try {
+                await manager.execute(order, async (order) => {})                
+            } catch (error) {
+                expect(error).not.toBeNull()
+            }
+            const received: Order = await Order.get(order.id, Order)
+            const status: Tradable.OrderStatus = received.status
+            expect(status).toEqual(Tradable.OrderStatus.rejected)
+            expect(received.paymentInformation).toBeUndefined()
+            await order.delete()
+            await orderItem.delete()
+        }, 10000)
     })
 
     afterAll(async () => {
