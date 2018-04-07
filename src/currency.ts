@@ -1,4 +1,4 @@
-export enum Currency {
+enum Currency {
 
     AFN = "afn", // Afghan Afghani, AFN*
     ALL = "all", // Albanian Lek, ALL
@@ -137,3 +137,28 @@ export enum Currency {
     YER = "yer", // Yemeni Rial, YER
     ZMW = "zmw"  // Zambian Kwacha, ZMW
 }
+
+namespace Currency {
+    export const minimum = (currency: Currency): number => {
+        switch (currency) {
+            case Currency.USD: return 50
+            case Currency.AUD: return 50
+            case Currency.BRL: return 50
+            case Currency.CAD: return 50
+            case Currency.CHF: return 50
+            case Currency.DKK: return 250
+            case Currency.EUR: return 50
+            case Currency.GBP: return 30
+            case Currency.HKD: return 400
+            case Currency.JPY: return 50
+            case Currency.MXN: return 10
+            case Currency.NOK: return 300
+            case Currency.NZD: return 50
+            case Currency.SEK: return 300
+            case Currency.SGD: return 50
+            default: return 50
+        }
+    }
+}
+
+export { Currency }

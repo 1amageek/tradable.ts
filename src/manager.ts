@@ -1,5 +1,5 @@
 import * as Pring from "pring"
-import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, BalanceProtocol, AccountProtocol, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions, TransferOptions } from "./index"
+import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, BalanceProtocol, AccountProtocol, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions, TransferOptions, Currency } from "./index"
 
 const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
@@ -75,6 +75,7 @@ export class Manager
     private validate(order: Order): Error | void {
         if (!this.validateCurrency(order)) return Error(`[Tradable] Error: validation error, Currency of OrderItem does not match Currency of Order.`)
         if (!this.validateAmount(order)) return Error(`[Tradable] Error: validation error, The sum of OrderItem does not match Amount of Order.`)
+        if (!this.validateMinimumAmount(order)) return Error(`[Tradable] Error: validation error, Amount is below the lower limit.`)
     }
 
     // Returns true if there is no problem in the verification
@@ -94,6 +95,15 @@ export class Manager
             totalAmount += item.amount
         }
         if (totalAmount !== order.amount) {
+            return false
+        }
+        return true
+    }
+
+    private validateMinimumAmount(order: Order): boolean {
+        const currency: Currency = order.currency
+        const amount: number = order.amount
+        if (0 < amount && amount < Currency.minimum(currency)) {
             return false
         }
         return true
@@ -192,53 +202,48 @@ export class Manager
             throw new Error(`[Failure] ORDER/${order.id}, Manager required delegate`)
         }
 
-        if (order.amount === 0) {
-            order.status = OrderStatus.paid
-            const _batch = order.pack(Pring.BatchType.update, null, batch)
-            return _batch
-        }
-
-        try {
-            await Pring.firestore.runTransaction(async (transaction) => {
-                return new Promise(async (resolve, reject) => {
-                    const account: Account = new this._Account(order.selledBy, {})
-                    try {
-                        await account.fetch()
-                    } catch (error) {
-                        reject(`[Failure] pay ORDER/${order.id}, Account could not be fetched.`)
-                    }
-
-                    const currency: string = order.currency
-                    const balance: { [currency: string]: number } = account.balance || {}
-                    const amount: number = balance[order.currency] || 0
-                    const newAmount: number = amount + order.amount
-                    transaction.set(account.reference, { balance: { [currency]: newAmount } }, { merge: true })
-
-                    resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
-                })
-            })
-        } catch (error) {
-            throw error
-        }
-
-        try {
-            const result = await this.delegate.pay(order, options)
-            order.paymentInformation = {
-                [options.vendorType]: result
-            }
-            order.status = OrderStatus.paid
-            const _batch = order.pack(Pring.BatchType.update, null, batch)
-            // return this.recode(order, _batch)
-            return _batch
-        } catch (error) {
-            order.status = OrderStatus.waitingForPayment
+        if (order.amount > 0) {
             try {
-                await order.update()
+                const result = await this.delegate.pay(order, options)
+                order.paymentInformation = {
+                    [options.vendorType]: result
+                }                      
+            } catch (error) {
+                order.status = OrderStatus.waitingForPayment
+                try {
+                    await order.update()
+                } catch (error) {
+                    throw error
+                }
+                throw error
+            }
+    
+            try {
+                await Pring.firestore.runTransaction(async (transaction) => {
+                    return new Promise(async (resolve, reject) => {
+                        const account: Account = new this._Account(order.selledBy, {})
+                        try {
+                            await account.fetch()
+                        } catch (error) {
+                            reject(`[Failure] pay ORDER/${order.id}, Account could not be fetched.`)
+                        }
+    
+                        const currency: string = order.currency
+                        const balance: { [currency: string]: number } = account.balance || {}
+                        const amount: number = balance[order.currency] || 0
+                        const newAmount: number = amount + order.amount
+                        transaction.set(account.reference, { balance: { [currency]: newAmount } }, { merge: true })
+    
+                        resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
+                    })
+                })
             } catch (error) {
                 throw error
             }
-            throw error
         }
+
+        order.status = OrderStatus.paid  
+        return order.pack(Pring.BatchType.update, null, batch)
     }
 
     // async recode(order: Order, batch: FirebaseFirestore.WriteBatch) {
