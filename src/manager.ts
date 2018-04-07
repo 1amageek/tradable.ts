@@ -212,7 +212,7 @@ export class Manager
                     const balance: { [currency: string]: number } = account.balance || {}
                     const amount: number = balance[order.currency] || 0
                     const newAmount: number = amount + order.amount
-                    transaction.set(account.reference, { balance: { [currency]: amount } }, { merge: true })
+                    transaction.set(account.reference, { balance: { [currency]: newAmount } }, { merge: true })
 
                     resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
                 })
@@ -220,7 +220,7 @@ export class Manager
         } catch (error) {
             throw error
         }
-        
+
         try {
             const result = await this.delegate.pay(order, options)
             order.paymentInformation = {
