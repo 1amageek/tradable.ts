@@ -1,4 +1,4 @@
-process.env.NODE_ENV = 'test';
+process.env.NODE_ENV = 'test'
 
 import * as Pring from 'pring'
 import * as Tradable from '../src/index'
@@ -6,8 +6,10 @@ import * as UUID from 'uuid'
 import { User } from './user'
 import { Product } from './product'
 import { SKU } from './sku'
-import { Order } from './order';
-import { OrderItem } from './orderItem';
+import { Order } from './order'
+import { OrderItem } from './orderItem'
+import { Balance } from './balance'
+import { Account } from './account'
 
 Pring.initialize({
     projectId: 'salada-f825d',
@@ -53,7 +55,7 @@ describe("Order validation test", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
             try {
                 await manager.execute(order, async (order) => {})
             } catch (error) {
@@ -69,7 +71,7 @@ describe("Order validation test", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
             try {
                 await manager.execute(order, async (order) => {})
             } catch (error) {
@@ -85,7 +87,7 @@ describe("Order validation test", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = null
             order.items.insert(orderItem)
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
             try {
                 await manager.execute(order, async (order) => {})
             } catch (error) {
@@ -102,7 +104,7 @@ describe("Order validation test", () => {
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
             order.currency = null
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
             try {
                 await manager.execute(order, async (order) => {})
             } catch (error) {
@@ -119,7 +121,7 @@ describe("Order validation test", () => {
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
             order.amount = null
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
             try {
                 await manager.execute(order, async (order) => {})
             } catch (error) {

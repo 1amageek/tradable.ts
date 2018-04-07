@@ -10,6 +10,8 @@ import { Product } from './product'
 import { SKU } from './sku'
 import { Order } from './order'
 import { OrderItem } from './orderItem'
+import { Balance } from './balance'
+import { Account } from './account'
 import { StripePaymentDelegate } from './stripePaymentDelegate'
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
@@ -54,7 +56,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -75,7 +77,7 @@ describe("Tradable", () => {
 
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
+                    return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
@@ -96,7 +98,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -117,7 +119,7 @@ describe("Tradable", () => {
 
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
+                    return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
@@ -138,8 +140,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
-
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
             manager.delegate = new StripePaymentDelegate()
 
             orderItem.order = order.id
@@ -160,7 +161,7 @@ describe("Tradable", () => {
 
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
+                    return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
@@ -182,7 +183,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -203,7 +204,7 @@ describe("Tradable", () => {
             order.status = Tradable.OrderStatus.rejected
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
+                    return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
@@ -225,7 +226,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -246,7 +247,7 @@ describe("Tradable", () => {
         
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
+                    return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
@@ -268,7 +269,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -289,7 +290,7 @@ describe("Tradable", () => {
         
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
+                    return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
@@ -311,7 +312,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -332,7 +333,7 @@ describe("Tradable", () => {
             
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
+                    await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
@@ -354,7 +355,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -375,7 +376,7 @@ describe("Tradable", () => {
             
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
+                    await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
