@@ -7,7 +7,7 @@ const property = Pring.property
 export class SKU extends Pring.Base implements tradable.SKUProtocol {
     @property selledBy: string
     @property createdBy: string
-    @property currency: tradable.Currency = tradable.Currency.USD
+    @property currency: tradable.Currency = tradable.Currency.JPY
     @property product: string
     @property name: string
     @property price: number = 0

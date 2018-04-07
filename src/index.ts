@@ -32,7 +32,7 @@ export interface AccountProtocol<Balance extends BalanceProtocol> extends Pring.
     country: string
     isRejected: boolean
     isSigned: boolean
-    balance: Pring.NestedCollection<Balance>
+    balance: { [currency: string]: number }
 }
 
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
@@ -119,6 +119,7 @@ export interface OrderItemProtocol extends Pring.Base {
     product?: string
     sku?: string
     quantity: number
+    currency: Currency
     amount: number
 }
 

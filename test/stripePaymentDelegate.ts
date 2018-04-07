@@ -37,7 +37,7 @@ export class StripePaymentDelegate implements tradable.PaymentDelegate {
         }
     }
 
-    async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.PaymentOptions): Promise<any> {
+    async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.TransferOptions): Promise<any> {
         try {            
             const account = await Account.get(order.selledBy, Account)
             const amount = order.amount

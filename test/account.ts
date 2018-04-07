@@ -10,5 +10,6 @@ export class Account extends Pring.Base implements tradable.AccountProtocol<Bala
     @property country: string = "JP"
     @property isRejected: boolean = false
     @property isSigned: boolean = false
-    @property balance: Pring.NestedCollection<Balance> = new Pring.NestedCollection(this)
+    @property balance: { [currency: string]: number }
+    // @property balance: Pring.NestedCollection<Balance> = new Pring.NestedCollection(this)
 }

@@ -12,5 +12,6 @@ export class OrderItem extends Pring.Base implements tradable.OrderItemProtocol 
     @property product?: string
     @property sku?: string
     @property quantity: number = 0
+    @property currency: tradable.Currency = tradable.Currency.JPY
     @property amount: number = 0
 }
