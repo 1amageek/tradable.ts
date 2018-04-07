@@ -9,6 +9,8 @@ import { Product } from './product'
 import { SKU } from './sku'
 import { Order } from './order'
 import { OrderItem } from './orderItem'
+import { Balance } from './balance'
+import { Account } from './account'
 
 Pring.initialize({
     projectId: 'salada-f825d',
@@ -118,10 +120,10 @@ describe("Tradable", () => {
 
             await order.save()
 
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.inventoryControl(order)
+                    return await manager.inventoryControl(order)
                 })                
             } catch (error) {
                 // console.log(error)
@@ -161,7 +163,7 @@ describe("Tradable", () => {
 
             await order.save()
 
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
             try {
                 await manager.execute(order, async (order) => {
                     await manager.inventoryControl(order)
@@ -204,7 +206,7 @@ describe("Tradable", () => {
 
             await order.save()
 
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
             try {
                 await manager.execute(order, async (order) => {
                     await manager.inventoryControl(order)
@@ -247,7 +249,7 @@ describe("Tradable", () => {
 
             await order.save()
 
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
             try {
                 await manager.execute(order, async (order) => {
                     await manager.inventoryControl(order)
@@ -290,7 +292,7 @@ describe("Tradable", () => {
             order.items.insert(orderItem)
             await order.save()
             
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
             try {
                 await manager.execute(order, async (order) => {
                     await manager.inventoryControl(order)
@@ -334,7 +336,7 @@ describe("Tradable", () => {
 
             await order.save()
 
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
             try {
                 await manager.execute(order, async (order) => {
                     await manager.inventoryControl(order)

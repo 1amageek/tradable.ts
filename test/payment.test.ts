@@ -10,6 +10,8 @@ import { Product } from './product'
 import { SKU } from './sku'
 import { Order } from './order'
 import { OrderItem } from './orderItem'
+import { Balance } from './balance'
+import { Account } from './account'
 import { StripePaymentDelegate } from './stripePaymentDelegate'
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
@@ -54,7 +56,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -74,7 +76,7 @@ describe("Tradable", () => {
             order.status = Tradable.OrderStatus.received
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
+                    return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
@@ -92,51 +94,11 @@ describe("Tradable", () => {
             await orderItem.delete()
         }, 10000)
 
-        // test("Stripe Payment use customer success, when set source", async () => {
-        //     const order: Order = new Order()
-        //     const date: Date = new Date()
-        //     const orderItem: OrderItem = new OrderItem()
-        //     const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
-
-        //     manager.delegate = new StripePaymentDelegate()
-
-        //     orderItem.order = order.id
-        //     orderItem.selledBy = shop.id
-        //     orderItem.buyer = user.id
-        //     orderItem.sku = sku.id
-        //     orderItem.quantity = 1
-
-        //     order.amount = 100
-        //     order.selledBy = shop.id
-        //     order.buyer = user.id
-        //     order.shippingTo = { address: "address" }
-        //     order.expirationDate = new Date(date.setDate(date.getDate() + 14))
-        //     order.items.insert(orderItem)
-
-        //     await order.save()
-        //     order.status = Tradable.OrderStatus.received
-        //     try {
-        //         await manager.payment(order, {
-        //             source: Config.STRIPE_CORD_TOKEN,
-        //             vendorType: 'stripe'
-        //         })
-        //     } catch (error) {
-        //         console.log(error)
-        //     }
-        //     await order.update()
-        //     const received: Order = await Order.get(order.id, Order)
-        //     const status: Tradable.OrderStatus = received.status
-        //     expect(status).toEqual(Tradable.OrderStatus.waitingForPayment)
-        //     expect(received.paymentInformation['stripe']).not.toBeNull()
-        //     await order.delete()
-        //     await orderItem.delete()
-        // }, 10000)
-
         test("Stripe Payment use customer failure, customer and source are not set", async () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -157,7 +119,7 @@ describe("Tradable", () => {
 
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
+                    return await manager.pay(order, {
                         vendorType: 'stripe'
                     })
                 })                
@@ -176,7 +138,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -197,7 +159,7 @@ describe("Tradable", () => {
 
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
+                    return await manager.pay(order, {
                         customer: "cus_xxxxxxxxxx",
                         vendorType: 'stripe'
                     })
@@ -217,7 +179,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -237,7 +199,7 @@ describe("Tradable", () => {
 
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
+                    return await manager.pay(order, {
                         vendorType: 'stripe'
                     })
                 })                
@@ -257,7 +219,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -278,7 +240,7 @@ describe("Tradable", () => {
 
             try {
                 await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
+                    return await manager.pay(order, {
                         vendorType: 'stripe'
                     })
                 })                
@@ -290,53 +252,6 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation).toBeUndefined()
-            await order.delete()
-            await orderItem.delete()
-        }, 10000)
-
-        test("Stripe Payment use customer success, when multiple charges", async () => {
-            const order: Order = new Order()
-            const date: Date = new Date()
-            const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order)
-
-            manager.delegate = new StripePaymentDelegate()
-
-            orderItem.order = order.id
-            orderItem.selledBy = shop.id
-            orderItem.buyer = user.id
-            orderItem.sku = sku.id
-            orderItem.quantity = 1
-
-            order.amount = 100
-            order.selledBy = shop.id
-            order.buyer = user.id
-            order.shippingTo = { address: "address" }
-            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
-            order.items.insert(orderItem)
-            order.status = Tradable.OrderStatus.received
-            await order.save()
-            
-            try {
-                await manager.execute(order, async (order) => {
-                    await manager.payment(order, {
-                        customer: Config.STRIPE_CUS_TOKEN,
-                        vendorType: 'stripe'
-                    })
-                    order.status = Tradable.OrderStatus.received
-                    await manager.payment(order, {
-                        customer: Config.STRIPE_CUS_TOKEN,
-                        vendorType: 'stripe'
-                    })
-                })
-            } catch (error) {
-                // console.log(error)
-            }
-
-            const received: Order = await Order.get(order.id, Order)
-            const status: Tradable.OrderStatus = received.status
-            expect(status).toEqual(Tradable.OrderStatus.paid)
-            expect(received.paymentInformation['stripe']).not.toBeNull()
             await order.delete()
             await orderItem.delete()
         }, 10000)

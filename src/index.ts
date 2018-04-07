@@ -5,6 +5,7 @@ import { Query } from '@google-cloud/firestore'
 
 export { Currency, Manager }
 
+/// UserProtocol is a protocol that the user must retain to make it tradeable.
 export interface UserProtocol
     <
     SKU extends SKUProtocol,
@@ -20,8 +21,18 @@ export interface UserProtocol
     orderings: Query
 }
 
-export interface AccountProtocol {
+export interface BalanceProtocol extends Pring.Base {
+    currency: string
+    amount: number
+}
 
+/// AccountProtocol must have the same ID as UserProtocol.
+/// AccountPtotocol holds information that can not be accessed except for principals with a protocol with a high security level.
+export interface AccountProtocol<Balance extends BalanceProtocol> extends Pring.Base {
+    country: string
+    isRejected: boolean
+    isSigned: boolean
+    balance: Pring.NestedCollection<Balance>
 }
 
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
@@ -96,6 +107,10 @@ export enum OrderStatus {
     canceled = 'canceled'
 }
 
+export enum TransferStatus {
+
+}
+
 export interface OrderItemProtocol extends Pring.Base {
     order: string
     buyer: string
@@ -127,8 +142,17 @@ export type PaymentOptions = {
     vendorType: string
 }
 
+export type TransferOptions = {
+    source?: string
+    customer?: string
+    vendorType: string
+}
+
 export interface PaymentDelegate {
 
     /// This function will make payment. The payment result is saved in the VendorType set in PaymentOptions.
-    payment<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>
+    pay<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>
+
+    /// This function performs Transfer. The transfer record is kept by the Account. You also need to specify VendorType.
+    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options?: TransferOptions): Promise<any>
 }

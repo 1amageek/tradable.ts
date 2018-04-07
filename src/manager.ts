@@ -1,12 +1,12 @@
 import * as Pring from "pring"
-import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions } from "./index"
+import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, BalanceProtocol, AccountProtocol, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions, TransferOptions } from "./index"
 
 const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
 }
 
 export interface Process {
-    <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U): Promise<void>
+    <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U): Promise<FirebaseFirestore.WriteBatch | void>
 }
 
 // 在庫の増減
@@ -16,24 +16,32 @@ export class Manager
     SKU extends SKUProtocol,
     Product extends ProductProtocol<SKU>,
     OrderItem extends OrderItemProtocol,
-    Order extends OrderProtocol<OrderItem>
+    Order extends OrderProtocol<OrderItem>,
+    Balance extends BalanceProtocol,
+    Account extends AccountProtocol<Balance>
     > {
 
     private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
     private _Product: { new(id?: string, value?: { [key: string]: any }): Product }
     private _OrderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem }
     private _Order: { new(id?: string, value?: { [key: string]: any }): Order }
+    private _Balance: { new(id?: string, value?: { [key: string]: any }): Balance }
+    private _Account: { new(id?: string, value?: { [key: string]: any }): Account }
 
     constructor(
         sku: { new(id?: string, value?: { [key: string]: any }): SKU },
         product: { new(id?: string, value?: { [key: string]: any }): Product },
         orderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem },
-        order: { new(id?: string, value?: { [key: string]: any }): Order }
+        order: { new(id?: string, value?: { [key: string]: any }): Order },
+        balance: { new(id?: string, value?: { [key: string]: any }): Balance },
+        account: { new(id?: string, value?: { [key: string]: any }): Account },
     ) {
         this._SKU = sku
         this._Product = product
         this._OrderItem = orderItem
         this._Order = order
+        this._Balance = balance
+        this._Account = account
     }
 
     async execute(order: Order, process: Process) {
@@ -43,8 +51,10 @@ export class Manager
             if (isUndefined(order.expirationDate)) throw Error(`[Tradable] Error: validation error, expirationDate is required`)
             if (isUndefined(order.currency)) throw Error(`[Tradable] Error: validation error, currency is required`)
             if (isUndefined(order.amount)) throw Error(`[Tradable] Error: validation error, amount is required`)
-            await process(order)
-            await order.update()
+            const batch = await process(order)
+            if (batch) {
+                await batch.commit()
+            }
         } catch (error) {
             throw error
         }
@@ -121,7 +131,7 @@ export class Manager
         }
     }
 
-    async payment(order: Order, options: PaymentOptions) {
+    async pay(order: Order, options: PaymentOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
 
         // Skip for paid, waitingForRefund, refunded
         if (order.status === OrderStatus.paid ||
@@ -144,11 +154,13 @@ export class Manager
         }
 
         try {
-            const result = await this.delegate.payment(order, options)
+            const result = await this.delegate.pay(order, options)
             order.paymentInformation = {
                 [options.vendorType]: result
             }
             order.status = OrderStatus.paid
+            const _batch = order.pack(Pring.BatchType.update, null, batch)
+            return this.recode(order, _batch)
         } catch (error) {
             order.status = OrderStatus.waitingForPayment
             try {
@@ -157,6 +169,26 @@ export class Manager
                 throw error
             }
             throw error
+        }
+    }
+
+    async recode(order: Order, batch: FirebaseFirestore.WriteBatch) {
+        const account: Account = new this._Account(order.selledBy, {})
+        const balance: Balance = new this._Balance()
+        balance.amount = order.amount
+        balance.currency = order.currency
+        balance.setParent(account.balance)
+        batch.set(balance.reference, balance.value())
+        return batch
+    }
+
+    async transfer(order: Order, options: TransferOptions) {
+        // Skip for paid, waitingForRefund, refunded
+        if (order.status === OrderStatus.paid ||
+            order.status === OrderStatus.waitingForRefund ||
+            order.status === OrderStatus.refunded
+        ) {
+            return
         }
     }
 }
