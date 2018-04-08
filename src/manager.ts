@@ -62,12 +62,6 @@ export class Manager
 
     async execute(order: Order, process: Process) {
         try {
-            if (isUndefined(order.buyer)) throw Error(`[Tradable] Error: validation error, buyer is required`)
-            if (isUndefined(order.selledBy)) throw Error(`[Tradable] Error: validation error, selledBy is required`)
-            if (isUndefined(order.expirationDate)) throw Error(`[Tradable] Error: validation error, expirationDate is required`)
-            if (isUndefined(order.currency)) throw Error(`[Tradable] Error: validation error, currency is required`)
-            if (isUndefined(order.amount)) throw Error(`[Tradable] Error: validation error, amount is required`)
-
             // validation error
             const validationError = this.validate(order)
             if (validationError) {
@@ -89,6 +83,11 @@ export class Manager
     }
 
     private validate(order: Order): Error | void {
+        if (isUndefined(order.buyer)) return Error(`[Tradable] Error: validation error, buyer is required`)
+        if (isUndefined(order.selledBy)) return Error(`[Tradable] Error: validation error, selledBy is required`)
+        if (isUndefined(order.expirationDate)) return Error(`[Tradable] Error: validation error, expirationDate is required`)
+        if (isUndefined(order.currency)) return Error(`[Tradable] Error: validation error, currency is required`)
+        if (isUndefined(order.amount)) return Error(`[Tradable] Error: validation error, amount is required`)
         if (!this.validateCurrency(order)) return Error(`[Tradable] Error: validation error, Currency of OrderItem does not match Currency of Order.`)
         if (!this.validateAmount(order)) return Error(`[Tradable] Error: validation error, The sum of OrderItem does not match Amount of Order.`)
         if (!this.validateMinimumAmount(order)) return Error(`[Tradable] Error: validation error, Amount is below the lower limit.`)

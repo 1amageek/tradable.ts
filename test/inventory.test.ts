@@ -36,6 +36,9 @@ describe("Tradable", () => {
         product.selledBy = shop.id
 
         finiteSKU.name = "FiniteSKU"
+        finiteSKU.currency = Tradable.Currency.JPY
+        finiteSKU.price = 100
+        finiteSKU.unitSales = 0
         finiteSKU.selledBy = shop.id
         finiteSKU.createdBy = shop.id
         finiteSKU.product = product.id
@@ -45,11 +48,17 @@ describe("Tradable", () => {
         }
 
         finiteSKUFailure.name = "FiniteSKU failure"
+        finiteSKUFailure.currency = Tradable.Currency.JPY
+        finiteSKUFailure.price = 100
+        finiteSKUFailure.unitSales = 0
         finiteSKUFailure.selledBy = shop.id
         finiteSKUFailure.createdBy = shop.id
         finiteSKUFailure.product = product.id
 
         infiniteSKU.name = "InfiniteSKU"
+        infiniteSKU.currency = Tradable.Currency.JPY
+        infiniteSKU.price = 100
+        infiniteSKU.unitSales = 0
         infiniteSKU.selledBy = shop.id
         infiniteSKU.createdBy = shop.id
         infiniteSKU.product = product.id
@@ -58,6 +67,9 @@ describe("Tradable", () => {
         }
 
         inStockSKU.name = "InStockSKU"
+        inStockSKU.currency = Tradable.Currency.JPY
+        inStockSKU.price = 100
+        inStockSKU.unitSales = 0
         inStockSKU.selledBy = shop.id
         inStockSKU.createdBy = shop.id
         inStockSKU.product = product.id
@@ -67,6 +79,9 @@ describe("Tradable", () => {
         }
 
         limitedSKU.name = "LimitedSKU"
+        limitedSKU.currency = Tradable.Currency.JPY
+        limitedSKU.price = 100
+        limitedSKU.unitSales = 0
         limitedSKU.selledBy = shop.id
         limitedSKU.createdBy = shop.id
         limitedSKU.product = product.id
@@ -76,6 +91,9 @@ describe("Tradable", () => {
         }
 
         outOfStockSKU.name = "OutOfStockSKU"
+        outOfStockSKU.currency = Tradable.Currency.JPY
+        outOfStockSKU.price = 100
+        outOfStockSKU.unitSales = 0
         outOfStockSKU.selledBy = shop.id
         outOfStockSKU.createdBy = shop.id
         outOfStockSKU.product = product.id
@@ -110,8 +128,12 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.product = product.id
             orderItem.sku = finiteSKU.id
+            orderItem.amount = finiteSKU.price
+            orderItem.currency = finiteSKU.currency
             orderItem.quantity = 2
 
+            order.amount = finiteSKU.price
+            order.currency = finiteSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -153,8 +175,12 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.product = product.id
             orderItem.sku = finiteSKUFailure.id
+            orderItem.amount = finiteSKUFailure.price
+            orderItem.currency = finiteSKUFailure.currency
             orderItem.quantity = 2
 
+            order.amount = finiteSKUFailure.price
+            order.currency = finiteSKUFailure.currency
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -169,7 +195,7 @@ describe("Tradable", () => {
                     await manager.inventoryControl(order)
                 })                
             } catch (error) {
-                // console.log(error)
+                console.log(error)
             }
 
             const received: Order = await Order.get(order.id, Order)
@@ -196,8 +222,12 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.product = product.id
             orderItem.sku = infiniteSKU.id
+            orderItem.amount = infiniteSKU.price
+            orderItem.currency = infiniteSKU.currency
             orderItem.quantity = 1
 
+            order.amount = infiniteSKU.price
+            order.currency = infiniteSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -239,8 +269,12 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.product = product.id
             orderItem.sku = inStockSKU.id
+            orderItem.amount = inStockSKU.price
+            orderItem.currency = inStockSKU.currency
             orderItem.quantity = 1
 
+            order.amount = inStockSKU.price
+            order.currency = inStockSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -283,8 +317,12 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.product = product.id
             orderItem.sku = limitedSKU.id
+            orderItem.amount = limitedSKU.price
+            orderItem.currency = limitedSKU.currency
             orderItem.quantity = 1
 
+            order.amount = limitedSKU.price
+            order.currency = limitedSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }
@@ -326,8 +364,12 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.product = product.id
             orderItem.sku = outOfStockSKU.id
+            orderItem.amount = outOfStockSKU.price
+            orderItem.currency = outOfStockSKU.currency
             orderItem.quantity = 1
 
+            order.amount = outOfStockSKU.price
+            order.currency = outOfStockSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
             order.shippingTo = { address: "address" }

@@ -1,6 +1,7 @@
 import * as Pring from 'pring'
 import * as tradable from '../src/index'
 import "reflect-metadata";
+import { DocumentData } from 'pring/lib/base';
 
 const property = Pring.property
 

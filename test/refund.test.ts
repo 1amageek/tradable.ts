@@ -136,7 +136,8 @@ describe("Tradable", () => {
             try {
                 await manager.execute(order, async (order) => {
                     return await manager.refund(order, {
-                        vendorType: 'stripe'
+                        vendorType: 'stripe',
+                        reason: Tradable.RefundReason.requestedByCustomer
                     })
                 })
             } catch (error) {
