@@ -1,6 +1,6 @@
 import * as Pring from 'pring'
 import * as tradable from '../src/index'
-import { Transaction } from './balance'
+import { Transaction } from './transaction'
 import "reflect-metadata"
 
 const property = Pring.property
@@ -12,5 +12,4 @@ export class Account extends Pring.Base implements tradable.AccountProtocol<Tran
     @property isSigned: boolean = false
     @property balance: { [currency: string]: number }
     @property transactions: Pring.NestedCollection<Transaction> = new Pring.NestedCollection(this)
-    // @property balance: Pring.NestedCollection<Balance> = new Pring.NestedCollection(this)
 }

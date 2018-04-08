@@ -10,7 +10,7 @@ import { Product } from './product'
 import { SKU } from './sku'
 import { Order } from './order'
 import { OrderItem } from './orderItem'
-import { Balance } from './balance'
+import { Transaction } from './transaction'
 import { Account } from './account'
 import { StripePaymentDelegate } from './stripePaymentDelegate'
 
@@ -80,7 +80,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -128,7 +128,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -176,7 +176,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -224,7 +224,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 

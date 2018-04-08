@@ -244,9 +244,7 @@ export class Manager
 
         order.status = OrderStatus.paid  
         const _batch = order.pack(Pring.BatchType.update, null, batch)
-        if (_batch) {
-            return this.transaction(order, _batch)
-        }
+        return this.transaction(order, _batch)
     }
 
     async transaction(order: Order, batch: FirebaseFirestore.WriteBatch) {
@@ -256,6 +254,7 @@ export class Manager
         transaction.currency = order.currency
         transaction.type = TransactionType.payment
         transaction.setParent(account.transactions)
+        transaction.order = order.id
         batch.set(transaction.reference, transaction.value())
         return batch
     }
