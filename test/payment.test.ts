@@ -27,7 +27,7 @@ describe("Tradable", () => {
     const user: User = new User()
     const product: Product = new Product()
     const sku: SKU = new SKU()
-
+    const account: Account = new Account(shop.id, {})
 
     beforeAll(async () => {
 
@@ -85,16 +85,20 @@ describe("Tradable", () => {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
-                })                
+                })
             } catch (error) {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
             await order.update()
+            const transaction: Transaction = await account.transactions.doc(order.id, Transaction)
+            expect(transaction.id).toEqual(order.id)
+            expect(transaction.type).toEqual(Tradable.TransactionType.payment)
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
+            await transaction.delete()
             await order.delete()
             await orderItem.delete()
         }, 10000)
@@ -130,7 +134,7 @@ describe("Tradable", () => {
                     return await manager.pay(order, {
                         vendorType: 'stripe'
                     })
-                })                
+                })
             } catch (error) {
                 expect(error).not.toBeNull()
             }
@@ -138,6 +142,8 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.received)
             expect(received.paymentInformation).toBeUndefined()
+            const transaction: Transaction = await account.transactions.doc(order.id, Transaction)
+            expect(transaction).toBeUndefined()
             await order.delete()
             await orderItem.delete()
         }, 10000)
@@ -174,7 +180,7 @@ describe("Tradable", () => {
                         customer: "cus_xxxxxxxxxx",
                         vendorType: 'stripe'
                     })
-                })                
+                })
             } catch (error) {
                 expect(error).not.toBeNull()
             }
@@ -182,6 +188,8 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.waitingForPayment)
             expect(received.paymentInformation).toBeUndefined()
+            const transaction: Transaction = await account.transactions.doc(order.id, Transaction)
+            expect(transaction).toBeUndefined()
             await order.delete()
             await orderItem.delete()
         }, 10000)
@@ -216,7 +224,7 @@ describe("Tradable", () => {
                     return await manager.pay(order, {
                         vendorType: 'stripe'
                     })
-                })                
+                })
             } catch (error) {
                 // console.log(error)
                 expect(error).not.toBeNull()
@@ -225,6 +233,8 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.created)
             expect(received.paymentInformation).toBeUndefined()
+            const transaction: Transaction = await account.transactions.doc(order.id, Transaction)
+            expect(transaction).toBeUndefined()
             await order.delete()
             await orderItem.delete()
         }, 10000)
@@ -260,7 +270,7 @@ describe("Tradable", () => {
                     return await manager.pay(order, {
                         vendorType: 'stripe'
                     })
-                })                
+                })
             } catch (error) {
                 // console.log(error)
                 expect(error).not.toBeNull()
@@ -269,6 +279,8 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation).toBeUndefined()
+            const transaction: Transaction = await account.transactions.doc(order.id, Transaction)
+            expect(transaction).toBeUndefined()
             await order.delete()
             await orderItem.delete()
         }, 10000)
@@ -276,7 +288,6 @@ describe("Tradable", () => {
     })
 
     afterAll(async () => {
-        const account: Account = new Account(shop.id, {})
         await account.delete()
         await shop.delete()
         await user.delete()
