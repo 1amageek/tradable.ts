@@ -159,8 +159,15 @@ export type PaymentOptions = {
     vendorType: string
 }
 
+export enum RefundReason {
+    duplicate = 'duplicate', 
+    fraudulent = 'fraudulent',
+    requestedByCustomer = 'requested_by_customer'
+}
+
 export type RefundOptions = {
     vendorType: string
+    reason?: RefundReason
 }
 
 export type TransferOptions = {

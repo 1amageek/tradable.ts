@@ -260,15 +260,15 @@ export class Manager
 
         order.status = OrderStatus.paid
         const _batch = order.pack(Pring.BatchType.update, null, batch)
-        return this.transaction(order, order.currency, order.amount, _batch)
+        return this.transaction(order, TransactionType.payment, order.currency, order.amount, _batch)
     }
 
-    private async transaction(order: Order, currency: Currency, amount: number, batch: FirebaseFirestore.WriteBatch) {
+    private async transaction(order: Order, type: TransactionType, currency: Currency, amount: number, batch: FirebaseFirestore.WriteBatch) {
         const account: Account = new this._Account(order.selledBy, {})
         const transaction: Transaction = new this._Transaction()
         transaction.amount = amount
         transaction.currency = currency
-        transaction.type = TransactionType.payment
+        transaction.type = type
         transaction.setParent(account.transactions)
         transaction.order = order.id
         batch.set(transaction.reference, transaction.value())
@@ -327,7 +327,7 @@ export class Manager
 
         order.status = OrderStatus.refunded
         const _batch = order.pack(Pring.BatchType.update, null, batch)
-        return this.transaction(order, order.currency, order.amount, _batch)
+        return this.transaction(order, TransactionType.paymentRefund, order.currency, order.amount, _batch)
     }
 
     async transfer(order: Order, options: TransferOptions) {

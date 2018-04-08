@@ -37,15 +37,17 @@ export class StripePaymentDelegate implements tradable.PaymentDelegate {
         }
     }
 
-    async refund<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.PaymentOptions): Promise<any> {
+    async refund<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.RefundOptions): Promise<any> {
 
-        const charegeID = order.id
+        const charegeID = order.paymentInformation[options.vendorType]['id']
         const amount = order.amount
         const currency = order.currency
-        const idempotency_key = order.id
-        const data: Stripe.refunds.IRefundCreationOptions = {
-            amount: order.amount,
-            reason: `Refund charge for user/${order.buyer} order/${order.id}`
+        const idempotency_key = `refund:${order.id}`
+
+        let data: Stripe.refunds.IRefundCreationOptions = {}
+
+        if (options.reason) {
+            data.reason = options.reason
         }
 
         try {
