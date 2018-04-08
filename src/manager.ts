@@ -327,4 +327,59 @@ export class Manager
         const _batch = order.pack(Pring.BatchType.update, null, batch)
         return this.transaction(order, TransactionType.paymentRefund, order.currency, order.amount, _batch)
     }
+
+    async transfer(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+
+        // Skip for 
+        if (order.status === OrderStatus.refunded) {
+            return
+        }
+        if (!(order.status === OrderStatus.paid)) {
+            throw new Error(`[Failure] ORDER/${order.id}, Order is not a refundable status.`)
+        }
+        if (!options.vendorType) {
+            throw new Error(`[Failure] ORDER/${order.id}, PaymentOptions required vendorType`)
+        }
+        if (!this.delegate) {
+            throw new Error(`[Failure] ORDER/${order.id}, Manager required delegate`)
+        }
+
+        if (order.amount > 0) {
+            try {
+                const result = await this.delegate.refund(order, options)
+                order.refundInformation = {
+                    [options.vendorType]: result
+                }
+            } catch (error) {
+                throw error
+            }
+
+            try {
+                await Pring.firestore.runTransaction(async (transaction) => {
+                    return new Promise(async (resolve, reject) => {
+                        const account: Account = new this._Account(order.selledBy, {})
+                        try {
+                            await account.fetch()
+                        } catch (error) {
+                            reject(`[Failure] refund ORDER/${order.id}, Account could not be fetched.`)
+                        }
+
+                        const currency: string = order.currency
+                        const balance: { [currency: string]: number } = account.balance || {}
+                        const amount: number = balance[order.currency] || 0
+                        const newAmount: number = amount - order.amount
+                        transaction.set(account.reference, { balance: { [currency]: newAmount } }, { merge: true })
+
+                        resolve(`[Success] refund ORDER/${order.id}, USER/${order.selledBy}`)
+                    })
+                })
+            } catch (error) {
+                throw error
+            }
+        }
+
+        order.status = OrderStatus.refunded
+        const _batch = order.pack(Pring.BatchType.update, null, batch)
+        return this.transaction(order, TransactionType.paymentRefund, order.currency, order.amount, _batch)
+    }
 }

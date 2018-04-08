@@ -108,7 +108,6 @@ describe("Tradable", () => {
         product.skus.insert(inStockSKU)
         product.skus.insert(limitedSKU)
         product.skus.insert(outOfStockSKU)
-        shop.products.insert(product)
         
         await shop.save()
         await user.save()

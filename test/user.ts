@@ -12,7 +12,7 @@ const property = Pring.property
 export class User extends Pring.Base implements tradable.UserProtocol<SKU, Product, OrderItem, Order> {
     @property isAvailabled: boolean = false
     @property country: string = "JP"
-    @property products: Pring.ReferenceCollection<Product> = new Pring.ReferenceCollection(this)
+    @property products: Query
     @property skus: Query
     @property orders: Query
     @property orderings: Query

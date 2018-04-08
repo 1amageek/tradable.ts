@@ -49,8 +49,6 @@ describe("Tradable", () => {
             type: Tradable.StockType.infinite
         }
 
-        shop.products.insert(product)
-
         orderItem.order = order.id
         orderItem.selledBy = shop.id
         orderItem.buyer = user.id

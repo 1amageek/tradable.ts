@@ -46,8 +46,6 @@ describe("Tradable", () => {
             type: Tradable.StockType.infinite
         }
 
-        // shop.skus.insert(sku)
-        shop.products.insert(product)
         await product.save()
         await shop.save()
         await user.save()

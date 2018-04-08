@@ -15,7 +15,7 @@ export interface UserProtocol
     > extends Pring.Base {
     isAvailabled: boolean
     country: string
-    products: Pring.ReferenceCollection<Product>
+    products: Query
     skus: Query
     orders: Query
     orderings: Query

@@ -30,8 +30,6 @@ describe("Order validation test", () => {
         product.createdBy = shop.id
         product.selledBy = shop.id
 
-        // shop.skus.insert(sku)
-        shop.products.insert(product)
         await product.save()
         await shop.save()
         await user.save()
