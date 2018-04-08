@@ -284,9 +284,6 @@ export class Manager
         if (!(order.status === OrderStatus.paid)) {
             throw new Error(`[Failure] ORDER/${order.id}, Order is not a refundable status.`)
         }
-        // if (!options.customer && !options.source) {
-        //     throw new Error(`[Failure] ORDER/${order.id}, PaymentOptions required customer or source`)
-        // }
         if (!options.vendorType) {
             throw new Error(`[Failure] ORDER/${order.id}, PaymentOptions required vendorType`)
         }

@@ -91,8 +91,10 @@ describe("Tradable", () => {
                 expect(error).not.toBeNull()
             }
             await order.update()
-            const transaction: Transaction = await account.transactions.doc(order.id, Transaction)
-            expect(transaction.id).toEqual(order.id)
+            const snapshot = await account.transactions.reference.where('order', '==', order.id).where('type', '==', Tradable.TransactionType.payment).get()
+            const doc = snapshot.docs[0]
+            const transaction: Transaction = new Transaction(doc.id, doc.data())
+            expect(transaction.order).toEqual(order.id)
             expect(transaction.type).toEqual(Tradable.TransactionType.payment)
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
@@ -142,8 +144,8 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.received)
             expect(received.paymentInformation).toBeUndefined()
-            const transaction: Transaction = await account.transactions.doc(order.id, Transaction)
-            expect(transaction).toBeUndefined()
+            const snapshot = await account.transactions.reference.where('order', '==', order.id).where('type', '==', Tradable.TransactionType.payment).get()
+            expect(snapshot.docs.length).toEqual(0)
             await order.delete()
             await orderItem.delete()
         }, 10000)
@@ -188,8 +190,8 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.waitingForPayment)
             expect(received.paymentInformation).toBeUndefined()
-            const transaction: Transaction = await account.transactions.doc(order.id, Transaction)
-            expect(transaction).toBeUndefined()
+            const snapshot = await account.transactions.reference.where('order', '==', order.id).where('type', '==', Tradable.TransactionType.payment).get()
+            expect(snapshot.docs.length).toEqual(0)
             await order.delete()
             await orderItem.delete()
         }, 10000)
@@ -233,8 +235,8 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.created)
             expect(received.paymentInformation).toBeUndefined()
-            const transaction: Transaction = await account.transactions.doc(order.id, Transaction)
-            expect(transaction).toBeUndefined()
+            const snapshot = await account.transactions.reference.where('order', '==', order.id).where('type', '==', Tradable.TransactionType.payment).get()
+            expect(snapshot.docs.length).toEqual(0)
             await order.delete()
             await orderItem.delete()
         }, 10000)
@@ -279,8 +281,8 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation).toBeUndefined()
-            const transaction: Transaction = await account.transactions.doc(order.id, Transaction)
-            expect(transaction).toBeUndefined()
+            const snapshot = await account.transactions.reference.where('order', '==', order.id).where('type', '==', Tradable.TransactionType.payment).get()
+            expect(snapshot.docs.length).toEqual(0)
             await order.delete()
             await orderItem.delete()
         }, 10000)

@@ -70,7 +70,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -120,7 +120,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -170,7 +170,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Balance, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
