@@ -265,7 +265,7 @@ export class Manager
 
     private async transaction(order: Order, currency: Currency, amount: number, batch: FirebaseFirestore.WriteBatch) {
         const account: Account = new this._Account(order.selledBy, {})
-        const transaction: Transaction = new this._Transaction(order.id)
+        const transaction: Transaction = new this._Transaction()
         transaction.amount = amount
         transaction.currency = currency
         transaction.type = TransactionType.payment
