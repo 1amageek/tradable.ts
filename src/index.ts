@@ -30,6 +30,7 @@ export enum TransactionType {
     payoutCancel = 'payout_cancel'
 }
 
+/// Transaction is the history that changed Balance. Tranasaction is made from the ID of the event.
 export interface TransactionProtocol extends Pring.Base {
     type: TransactionType
     currency: string
@@ -149,9 +150,16 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     items: Pring.NestedCollection<OrderItem>
     status: OrderStatus
     paymentInformation: { [key: string]: any }
+    refundInformation: { [key: string]: any }
 }
 
 export type PaymentOptions = {
+    source?: string
+    customer?: string
+    vendorType: string
+}
+
+export type RefundOptions = {
     source?: string
     customer?: string
     vendorType: string
@@ -167,6 +175,9 @@ export interface PaymentDelegate {
 
     /// This function will make payment. The payment result is saved in the VendorType set in PaymentOptions.
     pay<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>
+
+    /// This function will make payment. The payment result is saved in the VendorType set in PaymentOptions.
+    refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>
 
     /// This function performs Transfer. The transfer record is kept by the Account. You also need to specify VendorType.
     transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options?: TransferOptions): Promise<any>

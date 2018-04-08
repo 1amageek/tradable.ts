@@ -1,5 +1,21 @@
 import * as Pring from "pring"
-import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, TransactionProtocol, AccountProtocol, StockType, StockValue, OrderStatus, PaymentDelegate, PaymentOptions, TransferOptions, Currency, TransactionType } from "./index"
+import {
+    SKUProtocol,
+    OrderItemProtocol,
+    ProductProtocol,
+    OrderProtocol,
+    TransactionProtocol,
+    AccountProtocol,
+    StockType,
+    StockValue,
+    OrderStatus,
+    PaymentDelegate,
+    PaymentOptions,
+    RefundOptions,
+    TransferOptions,
+    Currency,
+    TransactionType
+} from "./index"
 
 const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
@@ -207,7 +223,7 @@ export class Manager
                 const result = await this.delegate.pay(order, options)
                 order.paymentInformation = {
                     [options.vendorType]: result
-                }                      
+                }
             } catch (error) {
                 order.status = OrderStatus.waitingForPayment
                 try {
@@ -217,7 +233,7 @@ export class Manager
                 }
                 throw error
             }
-    
+
             try {
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
@@ -227,13 +243,13 @@ export class Manager
                         } catch (error) {
                             reject(`[Failure] pay ORDER/${order.id}, Account could not be fetched.`)
                         }
-    
+
                         const currency: string = order.currency
                         const balance: { [currency: string]: number } = account.balance || {}
                         const amount: number = balance[order.currency] || 0
                         const newAmount: number = amount + order.amount
                         transaction.set(account.reference, { balance: { [currency]: newAmount } }, { merge: true })
-    
+
                         resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
                     })
                 })
@@ -242,21 +258,79 @@ export class Manager
             }
         }
 
-        order.status = OrderStatus.paid  
+        order.status = OrderStatus.paid
         const _batch = order.pack(Pring.BatchType.update, null, batch)
-        return this.transaction(order, _batch)
+        return this.transaction(order, order.currency, order.amount, _batch)
     }
 
-    async transaction(order: Order, batch: FirebaseFirestore.WriteBatch) {
+    private async transaction(order: Order, currency: Currency, amount: number, batch: FirebaseFirestore.WriteBatch) {
         const account: Account = new this._Account(order.selledBy, {})
         const transaction: Transaction = new this._Transaction(order.id)
-        transaction.amount = order.amount
-        transaction.currency = order.currency
+        transaction.amount = amount
+        transaction.currency = currency
         transaction.type = TransactionType.payment
         transaction.setParent(account.transactions)
         transaction.order = order.id
         batch.set(transaction.reference, transaction.value())
         return batch
+    }
+
+    async refund(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+
+        // Skip for refunded
+        if (order.status === OrderStatus.refunded) {
+            return
+        }
+        if (!(order.status === OrderStatus.paid)) {
+            throw new Error(`[Failure] ORDER/${order.id}, Order is not a refundable status.`)
+        }
+        // if (!options.customer && !options.source) {
+        //     throw new Error(`[Failure] ORDER/${order.id}, PaymentOptions required customer or source`)
+        // }
+        if (!options.vendorType) {
+            throw new Error(`[Failure] ORDER/${order.id}, PaymentOptions required vendorType`)
+        }
+        if (!this.delegate) {
+            throw new Error(`[Failure] ORDER/${order.id}, Manager required delegate`)
+        }
+
+        if (order.amount > 0) {
+            try {
+                const result = await this.delegate.refund(order, options)
+                order.refundInformation = {
+                    [options.vendorType]: result
+                }
+            } catch (error) {
+                throw error
+            }
+
+            try {
+                await Pring.firestore.runTransaction(async (transaction) => {
+                    return new Promise(async (resolve, reject) => {
+                        const account: Account = new this._Account(order.selledBy, {})
+                        try {
+                            await account.fetch()
+                        } catch (error) {
+                            reject(`[Failure] refund ORDER/${order.id}, Account could not be fetched.`)
+                        }
+
+                        const currency: string = order.currency
+                        const balance: { [currency: string]: number } = account.balance || {}
+                        const amount: number = balance[order.currency] || 0
+                        const newAmount: number = amount - order.amount
+                        transaction.set(account.reference, { balance: { [currency]: newAmount } }, { merge: true })
+
+                        resolve(`[Success] refund ORDER/${order.id}, USER/${order.selledBy}`)
+                    })
+                })
+            } catch (error) {
+                throw error
+            }
+        }
+
+        order.status = OrderStatus.refunded
+        const _batch = order.pack(Pring.BatchType.update, null, batch)
+        return this.transaction(order, order.currency, order.amount, _batch)
     }
 
     async transfer(order: Order, options: TransferOptions) {
