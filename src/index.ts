@@ -122,10 +122,6 @@ export enum OrderStatus {
     canceled = 'canceled'
 }
 
-export enum TransferStatus {
-
-}
-
 export interface OrderItemProtocol extends Pring.Base {
     order: string
     buyer: string
@@ -170,20 +166,11 @@ export type RefundOptions = {
     reason?: RefundReason
 }
 
-export type TransferOptions = {
-    source?: string
-    customer?: string
-    vendorType: string
-}
-
 export interface PaymentDelegate {
 
     /// This function will make payment. The payment result is saved in the VendorType set in PaymentOptions.
     pay<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>
 
-    /// This function will make payment. The payment result is saved in the VendorType set in PaymentOptions.
+    /// This functioin will make a refund. The refund result is saved in the VendorType set in RefundOptions.
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>
-
-    /// This function performs Transfer. The transfer record is kept by the Account. You also need to specify VendorType.
-    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options?: TransferOptions): Promise<any>
 }

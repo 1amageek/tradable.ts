@@ -12,7 +12,6 @@ import {
     PaymentDelegate,
     PaymentOptions,
     RefundOptions,
-    TransferOptions,
     Currency,
     TransactionType
 } from "./index"
@@ -327,15 +326,5 @@ export class Manager
         order.status = OrderStatus.refunded
         const _batch = order.pack(Pring.BatchType.update, null, batch)
         return this.transaction(order, TransactionType.paymentRefund, order.currency, order.amount, _batch)
-    }
-
-    async transfer(order: Order, options: TransferOptions) {
-        // Skip for paid, waitingForRefund, refunded
-        if (order.status === OrderStatus.paid ||
-            order.status === OrderStatus.waitingForRefund ||
-            order.status === OrderStatus.refunded
-        ) {
-            return
-        }
     }
 }

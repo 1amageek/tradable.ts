@@ -11,15 +11,30 @@ export interface UserProtocol<SKU extends SKUProtocol, Product extends ProductPr
     orders: Query;
     orderings: Query;
 }
-export interface BalanceProtocol extends Pring.Base {
+export declare enum TransactionType {
+    payment = "payment",
+    paymentRefund = "payment_refund",
+    transfer = "transfer",
+    transferRefund = "transfer_refund",
+    payout = "payout",
+    payoutCancel = "payout_cancel",
+}
+export interface TransactionProtocol extends Pring.Base {
+    type: TransactionType;
     currency: string;
     amount: number;
+    order?: string;
+    transfer?: string;
+    payout?: string;
 }
-export interface AccountProtocol<Balance extends BalanceProtocol> extends Pring.Base {
+export interface AccountProtocol<Transaction extends TransactionProtocol> extends Pring.Base {
     country: string;
     isRejected: boolean;
     isSigned: boolean;
-    balance: Pring.NestedCollection<Balance>;
+    balance: {
+        [currency: string]: number;
+    };
+    transactions: Pring.NestedCollection<Transaction>;
 }
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
     title: string;
@@ -70,8 +85,6 @@ export declare enum OrderStatus {
     refunded = "refunded",
     canceled = "canceled",
 }
-export declare enum TransferStatus {
-}
 export interface OrderItemProtocol extends Pring.Base {
     order: string;
     buyer: string;
@@ -80,6 +93,7 @@ export interface OrderItemProtocol extends Pring.Base {
     product?: string;
     sku?: string;
     quantity: number;
+    currency: Currency;
     amount: number;
 }
 export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Pring.Base {
@@ -98,18 +112,25 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     paymentInformation: {
         [key: string]: any;
     };
+    refundInformation: {
+        [key: string]: any;
+    };
 }
 export declare type PaymentOptions = {
     source?: string;
     customer?: string;
     vendorType: string;
 };
-export declare type TransferOptions = {
-    source?: string;
-    customer?: string;
+export declare enum RefundReason {
+    duplicate = "duplicate",
+    fraudulent = "fraudulent",
+    requestedByCustomer = "requested_by_customer",
+}
+export declare type RefundOptions = {
     vendorType: string;
+    reason?: RefundReason;
 };
 export interface PaymentDelegate {
     pay<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>;
-    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options?: TransferOptions): Promise<any>;
+    refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>;
 }

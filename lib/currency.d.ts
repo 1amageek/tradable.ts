@@ -1,4 +1,4 @@
-export declare enum Currency {
+declare enum Currency {
     AFN = "afn",
     ALL = "all",
     DZD = "dzd",
@@ -136,3 +136,7 @@ export declare enum Currency {
     YER = "yer",
     ZMW = "zmw",
 }
+declare namespace Currency {
+    const minimum: (currency: Currency) => number;
+}
+export { Currency };
