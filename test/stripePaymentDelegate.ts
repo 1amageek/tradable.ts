@@ -59,4 +59,47 @@ export class StripePaymentDelegate implements tradable.PaymentDelegate {
             throw error
         }
     }
+
+    // async payout<U extends tradable.TransactionProtocol, T extends tradable.AccountProtocol<U>>(account: T, amount: number, currency: tradable.Currency): Promise<any> {
+    //     const stripeAccountID = account.fundInformation['stripe']
+    //     const destinationAmount = amount * (1 - 0.2)
+    //     try {
+    //         const result = await stripe.payouts.create({
+    //             destination: stripeAccountID,
+    //             amount: destinationAmount,
+    //             currency: currency
+    //         })
+    //         return result
+    //     } catch (error) {
+    //         throw error
+    //     }        
+    // }
+
+    // async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.RefundOptions): Promise<any> {
+
+    //     const account = await Account.get(order.selledBy, Account)
+    //     const destination = account.fundInformation
+    //     const amount = order.amount
+    //     const currency = order.currency
+    //     const idempotency_key = `refund:${order.id}`
+
+    //     let data: Stripe.refunds.IRefundCreationOptions = {}
+
+    //     if (options.reason) {
+    //         data.reason = options.reason
+    //     }
+
+    //     try {
+    //         const result = await stripe.transfers.create({
+    //             amount: amount,
+    //             currency: currency,
+    //             destination: "acct_1C6cjSHh3iLDERYv",
+    //             transfer_group: "ORDER_95"
+    //         })
+    //         return result
+    //     } catch (error) {
+    //         throw error
+    //     }
+    // }
+
 }

@@ -40,14 +40,38 @@ export interface TransactionProtocol extends Pring.Base {
     payout?: string
 }
 
+export enum SaleStatus {
+    accountsReceivable = "accounts_receivable",
+    receive = "receive"
+}
+
+export interface SaleProtocol extends Pring.Base {
+    status: SaleStatus
+    currency: Currency
+    amount: number
+    order: string
+    transfer?: string
+}
+
+export type Balance = {
+
+    /// Represents accounts receivable. The sale was done, but the amount has not been distributed to the account.
+    accountsReceivable: { [currency: string]: number }
+
+    /// It is the amount that the user can withdraw.
+    available: { [currency: string]: number }
+}
+
 /// AccountProtocol must have the same ID as UserProtocol.
 /// AccountPtotocol holds information that can not be accessed except for principals with a protocol with a high security level.
-export interface AccountProtocol<Transaction extends TransactionProtocol> extends Pring.Base {
+export interface AccountProtocol<Sale extends SaleProtocol, Transaction extends TransactionProtocol> extends Pring.Base {
     country: string
     isRejected: boolean
     isSigned: boolean
-    balance: { [currency: string]: number }
+    balance: Balance
+    sales: Pring.NestedCollection<Sale>
     transactions: Pring.NestedCollection<Transaction>
+    fundInformation: { [key: string]: any }
 }
 
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
@@ -106,7 +130,7 @@ export enum OrderStatus {
     /// Inventory processing was successful
     received = 'received',
 
-    /// Payment was successful
+    /// Customer payment succeeded, but we do not transfer funds to the account.
     paid = 'paid',
 
     /// Successful inventory processing but payment failed.
@@ -119,7 +143,10 @@ export enum OrderStatus {
     refunded = 'refunded',
 
     /// Everything including refunds was canceled. Inventory processing is not canceled
-    canceled = 'canceled'
+    canceled = 'canceled',
+
+    /// It means that a payout has been made to the Account.
+    completed = 'completed'
 }
 
 export interface OrderItemProtocol extends Pring.Base {
@@ -173,4 +200,10 @@ export interface PaymentDelegate {
 
     /// This functioin will make a refund. The refund result is saved in the VendorType set in RefundOptions.
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>
+
+    ///
+    // payout<U extends TransactionProtocol, T extends AccountProtocol<U>>(account: T, amount: number, currency: Currency): Promise<any>
+
+    // transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>
+
 }

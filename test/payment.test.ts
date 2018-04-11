@@ -10,6 +10,7 @@ import { Product } from './product'
 import { SKU } from './sku'
 import { Order } from './order'
 import { OrderItem } from './orderItem'
+import { Sale } from './sale'
 import { Transaction } from './transaction'
 import { Account } from './account'
 import { StripePaymentDelegate } from './stripePaymentDelegate'
@@ -30,6 +31,19 @@ describe("Tradable", () => {
     const account: Account = new Account(shop.id, {})
 
     beforeAll(async () => {
+
+        const stripeAccount: Stripe.accounts.IAccount = await stripe.accounts.create({
+            type: 'custom',
+            country: 'jp',
+            metadata: { id: shop.id }
+        })
+        const account: Account = new Account(shop.id)
+        account.country = 'jp'
+        account.fundInformation = { 'stripe': stripeAccount.id }
+        account.isRejected = false
+        account.isSigned = false
+        account.balance = { accountsReceivable: {}, available: {} }
+        await account.save()
 
         product.skus.insert(sku)
         product.title = "PRODUCT"
@@ -56,7 +70,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Sale, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -107,7 +121,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Sale, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -152,7 +166,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Sale, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -198,7 +212,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Sale, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -243,7 +257,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Sale, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
