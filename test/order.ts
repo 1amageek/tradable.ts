@@ -21,5 +21,6 @@ export class Order extends Pring.Base implements tradable.OrderProtocol<OrderIte
     @property items: Pring.NestedCollection<OrderItem> = new Pring.NestedCollection(this)
     @property status: tradable.OrderStatus = tradable.OrderStatus.created
     @property paymentInformation: { [key: string]: any }
+    @property transferInformation: { [key: string]: any }
     @property refundInformation: { [key: string]: any }
 }

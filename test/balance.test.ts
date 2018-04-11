@@ -117,7 +117,7 @@ describe("Tradable", () => {
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
             const account: Account = await Account.get(order.selledBy, Account)
-            expect(account.balance[Tradable.Currency.JPY]).toEqual(jpySKU.price)
+            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.price)
             
             await order.delete()
             await orderItem.delete()
@@ -165,7 +165,7 @@ describe("Tradable", () => {
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
             const account: Account = await Account.get(order.selledBy, Account)
-            expect(account.balance[Tradable.Currency.JPY]).toEqual(jpySKU.price * 2)
+            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.price * 2)
             
             await order.delete()
             await orderItem.delete()
@@ -213,7 +213,7 @@ describe("Tradable", () => {
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
             const account: Account = await Account.get(order.selledBy, Account)
-            expect(account.balance[Tradable.Currency.USD]).toEqual(usdSKU.price)
+            expect(account.balance['accountsReceivable'][Tradable.Currency.USD]).toEqual(usdSKU.price)
             
             await order.delete()
             await orderItem.delete()
@@ -260,8 +260,8 @@ describe("Tradable", () => {
             expect(status).toEqual(Tradable.OrderStatus.rejected)
             expect(received.paymentInformation).toBeUndefined()
             const account: Account = await Account.get(order.selledBy, Account)
-            expect(account.balance[Tradable.Currency.USD]).toEqual(usdSKU.price)
-            expect(account.balance[Tradable.Currency.JPY]).toEqual(jpySKU.price * 2)
+            expect(account.balance['accountsReceivable'][Tradable.Currency.USD]).toEqual(usdSKU.price)
+            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.price * 2)
             
             await order.delete()
             await orderItem.delete()

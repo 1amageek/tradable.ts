@@ -42,7 +42,8 @@ export interface TransactionProtocol extends Pring.Base {
 
 export enum SaleStatus {
     accountsReceivable = "accounts_receivable",
-    receive = "receive"
+    receive = "receive",
+    cancel = "cancel"
 }
 
 export interface SaleProtocol extends Pring.Base {
@@ -173,6 +174,7 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     items: Pring.NestedCollection<OrderItem>
     status: OrderStatus
     paymentInformation: { [key: string]: any }
+    transferInformation: { [key: string]: any }
     refundInformation: { [key: string]: any }
 }
 
@@ -202,8 +204,9 @@ export interface PaymentDelegate {
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>
 
     ///
+    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>
     // payout<U extends TransactionProtocol, T extends AccountProtocol<U>>(account: T, amount: number, currency: Currency): Promise<any>
 
-    // transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>
+    
 
 }
