@@ -42,22 +42,6 @@ export interface TransactionProtocol extends Pring.Base {
     payout?: string
 }
 
-export enum SaleStatus {
-    accountsReceivable = "accounts_receivable",
-    receive = "receive",
-    cancel = "cancel"
-}
-
-export interface SaleProtocol extends Pring.Base {
-    status: SaleStatus
-    currency: Currency
-    amount: number
-    fee: number
-    net: number // net = amount - fee
-    order: string
-    transfer?: string
-}
-
 export type Balance = {
 
     /// Represents accounts receivable. The sale was done, but the amount has not been distributed to the account.
@@ -69,14 +53,13 @@ export type Balance = {
 
 /// AccountProtocol must have the same ID as UserProtocol.
 /// AccountPtotocol holds information that can not be accessed except for principals with a protocol with a high security level.
-export interface AccountProtocol<Sale extends SaleProtocol, Transaction extends TransactionProtocol> extends Pring.Base {
+export interface AccountProtocol<Transaction extends TransactionProtocol> extends Pring.Base {
     country: string
     isRejected: boolean
     isSigned: boolean
     commissionRatio: number // 0 ~ 1
     revenue: { [currency: string]: number }
     balance: Balance
-    sales: Pring.NestedCollection<Sale>
     transactions: Pring.NestedCollection<Transaction>
     fundInformation: { [key: string]: any }
 }

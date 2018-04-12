@@ -10,7 +10,6 @@ import { Product } from './product'
 import { SKU } from './sku'
 import { Order } from './order'
 import { OrderItem } from './orderItem'
-import { Sale } from './sale'
 import { Transaction } from './transaction'
 import { Account } from './account'
 import { StripePaymentDelegate } from './stripePaymentDelegate'
@@ -71,7 +70,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Sale, Transaction, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -104,17 +103,13 @@ describe("Tradable", () => {
                 expect(error).not.toBeNull()
             }
 
-            const snapshot = await account.sales.reference.where('order', '==', order.id).get()
-            const doc = snapshot.docs[0]
-            const sale: Sale = new Sale(doc.id, doc.data())
-            expect(sale.order).toEqual(order.id)
-            expect(sale.fee).toEqual(sale.amount * 0.1)
-            expect(sale.net).toEqual(sale.amount * (1 - 0.1))
+
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
-            await sale.delete()
+            expect(received.fee).toEqual(order.amount * 0.1)
+            expect(received.net).toEqual(order.amount * (1 - 0.1))
             await order.delete()
             await orderItem.delete()
         }, 13000)
@@ -123,7 +118,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Sale, Transaction, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -158,8 +153,6 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.received)
             expect(received.paymentInformation).toBeUndefined()
-            const snapshot = await account.sales.reference.where('order', '==', order.id).get()
-            expect(snapshot.docs.length).toEqual(0)
             await order.delete()
             await orderItem.delete()
         }, 13000)
@@ -168,7 +161,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Sale, Transaction, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -204,8 +197,6 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.waitingForPayment)
             expect(received.paymentInformation).toBeUndefined()
-            const snapshot = await account.sales.reference.where('order', '==', order.id).get()
-            expect(snapshot.docs.length).toEqual(0)
             await order.delete()
             await orderItem.delete()
         }, 13000)
@@ -214,7 +205,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Sale, Transaction, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -249,8 +240,6 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.created)
             expect(received.paymentInformation).toBeUndefined()
-            const snapshot = await account.sales.reference.where('order', '==', order.id).get()
-            expect(snapshot.docs.length).toEqual(0)
             await order.delete()
             await orderItem.delete()
         }, 13000)
@@ -259,7 +248,7 @@ describe("Tradable", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Sale, Transaction, Account)
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
 
             manager.delegate = new StripePaymentDelegate()
 
@@ -295,8 +284,6 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation).toBeUndefined()
-            const snapshot = await account.sales.reference.where('order', '==', order.id).get()
-            expect(snapshot.docs.length).toEqual(0)
             await order.delete()
             await orderItem.delete()
         }, 13000)

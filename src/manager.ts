@@ -14,8 +14,6 @@ import {
     RefundOptions,
     Currency,
     TransactionType,
-    SaleProtocol,
-    SaleStatus,
     Balance
 } from "./index"
 import { Account } from "../test/account";
@@ -36,16 +34,14 @@ export class Manager
     Product extends ProductProtocol<SKU>,
     OrderItem extends OrderItemProtocol,
     Order extends OrderProtocol<OrderItem>,
-    Sale extends SaleProtocol,
     Transaction extends TransactionProtocol,
-    Account extends AccountProtocol<Sale, Transaction>
+    Account extends AccountProtocol<Transaction>
     > {
 
     private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
     private _Product: { new(id?: string, value?: { [key: string]: any }): Product }
     private _OrderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem }
     private _Order: { new(id?: string, value?: { [key: string]: any }): Order }
-    private _Sale: { new(id?: string, value?: { [key: string]: any }): Sale }
     private _Transaction: { new(id?: string, value?: { [key: string]: any }): Transaction }
     private _Account: { new(id?: string, value?: { [key: string]: any }): Account }
 
@@ -54,7 +50,6 @@ export class Manager
         product: { new(id?: string, value?: { [key: string]: any }): Product },
         orderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem },
         order: { new(id?: string, value?: { [key: string]: any }): Order },
-        sale: { new(id?: string, value?: { [key: string]: any }): Sale },
         transaction: { new(id?: string, value?: { [key: string]: any }): Transaction },
         account: { new(id?: string, value?: { [key: string]: any }): Account },
     ) {
@@ -62,7 +57,6 @@ export class Manager
         this._Product = product
         this._OrderItem = orderItem
         this._Order = order
-        this._Sale = sale
         this._Transaction = transaction
         this._Account = account
     }
@@ -263,19 +257,10 @@ export class Manager
                             paymentInformation: {
                                 [options.vendorType]: result
                             },
+                            fee: fee,
+                            net: net,
                             status: OrderStatus.paid
                         })
-
-                        // set sale data
-                        const sale: Sale = new this._Sale()
-                        sale.setParent(account.sales)
-                        sale.amount = amount
-                        sale.fee = fee
-                        sale.net = net
-                        sale.currency = currency
-                        sale.status = SaleStatus.accountsReceivable
-                        sale.order = order.id
-                        transaction.set(sale.reference, sale.value())
 
                         resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
                     })
@@ -290,18 +275,6 @@ export class Manager
                 throw error
             }
         }
-    }
-
-    private async _transaction(order: Order, batch: FirebaseFirestore.WriteBatch) {
-        const account: Account = new this._Account(order.selledBy, {})
-        const sale: Sale = new this._Sale()
-        sale.setParent(account.sales)
-        sale.amount = order.amount
-        sale.currency = order.currency
-        sale.status = SaleStatus.accountsReceivable
-        sale.order = order.id
-        batch.set(sale.reference, sale.value())
-        return batch
     }
 
     private async transaction(order: Order, type: TransactionType, currency: Currency, amount: number, batch: FirebaseFirestore.WriteBatch) {
@@ -357,7 +330,7 @@ export class Manager
                                 transaction.set(order.reference, {
                                     refundInformation: {
                                         [options.vendorType]: result
-                                    },
+                                    },                                   
                                     status: OrderStatus.refunded
                                 })
 
