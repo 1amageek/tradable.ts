@@ -35,6 +35,8 @@ export interface TransactionProtocol extends Pring.Base {
     type: TransactionType
     currency: string
     amount: number
+    fee: number
+    net: number // net = amount - fee
     order?: string
     transfer?: string
     payout?: string
@@ -50,6 +52,8 @@ export interface SaleProtocol extends Pring.Base {
     status: SaleStatus
     currency: Currency
     amount: number
+    fee: number
+    net: number // net = amount - fee
     order: string
     transfer?: string
 }
@@ -69,6 +73,8 @@ export interface AccountProtocol<Sale extends SaleProtocol, Transaction extends 
     country: string
     isRejected: boolean
     isSigned: boolean
+    commissionRatio: number // 0 ~ 1
+    revenue: { [currency: string]: number }
     balance: Balance
     sales: Pring.NestedCollection<Sale>
     transactions: Pring.NestedCollection<Transaction>
@@ -171,6 +177,8 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     expirationDate: Date
     currency: Currency
     amount: number
+    fee: number
+    net: number // net = amount - fee
     items: Pring.NestedCollection<OrderItem>
     status: OrderStatus
     paymentInformation: { [key: string]: any }

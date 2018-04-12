@@ -38,6 +38,7 @@ describe("Tradable", () => {
             metadata: { id: shop.id }
         })
         const account: Account = new Account(shop.id)
+        account.commissionRatio = 0.1
         account.country = 'jp'
         account.fundInformation = { 'stripe': stripeAccount.id }
         account.isRejected = false
@@ -102,20 +103,21 @@ describe("Tradable", () => {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
-            await order.update()
-            const snapshot = await account.transactions.reference.where('order', '==', order.id).where('type', '==', Tradable.TransactionType.payment).get()
+
+            const snapshot = await account.sales.reference.where('order', '==', order.id).get()
             const doc = snapshot.docs[0]
-            const transaction: Transaction = new Transaction(doc.id, doc.data())
-            expect(transaction.order).toEqual(order.id)
-            expect(transaction.type).toEqual(Tradable.TransactionType.payment)
+            const sale: Sale = new Sale(doc.id, doc.data())
+            expect(sale.order).toEqual(order.id)
+            expect(sale.fee).toEqual(sale.amount * 0.1)
+            expect(sale.net).toEqual(sale.amount * (1 - 0.1))
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
-            await transaction.delete()
+            await sale.delete()
             await order.delete()
             await orderItem.delete()
-        }, 10000)
+        }, 13000)
 
         test("Stripe Payment use customer failure, customer and source are not set", async () => {
             const order: Order = new Order()
@@ -156,11 +158,11 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.received)
             expect(received.paymentInformation).toBeUndefined()
-            const snapshot = await account.transactions.reference.where('order', '==', order.id).where('type', '==', Tradable.TransactionType.payment).get()
+            const snapshot = await account.sales.reference.where('order', '==', order.id).get()
             expect(snapshot.docs.length).toEqual(0)
             await order.delete()
             await orderItem.delete()
-        }, 10000)
+        }, 13000)
 
         test("Stripe Payment use customer failure, stripe error", async () => {
             const order: Order = new Order()
@@ -202,11 +204,11 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.waitingForPayment)
             expect(received.paymentInformation).toBeUndefined()
-            const snapshot = await account.transactions.reference.where('order', '==', order.id).where('type', '==', Tradable.TransactionType.payment).get()
+            const snapshot = await account.sales.reference.where('order', '==', order.id).get()
             expect(snapshot.docs.length).toEqual(0)
             await order.delete()
             await orderItem.delete()
-        }, 10000)
+        }, 13000)
 
         test("Stripe Payment use customer failure, when Order is not a payable status.", async () => {
             const order: Order = new Order()
@@ -247,11 +249,11 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.created)
             expect(received.paymentInformation).toBeUndefined()
-            const snapshot = await account.transactions.reference.where('order', '==', order.id).where('type', '==', Tradable.TransactionType.payment).get()
+            const snapshot = await account.sales.reference.where('order', '==', order.id).get()
             expect(snapshot.docs.length).toEqual(0)
             await order.delete()
             await orderItem.delete()
-        }, 10000)
+        }, 13000)
 
         test("Stripe Payment use customer failure, when Order already paid.", async () => {
             const order: Order = new Order()
@@ -293,11 +295,11 @@ describe("Tradable", () => {
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation).toBeUndefined()
-            const snapshot = await account.transactions.reference.where('order', '==', order.id).where('type', '==', Tradable.TransactionType.payment).get()
+            const snapshot = await account.sales.reference.where('order', '==', order.id).get()
             expect(snapshot.docs.length).toEqual(0)
             await order.delete()
             await orderItem.delete()
-        }, 10000)
+        }, 13000)
 
     })
 

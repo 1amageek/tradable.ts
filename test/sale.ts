@@ -8,6 +8,8 @@ export class Sale extends Pring.Base implements tradable.SaleProtocol {
     @property status: tradable.SaleStatus
     @property currency: tradable.Currency
     @property amount: number
+    @property fee: number
+    @property net: number
     @property order: string
     @property transfer?: string
 }

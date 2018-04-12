@@ -134,19 +134,18 @@ export class Manager
     public delegate?: PaymentDelegate
 
     async inventoryControl(order: Order) {
+        // Skip
+        if (order.status === OrderStatus.received ||
+            order.status === OrderStatus.waitingForRefund ||
+            order.status === OrderStatus.paid ||
+            order.status === OrderStatus.waitingForPayment ||
+            order.status === OrderStatus.canceled
+        ) {
+            return
+        }
+
+        order.status = OrderStatus.received
         try {
-
-            // Skip
-            if (order.status === OrderStatus.received ||
-                order.status === OrderStatus.waitingForRefund ||
-                order.status === OrderStatus.paid ||
-                order.status === OrderStatus.waitingForPayment ||
-                order.status === OrderStatus.canceled
-            ) {
-                return
-            }
-
-            order.status = OrderStatus.received
             await Pring.firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
 
@@ -227,20 +226,6 @@ export class Manager
         if (order.amount > 0) {
             try {
                 const result = await this.delegate.pay(order, options)
-                order.paymentInformation = {
-                    [options.vendorType]: result
-                }
-            } catch (error) {
-                order.status = OrderStatus.waitingForPayment
-                try {
-                    await order.update()
-                } catch (error) {
-                    throw error
-                }
-                throw error
-            }
-
-            try {
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         const account: Account = new this._Account(order.selledBy, {})
@@ -250,28 +235,61 @@ export class Manager
                             reject(`[Failure] pay ORDER/${order.id}, Account could not be fetched.`)
                         }
 
-                        const currency: string = order.currency
+                        const amount: number = order.amount
+                        const commissionRatio: number = account.commissionRatio
+                        const fee: number = amount * commissionRatio
+                        const net: number = amount - fee
+
+                        const currency: Currency = order.currency
                         const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
                         const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
-                        const amount: number = accountsReceivable[order.currency] || 0
-                        const newAmount: number = amount + order.amount
+                        const amountOfAccountsReceivable: number = accountsReceivable[currency] || 0
+                        const newAmount: number = amountOfAccountsReceivable + net
+
+                        const revenue: { [currency: string]: number } = account.revenue || {}
+                        const amountOfRevenue: number = revenue[currency] || 0
+                        const newRevenue: number = amountOfRevenue + amount
+
+                        // set account data
                         transaction.set(account.reference, {
+                            revenue: { [currency]: newRevenue },
                             balance: {
                                 accountsReceivable: { [currency]: newAmount }
                             }
                         }, { merge: true })
 
+                        // set order data
+                        transaction.set(order.reference, {
+                            paymentInformation: {
+                                [options.vendorType]: result
+                            },
+                            status: OrderStatus.paid
+                        })
+
+                        // set sale data
+                        const sale: Sale = new this._Sale()
+                        sale.setParent(account.sales)
+                        sale.amount = amount
+                        sale.fee = fee
+                        sale.net = net
+                        sale.currency = currency
+                        sale.status = SaleStatus.accountsReceivable
+                        sale.order = order.id
+                        transaction.set(sale.reference, sale.value())
+
                         resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
                     })
                 })
             } catch (error) {
+                order.status = OrderStatus.waitingForPayment
+                try {
+                    await order.update()
+                } catch (error) {
+                    throw error
+                }
                 throw error
             }
         }
-
-        order.status = OrderStatus.paid
-        const _batch = order.pack(Pring.BatchType.update, null, batch)
-        return this._transaction(order, _batch)
     }
 
     private async _transaction(order: Order, batch: FirebaseFirestore.WriteBatch) {
