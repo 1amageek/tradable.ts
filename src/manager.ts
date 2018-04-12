@@ -90,7 +90,7 @@ export class Manager
         if (isUndefined(order.currency)) return Error(`[Tradable] Error: validation error, currency is required`)
         if (isUndefined(order.amount)) return Error(`[Tradable] Error: validation error, amount is required`)
         if (!this.validateCurrency(order)) return Error(`[Tradable] Error: validation error, Currency of OrderItem does not match Currency of Order.`)
-        if (!this.validateAmount(order)) return Error(`[Tradable] Error: validation error, The sum of OrderItem does not match Amount of Order.`)
+        // if (!this.validateAmount(order)) return Error(`[Tradable] Error: validation error, The sum of OrderItem does not match Amount of Order.`)
         if (!this.validateMinimumAmount(order)) return Error(`[Tradable] Error: validation error, Amount is below the lower limit.`)
     }
 
@@ -222,47 +222,45 @@ export class Manager
                 const result = await this.delegate.pay(order, options)
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
-                        const account: Account = new this._Account(order.selledBy, {})
                         try {
-                            await account.fetch()
+                            const account: Account = await Account.get(order.selledBy, this._Account)
+                            const amount: number = order.amount
+                            const commissionRatio: number = account.commissionRatio
+                            const fee: number = amount * commissionRatio
+                            const net: number = amount - fee
+
+                            const currency: Currency = order.currency
+                            const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
+                            const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
+                            const amountOfAccountsReceivable: number = accountsReceivable[currency] || 0
+                            const newAmount: number = amountOfAccountsReceivable + net
+
+                            const revenue: { [currency: string]: number } = account.revenue || {}
+                            const amountOfRevenue: number = revenue[currency] || 0
+                            const newRevenue: number = amountOfRevenue + amount
+
+                            // set account data
+                            transaction.set(account.reference, {
+                                revenue: { [currency]: newRevenue },
+                                balance: {
+                                    accountsReceivable: { [currency]: newAmount }
+                                }
+                            }, { merge: true })
+
+                            // set order data
+                            transaction.set(order.reference, {
+                                paymentInformation: {
+                                    [options.vendorType]: result
+                                },
+                                fee: fee,
+                                net: net,
+                                status: OrderStatus.paid
+                            }, { merge: true })
+
+                            resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
                         } catch (error) {
                             reject(`[Failure] pay ORDER/${order.id}, Account could not be fetched.`)
                         }
-
-                        const amount: number = order.amount
-                        const commissionRatio: number = account.commissionRatio
-                        const fee: number = amount * commissionRatio
-                        const net: number = amount - fee
-
-                        const currency: Currency = order.currency
-                        const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
-                        const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
-                        const amountOfAccountsReceivable: number = accountsReceivable[currency] || 0
-                        const newAmount: number = amountOfAccountsReceivable + net
-
-                        const revenue: { [currency: string]: number } = account.revenue || {}
-                        const amountOfRevenue: number = revenue[currency] || 0
-                        const newRevenue: number = amountOfRevenue + amount
-
-                        // set account data
-                        transaction.set(account.reference, {
-                            revenue: { [currency]: newRevenue },
-                            balance: {
-                                accountsReceivable: { [currency]: newAmount }
-                            }
-                        }, { merge: true })
-
-                        // set order data
-                        transaction.set(order.reference, {
-                            paymentInformation: {
-                                [options.vendorType]: result
-                            },
-                            fee: fee,
-                            net: net,
-                            status: OrderStatus.paid
-                        })
-
-                        resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
                     })
                 })
             } catch (error) {
@@ -314,10 +312,11 @@ export class Manager
                             const account: Account = await Account.get(order.selledBy, this._Account)
                             if (order.status === OrderStatus.completed) {
                                 const currency: string = order.currency
+                                const net: number = order.net
                                 const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
                                 const available: { [currency: string]: number } = balance.available
-                                const amount: number = available[order.currency] || 0
-                                const newAmount: number = amount - order.amount
+                                const amountOfAvailable: number = available[order.currency] || 0
+                                const newAmount: number = amountOfAvailable - net
 
                                 // set account data
                                 transaction.set(account.reference, {
@@ -330,16 +329,17 @@ export class Manager
                                 transaction.set(order.reference, {
                                     refundInformation: {
                                         [options.vendorType]: result
-                                    },                                   
+                                    },
                                     status: OrderStatus.refunded
-                                })
+                                }, { merge: true })
 
                             } else {
                                 const currency: string = order.currency
+                                const net: number = order.net
                                 const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
                                 const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
-                                const amount: number = accountsReceivable[order.currency] || 0
-                                const newAmount: number = amount - order.amount
+                                const amountAccountsReceivable: number = accountsReceivable[order.currency] || 0
+                                const newAmount: number = amountAccountsReceivable - net
 
                                 // set account data
                                 transaction.set(account.reference, {
@@ -354,7 +354,7 @@ export class Manager
                                         [options.vendorType]: result
                                     },
                                     status: OrderStatus.refunded
-                                })
+                                }, { merge: true })
                             }
                             resolve(`[Success] refund ORDER/${order.id}, USER/${order.selledBy}`)
                         } catch (error) {
@@ -366,10 +366,6 @@ export class Manager
                 throw error
             }
         }
-
-        order.status = OrderStatus.refunded
-        const _batch = order.pack(Pring.BatchType.update, null, batch)
-        return this.transaction(order, TransactionType.paymentRefund, order.currency, order.amount, _batch)
     }
 
     async transfer(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
