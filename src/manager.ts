@@ -205,16 +205,16 @@ export class Manager
             return
         }
         if (!(order.status === OrderStatus.received || order.status === OrderStatus.waitingForPayment)) {
-            throw new Error(`[Failure] ORDER/${order.id}, Order is not a payable status.`)
+            throw new Error(`[Failure] pay ORDER/${order.id}, Order is not a payable status.`)
         }
         if (!options.customer && !options.source) {
-            throw new Error(`[Failure] ORDER/${order.id}, PaymentOptions required customer or source`)
+            throw new Error(`[Failure] pay ORDER/${order.id}, PaymentOptions required customer or source`)
         }
         if (!options.vendorType) {
-            throw new Error(`[Failure] ORDER/${order.id}, PaymentOptions required vendorType`)
+            throw new Error(`[Failure] pay ORDER/${order.id}, PaymentOptions required vendorType`)
         }
         if (!this.delegate) {
-            throw new Error(`[Failure] ORDER/${order.id}, Manager required delegate`)
+            throw new Error(`[Failure] pay ORDER/${order.id}, Manager required delegate`)
         }
 
         if (order.amount > 0) {
@@ -294,13 +294,13 @@ export class Manager
             return
         }
         if (!(order.status === OrderStatus.paid || order.status === OrderStatus.completed)) {
-            throw new Error(`[Failure] ORDER/${order.id}, Order is not a refundable status.`)
+            throw new Error(`[Failure] refund ORDER/${order.id}, Order is not a refundable status.`)
         }
         if (!options.vendorType) {
-            throw new Error(`[Failure] ORDER/${order.id}, PaymentOptions required vendorType`)
+            throw new Error(`[Failure] refund ORDER/${order.id}, PaymentOptions required vendorType`)
         }
         if (!this.delegate) {
-            throw new Error(`[Failure] ORDER/${order.id}, Manager required delegate`)
+            throw new Error(`[Failure] refund ORDER/${order.id}, Manager required delegate`)
         }
 
         if (order.amount > 0) {
@@ -395,11 +395,11 @@ export class Manager
                             const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
                             const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
                             const available: { [currency: string]: number } = balance.available
-                            const amount: number = order.amount
+                            const net: number = order.net
                             const accountsReceivableAmount: number = accountsReceivable[order.currency] || 0
                             const availableAmount: number = available[order.currency] || 0
-                            const newAccountsReceivableAmount: number = accountsReceivableAmount - amount
-                            const newAvailableAmount: number = availableAmount + amount
+                            const newAccountsReceivableAmount: number = accountsReceivableAmount - net
+                            const newAvailableAmount: number = availableAmount + net
 
                             // set account data
                             transaction.set(account.reference, {
@@ -411,14 +411,16 @@ export class Manager
 
                             // set order data
                             transaction.set(order.reference, {
-                                refundInformation: {
+                                transactionInformation: {
                                     [options.vendorType]: result
                                 },
                                 status: OrderStatus.completed
-                            })
+                            }, { merge: true })
 
                             const trans: Transaction = new this._Transaction()
-                            trans.amount = amount
+                            trans.amount = order.amount
+                            trans.fee = order.fee
+                            trans.net = order.net 
                             trans.currency = currency
                             trans.type = TransactionType.transfer
                             trans.setParent(account.transactions)
