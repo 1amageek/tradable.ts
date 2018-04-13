@@ -155,7 +155,8 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     parentID?: string
     buyer: string
     selledBy: string
-    shippingTo?: { [key: string]: string }
+    shippingTo: { [key: string]: string }
+    transferredTo: { [key: string]: true }
     paidAt?: Date
     expirationDate: Date
     currency: Currency

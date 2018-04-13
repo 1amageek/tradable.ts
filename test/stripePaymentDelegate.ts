@@ -75,28 +75,9 @@ export class StripePaymentDelegate implements tradable.PaymentDelegate {
     //     }        
     // }
 
-    async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.RefundOptions): Promise<any> {
-
-        const account = await Account.get(order.selledBy, Account)
-        const destination = account.fundInformation
-        const amount = order.amount
-        const currency = order.currency
-        const idempotency_key = `refund:${order.id}`
-
-        let data: Stripe.refunds.IRefundCreationOptions = {}
-
-        if (options.reason) {
-            data.reason = options.reason
-        }
-
+    async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.TransferOptions): Promise<any> {
         try {
-            const result = await stripe.transfers.create({
-                amount: amount,
-                currency: currency,
-                destination: "acct_1C6cjSHh3iLDERYv",
-                transfer_group: "ORDER_95"
-            })
-            return result
+            return {}
         } catch (error) {
             throw error
         }

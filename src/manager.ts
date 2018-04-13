@@ -161,7 +161,7 @@ export class Manager
                                     reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                                 }
                                 const newUnitSales = sku.unitSales + quantity
-                                transaction.update(sku.reference, { 
+                                transaction.update(sku.reference, {
                                     updateAt: FieldValue.serverTimestamp(),
                                     unitSales: newUnitSales
                                 })
@@ -174,26 +174,26 @@ export class Manager
                                     }
                                     default: {
                                         const newUnitSales = sku.unitSales + quantity
-                                        transaction.update(sku.reference, { 
+                                        transaction.update(sku.reference, {
                                             updateAt: FieldValue.serverTimestamp(),
-                                            unitSales: newUnitSales 
+                                            unitSales: newUnitSales
                                         })
                                     }
                                 }
                             }
                             case StockType.infinite: {
                                 const newUnitSales = sku.unitSales + quantity
-                                transaction.update(sku.reference, { 
+                                transaction.update(sku.reference, {
                                     updateAt: FieldValue.serverTimestamp(),
-                                    unitSales: newUnitSales 
+                                    unitSales: newUnitSales
                                 })
                             }
                         }
                     }
 
-                    transaction.update(order.reference, { 
+                    transaction.update(order.reference, {
                         updateAt: FieldValue.serverTimestamp(),
-                        status: OrderStatus.received 
+                        status: OrderStatus.received
                     })
                     resolve(`[Success] ORDER/${order.id}, USER/${order.selledBy}`)
                 })
@@ -387,6 +387,12 @@ export class Manager
             } catch (error) {
                 throw error
             }
+        } else {
+            batch.set(order.reference, {
+                updateAt: FieldValue.serverTimestamp(),
+                status: OrderStatus.refunded
+            }, { merge: true })
+            return batch
         }
     }
 
@@ -431,14 +437,7 @@ export class Manager
                                 }
                             }, { merge: true })
 
-                            // set order data
-                            transaction.set(order.reference, {
-                                transactionInformation: {
-                                    [options.vendorType]: result
-                                },
-                                status: OrderStatus.completed
-                            }, { merge: true })
-
+                            // set transaction data
                             const trans: Transaction = new this._Transaction()
                             trans.amount = order.amount
                             trans.fee = order.fee
@@ -446,10 +445,18 @@ export class Manager
                             trans.currency = currency
                             trans.type = TransactionType.transfer
                             trans.setParent(account.transactions)
-                            trans.order = order.id
-
-                            // set transaction data
+                            trans.order = order.id                            
                             transaction.set(trans.reference, trans.value())
+
+                            // set order data
+                            transaction.set(order.reference, {
+                                transactionInformation: {
+                                    [options.vendorType]: result
+                                },
+                                transferredTo: { [trans.id]: true },
+                                status: OrderStatus.completed
+                            }, { merge: true })
+
                             resolve(`[Success] transfer ORDER/${order.id}, USER/${order.selledBy}, TRANSACTION/${trans.id}`)
                         } catch (error) {
                             reject(`[Failure] transfer ORDER/${order.id}, Account could not be fetched.`)
@@ -459,6 +466,12 @@ export class Manager
             } catch (error) {
                 throw error
             }
+        } else {
+            batch.set(order.reference, {
+                updateAt: FieldValue.serverTimestamp(),
+                status: OrderStatus.completed
+            }, { merge: true })
+            return batch
         }
     }
 
