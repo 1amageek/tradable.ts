@@ -13,6 +13,7 @@ import { OrderItem } from './orderItem'
 import { Transaction } from './transaction'
 import { Account } from './account'
 import { StripePaymentDelegate } from './stripePaymentDelegate'
+import { onRequest } from 'firebase-functions/lib/providers/https';
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
@@ -115,7 +116,7 @@ describe("Tradable", () => {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
-                })                
+                })
             } catch (error) {
                 console.log(error)
                 expect(error).not.toBeNull()
@@ -126,7 +127,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation['stripe']).not.toBeNull()
             const account: Account = await Account.get(order.selledBy, Account)
             expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.price * (1 - 0.1))
-        
+
         }, 10000)
 
         test("Added to Balance after payment is successful", async () => {
@@ -160,7 +161,7 @@ describe("Tradable", () => {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     })
-                })                
+                })
             } catch (error) {
                 console.log(error)
                 expect(error).not.toBeNull()
@@ -171,7 +172,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation['stripe']).not.toBeNull()
             const account: Account = await Account.get(order.selledBy, Account)
             expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.price * (1 - 0.1) * 2)
-            
+
             await order.delete()
             await orderItem.delete()
         }, 10000)
@@ -219,7 +220,7 @@ describe("Tradable", () => {
         //     expect(received.transferInformation['stripe']).not.toBeNull()
         //     const account: Account = await Account.get(order.selledBy, Account)
         //     expect(account.balance['accountsReceivable'][Tradable.Currency.USD]).toEqual(usdSKU.price * (1 - 0.1))
-            
+
         //     await order.delete()
         //     await orderItem.delete()
         // }, 10000)
@@ -234,7 +235,7 @@ describe("Tradable", () => {
                     return await manager.transfer(order, {
                         vendorType: 'stripe'
                     })
-                })                
+                })
             } catch (error) {
                 console.error(error)
                 expect(error).not.toBeNull()
@@ -248,9 +249,18 @@ describe("Tradable", () => {
             const account: Account = await Account.get(order.selledBy, Account)
             expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(order.net)
             expect(account.balance['available'][Tradable.Currency.JPY]).toEqual(order.net)
+            expect(received.transferredTo).not.toBeNull()
 
-            // account.transactions.doc()
-            // const transaction: Transaction = new Transaction(received.or)
+            for (const id in received.transferredTo) {
+                const transaction: Transaction = await account.transactions.doc(id, Transaction)
+                expect(transaction.order).toEqual(received.id)
+                expect(transaction.amount).toEqual(received.amount)
+                expect(transaction.fee).toEqual(received.fee)
+                expect(transaction.net).toEqual(received.net)
+                expect(transaction.currency).toEqual(received.currency)
+                expect(transaction.type).toEqual(Tradable.TransactionType.transfer)
+                expect(transaction.information['stripe']).not.toBeNull()            
+            }
 
             await order.delete()
         }, 10000)

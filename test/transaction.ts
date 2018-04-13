@@ -11,6 +11,7 @@ export class Transaction extends Pring.Base implements tradable.TransactionProto
     @property fee: number
     @property net: number 
     @property order?: string
-    @property transfer?: string
+    @property transfer?: string    
     @property payout?: string
+    @property information: { [key: string]: any }
 }

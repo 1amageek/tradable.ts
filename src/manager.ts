@@ -445,7 +445,10 @@ export class Manager
                             trans.currency = currency
                             trans.type = TransactionType.transfer
                             trans.setParent(account.transactions)
-                            trans.order = order.id                            
+                            trans.order = order.id
+                            trans.information = {
+                                [options.vendorType]: result
+                            }                        
                             transaction.set(trans.reference, trans.value())
 
                             // set order data

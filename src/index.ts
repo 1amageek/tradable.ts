@@ -40,6 +40,7 @@ export interface TransactionProtocol extends Pring.Base {
     order?: string
     transfer?: string
     payout?: string
+    information: { [key: string]: any }
 }
 
 export type Balance = {
