@@ -27,9 +27,17 @@ describe("Tradable", () => {
     const user: User = new User()
     const product: Product = new Product()
     const sku: SKU = new SKU()
-
+    const account: Account = new Account(shop.id, {})
 
     beforeAll(async () => {
+
+        const account: Account = new Account(shop.id)
+        account.commissionRatio = 0.1
+        account.country = 'jp'
+        account.isRejected = false
+        account.isSigned = false
+        account.balance = { accountsReceivable: {}, available: {} }
+        await account.save()
 
         product.skus.insert(sku)
         product.title = "PRODUCT"
@@ -93,7 +101,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation['stripe']).not.toBeNull()
             await order.delete()
             await orderItem.delete()
-        }, 10000)
+        }, 15000)
 
         test("Stripe Payment success, when OrderStatus waitingForPayment", async () => {
             const order: Order = new Order()
@@ -137,7 +145,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation['stripe']).not.toBeNull()
             await order.delete()
             await orderItem.delete()
-        }, 10000)
+        }, 15000)
 
         test("Stripe Payment failure, when OrderStatus created", async () => {
             const order: Order = new Order()
@@ -182,7 +190,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation).toBeUndefined()
             await order.delete()
             await orderItem.delete()
-        }, 10000)
+        }, 15000)
 
         test("Stripe Payment failure, when OrderStatus rejected", async () => {
             const order: Order = new Order()
@@ -227,7 +235,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation).toBeUndefined()
             await order.delete()
             await orderItem.delete()
-        }, 10000)
+        }, 15000)
 
         test("Stripe Payment failure, when OrderStatus paid", async () => {
             const order: Order = new Order()
@@ -272,7 +280,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation).toBeUndefined()
             await order.delete()
             await orderItem.delete()
-        }, 10000)
+        }, 15000)
 
         test("Stripe Payment failure, when OrderStatus waitingForRefund", async () => {
             const order: Order = new Order()
@@ -317,7 +325,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation).toBeUndefined()
             await order.delete()
             await orderItem.delete()
-        }, 10000)
+        }, 15000)
 
         test("Stripe Payment failure, when OrderStatus refunded", async () => {
             const order: Order = new Order()
@@ -415,5 +423,6 @@ describe("Tradable", () => {
         await user.delete()
         await product.delete()
         await sku.delete()
+        await account.delete()
     })
 })
