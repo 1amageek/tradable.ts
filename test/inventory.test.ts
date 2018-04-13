@@ -143,9 +143,9 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
             try {
-                await manager.execute(order, async (order) => {
-                    return await manager.inventoryControl(order)
-                })                
+                await manager.execute(order, async (order, batch) => {
+                    return await manager.inventoryControl(order, batch)
+                })                   
             } catch (error) {
                 // console.log(error)
             }
@@ -190,9 +190,9 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
             try {
-                await manager.execute(order, async (order) => {
-                    await manager.inventoryControl(order)
-                })                
+                await manager.execute(order, async (order, batch) => {
+                    return await manager.inventoryControl(order, batch)
+                })                  
             } catch (error) {
                 console.log(error)
             }
@@ -237,9 +237,9 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
             try {
-                await manager.execute(order, async (order) => {
-                    await manager.inventoryControl(order)
-                })                
+                await manager.execute(order, async (order, batch) => {
+                    return await manager.inventoryControl(order, batch)
+                })                  
             } catch (error) {
                 // console.log(error)
             }
@@ -284,8 +284,8 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
             try {
-                await manager.execute(order, async (order) => {
-                    await manager.inventoryControl(order)
+                await manager.execute(order, async (order, batch) => {
+                    return await manager.inventoryControl(order, batch)
                 })                
             } catch (error) {
                 // console.log(error)
@@ -331,9 +331,9 @@ describe("Tradable", () => {
             
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
             try {
-                await manager.execute(order, async (order) => {
-                    await manager.inventoryControl(order)
-                })                
+                await manager.execute(order, async (order, batch) => {
+                    return await manager.inventoryControl(order, batch)
+                })                  
             } catch (error) {
                 // console.log(error)
             }
@@ -379,9 +379,9 @@ describe("Tradable", () => {
 
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
             try {
-                await manager.execute(order, async (order) => {
-                    await manager.inventoryControl(order)
-                })                
+                await manager.execute(order, async (order, batch) => {
+                    return await manager.inventoryControl(order, batch)
+                })                  
             } catch (error) {
                 // console.log(error)
             }

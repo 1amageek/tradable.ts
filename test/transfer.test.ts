@@ -111,12 +111,12 @@ describe("Tradable", () => {
             await order.save()
             order.status = Tradable.OrderStatus.received
             try {
-                await manager.execute(order, async (order) => {
+                await manager.execute(order, async (order, batch) => {
                     return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                })  
             } catch (error) {
                 console.log(error)
                 expect(error).not.toBeNull()
@@ -128,7 +128,7 @@ describe("Tradable", () => {
             const account: Account = await Account.get(order.selledBy, Account)
             expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.price * (1 - 0.1))
 
-        }, 10000)
+        }, 15000)
 
         test("Added to Balance after payment is successful", async () => {
             const order: Order = new Order()
@@ -156,12 +156,12 @@ describe("Tradable", () => {
             await order.save()
             order.status = Tradable.OrderStatus.received
             try {
-                await manager.execute(order, async (order) => {
+                await manager.execute(order, async (order, batch) => {
                     return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                })  
             } catch (error) {
                 console.log(error)
                 expect(error).not.toBeNull()
@@ -175,7 +175,7 @@ describe("Tradable", () => {
 
             await order.delete()
             await orderItem.delete()
-        }, 10000)
+        }, 15000)
 
         // test("Transfer succeeds after payment usd", async () => {
         //     const order: Order = new Order()
@@ -263,7 +263,7 @@ describe("Tradable", () => {
             }
 
             await order.delete()
-        }, 10000)
+        }, 15000)
     })
 
     afterAll(async () => {

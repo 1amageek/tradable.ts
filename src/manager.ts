@@ -25,7 +25,7 @@ const isUndefined = (value: any): boolean => {
 }
 
 export interface Process {
-    <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U): Promise<FirebaseFirestore.WriteBatch | void>
+    <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>
 }
 
 // 在庫の増減
@@ -76,7 +76,8 @@ export class Manager
                 }
                 throw validationError
             }
-            const batch = await process(order)
+            const _batch = Pring.batch()
+            const batch = await process(order, _batch)
             if (batch) {
                 await batch.commit()
             }
@@ -129,7 +130,7 @@ export class Manager
 
     public delegate?: PaymentDelegate
 
-    async inventoryControl(order: Order) {
+    async inventoryControl(order: Order, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
         // Skip
         if (order.status === OrderStatus.received ||
             order.status === OrderStatus.waitingForRefund ||
@@ -140,7 +141,6 @@ export class Manager
             return
         }
 
-        order.status = OrderStatus.received
         try {
             await Pring.firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
@@ -161,10 +161,10 @@ export class Manager
                                     reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                                 }
                                 const newUnitSales = sku.unitSales + quantity
-                                transaction.update(sku.reference, {
+                                transaction.set(sku.reference, {
                                     updateAt: FieldValue.serverTimestamp(),
                                     unitSales: newUnitSales
-                                })
+                                }, { merge: true })
                                 break
                             }
                             case StockType.bucket: {
@@ -174,27 +174,30 @@ export class Manager
                                     }
                                     default: {
                                         const newUnitSales = sku.unitSales + quantity
-                                        transaction.update(sku.reference, {
+                                        transaction.set(sku.reference, {
                                             updateAt: FieldValue.serverTimestamp(),
                                             unitSales: newUnitSales
-                                        })
+                                        }, { merge: true })
+                                        break
                                     }
                                 }
+                                break
                             }
                             case StockType.infinite: {
                                 const newUnitSales = sku.unitSales + quantity
-                                transaction.update(sku.reference, {
+                                transaction.set(sku.reference, {
                                     updateAt: FieldValue.serverTimestamp(),
                                     unitSales: newUnitSales
-                                })
+                                }, { merge: true })
+                                break
                             }
                         }
                     }
 
-                    transaction.update(order.reference, {
+                    transaction.set(order.reference, {
                         updateAt: FieldValue.serverTimestamp(),
                         status: OrderStatus.received
-                    })
+                    }, { merge: true })
                     resolve(`[Success] ORDER/${order.id}, USER/${order.selledBy}`)
                 })
             })
@@ -209,7 +212,7 @@ export class Manager
         }
     }
 
-    async pay(order: Order, options: PaymentOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+    async pay(order: Order, options: PaymentOptions, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
 
         // Skip for paid, waitingForRefund, refunded
         if (order.status === OrderStatus.paid ||
@@ -448,7 +451,7 @@ export class Manager
                             trans.order = order.id
                             trans.information = {
                                 [options.vendorType]: result
-                            }                        
+                            }
                             transaction.set(trans.reference, trans.value())
 
                             // set order data

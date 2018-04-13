@@ -112,7 +112,7 @@ describe("Tradable", () => {
             await order.delete()
             await jpyOrderItem.delete()
             await usdOrderItem.delete()
-        }, 10000)
+        }, 15000)
 
         test("OrderItem and Order Amount do not match", async () => {
             const order: Order = new Order()
@@ -162,7 +162,7 @@ describe("Tradable", () => {
             await order.delete()
             await orderItem0.delete()
             await orderItem1.delete()
-        }, 10000)
+        }, 15000)
 
         test("Amount is below the lower limit.", async () => {
             const order: Order = new Order()
@@ -201,7 +201,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation).toBeUndefined()
             await order.delete()
             await orderItem.delete()
-        }, 10000)
+        }, 15000)
     })
 
     afterAll(async () => {

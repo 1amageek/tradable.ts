@@ -85,12 +85,12 @@ describe("Tradable", () => {
             await order.save()
 
             try {
-                await manager.execute(order, async (order) => {
+                await manager.execute(order, async (order, batch) => {
                     return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                })  
             } catch (error) {
                 console.log(error)
             }
@@ -129,12 +129,12 @@ describe("Tradable", () => {
             await order.save()
 
             try {
-                await manager.execute(order, async (order) => {
+                await manager.execute(order, async (order, batch) => {
                     return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                })  
             } catch (error) {
                 // console.log(error)
             }
@@ -173,12 +173,12 @@ describe("Tradable", () => {
             order.status = Tradable.OrderStatus.created
 
             try {
-                await manager.execute(order, async (order) => {
+                await manager.execute(order, async (order, batch) => {
                     return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                })  
             } catch (error) {
                 expect(error).not.toBeNull()
                 // console.log(error)
@@ -218,12 +218,12 @@ describe("Tradable", () => {
 
             order.status = Tradable.OrderStatus.rejected
             try {
-                await manager.execute(order, async (order) => {
+                await manager.execute(order, async (order, batch) => {
                     return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                })  
             } catch (error) {
                 expect(error).not.toBeNull()
                 // console.log(error)
@@ -263,12 +263,12 @@ describe("Tradable", () => {
             await order.save()
         
             try {
-                await manager.execute(order, async (order) => {
+                await manager.execute(order, async (order, batch) => {
                     return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                })  
             } catch (error) {
                 expect(error).not.toBeNull()
                 // console.log(error)
@@ -308,12 +308,12 @@ describe("Tradable", () => {
             await order.save()
         
             try {
-                await manager.execute(order, async (order) => {
+                await manager.execute(order, async (order, batch) => {
                     return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                })  
             } catch (error) {
                 expect(error).not.toBeNull()
                 // console.log(error)
@@ -353,12 +353,12 @@ describe("Tradable", () => {
             await order.save()
             
             try {
-                await manager.execute(order, async (order) => {
-                    await manager.pay(order, {
+                await manager.execute(order, async (order, batch) => {
+                    return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                })  
             } catch (error) {
                 expect(error).not.toBeNull()
                 // console.log(error)
@@ -398,12 +398,12 @@ describe("Tradable", () => {
             await order.save()
             
             try {
-                await manager.execute(order, async (order) => {
-                    await manager.pay(order, {
+                await manager.execute(order, async (order, batch) => {
+                    return await manager.pay(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                })  
             } catch (error) {
                 expect(error).not.toBeNull()
                 // console.log(error)
