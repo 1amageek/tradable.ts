@@ -225,7 +225,7 @@ describe("Tradable", () => {
         // }, 10000)
 
         test("Transfer succeeds after payment jpy", async () => {
-            const order: Order = targetOrder
+            const order: Order = await Order.get(targetOrder.id, Order)
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
             manager.delegate = new StripePaymentDelegate()
 
@@ -236,6 +236,7 @@ describe("Tradable", () => {
                     })
                 })                
             } catch (error) {
+                console.error(error)
                 expect(error).not.toBeNull()
             }
 
@@ -245,7 +246,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation['stripe']).not.toBeNull()
             expect(received.transferInformation['stripe']).not.toBeNull()
             const account: Account = await Account.get(order.selledBy, Account)
-            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(0)
+            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(order.net)
             expect(account.balance['available'][Tradable.Currency.JPY]).toEqual(order.net)
 
             // account.transactions.doc()

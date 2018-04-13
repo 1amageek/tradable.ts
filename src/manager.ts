@@ -450,7 +450,7 @@ export class Manager
 
                             // set order data
                             transaction.set(order.reference, {
-                                transactionInformation: {
+                                transferInformation: {
                                     [options.vendorType]: result
                                 },
                                 transferredTo: { [trans.id]: true },
