@@ -186,6 +186,11 @@ export type RefundOptions = {
     reason?: RefundReason
 }
 
+
+export type TransferOptions = {
+    vendorType: string
+}
+
 export interface PaymentDelegate {
 
     /// This function will make payment. The payment result is saved in the VendorType set in PaymentOptions.
@@ -195,7 +200,7 @@ export interface PaymentDelegate {
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>
 
     ///
-    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>
+    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: TransferOptions): Promise<any>
     // payout<U extends TransactionProtocol, T extends AccountProtocol<U>>(account: T, amount: number, currency: Currency): Promise<any>
 
     

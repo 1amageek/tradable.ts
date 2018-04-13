@@ -14,9 +14,11 @@ import {
     RefundOptions,
     Currency,
     TransactionType,
-    Balance
+    Balance,
+    TransferOptions
 } from "./index"
 import { Account } from "../test/account";
+import { FieldValue } from "@google-cloud/firestore";
 
 const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
@@ -159,7 +161,10 @@ export class Manager
                                     reject(`[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                                 }
                                 const newUnitSales = sku.unitSales + quantity
-                                transaction.update(sku.reference, { unitSales: newUnitSales })
+                                transaction.update(sku.reference, { 
+                                    updateAt: FieldValue.serverTimestamp(),
+                                    unitSales: newUnitSales
+                                })
                                 break
                             }
                             case StockType.bucket: {
@@ -169,18 +174,27 @@ export class Manager
                                     }
                                     default: {
                                         const newUnitSales = sku.unitSales + quantity
-                                        transaction.update(sku.reference, { unitSales: newUnitSales })
+                                        transaction.update(sku.reference, { 
+                                            updateAt: FieldValue.serverTimestamp(),
+                                            unitSales: newUnitSales 
+                                        })
                                     }
                                 }
                             }
                             case StockType.infinite: {
                                 const newUnitSales = sku.unitSales + quantity
-                                transaction.update(sku.reference, { unitSales: newUnitSales })
+                                transaction.update(sku.reference, { 
+                                    updateAt: FieldValue.serverTimestamp(),
+                                    unitSales: newUnitSales 
+                                })
                             }
                         }
                     }
 
-                    transaction.update(order.reference, { status: OrderStatus.received })
+                    transaction.update(order.reference, { 
+                        updateAt: FieldValue.serverTimestamp(),
+                        status: OrderStatus.received 
+                    })
                     resolve(`[Success] ORDER/${order.id}, USER/${order.selledBy}`)
                 })
             })
@@ -241,6 +255,7 @@ export class Manager
 
                             // set account data
                             transaction.set(account.reference, {
+                                updateAt: FieldValue.serverTimestamp(),
                                 revenue: { [currency]: newRevenue },
                                 balance: {
                                     accountsReceivable: { [currency]: newAmount }
@@ -249,6 +264,7 @@ export class Manager
 
                             // set order data
                             transaction.set(order.reference, {
+                                updateAt: FieldValue.serverTimestamp(),
                                 paymentInformation: {
                                     [options.vendorType]: result
                                 },
@@ -272,6 +288,12 @@ export class Manager
                 }
                 throw error
             }
+        } else {
+            batch.set(order.reference, {
+                updateAt: FieldValue.serverTimestamp(),
+                status: OrderStatus.paid
+            }, { merge: true })
+            return batch
         }
     }
 
@@ -368,7 +390,7 @@ export class Manager
         }
     }
 
-    async transfer(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+    async transfer(order: Order, options: TransferOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
 
         // Skip for 
         if (order.status === OrderStatus.completed) {
@@ -420,7 +442,7 @@ export class Manager
                             const trans: Transaction = new this._Transaction()
                             trans.amount = order.amount
                             trans.fee = order.fee
-                            trans.net = order.net 
+                            trans.net = order.net
                             trans.currency = currency
                             trans.type = TransactionType.transfer
                             trans.setParent(account.transactions)
