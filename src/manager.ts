@@ -1,4 +1,5 @@
 import * as Pring from "pring"
+import { FieldValue } from "@google-cloud/firestore"
 import {
     SKUProtocol,
     OrderItemProtocol,
@@ -17,9 +18,7 @@ import {
     Balance,
     TransferOptions
 } from "./index"
-import { Account } from "../test/account";
-import { FieldValue } from "@google-cloud/firestore";
-import { OrderItem } from "../test/orderItem";
+
 
 const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
@@ -247,7 +246,8 @@ export class Manager
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            const account: Account = await Account.get(order.selledBy, this._Account)
+                            const account: Account = new this._Account(order.selledBy, {})
+                            await account.fetch()
                             const amount: number = order.amount
                             const commissionRatio: number = account.commissionRatio
                             const fee: number = amount * commissionRatio
@@ -340,7 +340,8 @@ export class Manager
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            const account: Account = await Account.get(order.selledBy, this._Account)
+                            const account: Account = new this._Account(order.selledBy, {})
+                            await account.fetch()
                             if (order.status === OrderStatus.completed) {
                                 const currency: string = order.currency
                                 const net: number = order.net
@@ -427,7 +428,8 @@ export class Manager
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            const account: Account = await Account.get(order.selledBy, this._Account)
+                            const account: Account = new this._Account(order.selledBy, {})
+                            await account.fetch()
                             const currency: string = order.currency
                             const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
                             const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable

@@ -6,7 +6,7 @@ export { Currency, Manager };
 export interface UserProtocol<SKU extends SKUProtocol, Product extends ProductProtocol<SKU>, OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>> extends Pring.Base {
     isAvailabled: boolean;
     country: string;
-    products: Pring.ReferenceCollection<Product>;
+    products: Query;
     skus: Query;
     orders: Query;
     orderings: Query;
@@ -23,18 +23,36 @@ export interface TransactionProtocol extends Pring.Base {
     type: TransactionType;
     currency: string;
     amount: number;
+    fee: number;
+    net: number;
     order?: string;
     transfer?: string;
     payout?: string;
+    information: {
+        [key: string]: any;
+    };
 }
+export declare type Balance = {
+    accountsReceivable: {
+        [currency: string]: number;
+    };
+    available: {
+        [currency: string]: number;
+    };
+};
 export interface AccountProtocol<Transaction extends TransactionProtocol> extends Pring.Base {
     country: string;
     isRejected: boolean;
     isSigned: boolean;
-    balance: {
+    commissionRatio: number;
+    revenue: {
         [currency: string]: number;
     };
+    balance: Balance;
     transactions: Pring.NestedCollection<Transaction>;
+    fundInformation: {
+        [key: string]: any;
+    };
 }
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
     title: string;
@@ -84,6 +102,7 @@ export declare enum OrderStatus {
     waitingForRefund = "waitingForRefund",
     refunded = "refunded",
     canceled = "canceled",
+    completed = "completed",
 }
 export interface OrderItemProtocol extends Pring.Base {
     order: string;
@@ -100,16 +119,24 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     parentID?: string;
     buyer: string;
     selledBy: string;
-    shippingTo?: {
+    shippingTo: {
         [key: string]: string;
+    };
+    transferredTo: {
+        [key: string]: true;
     };
     paidAt?: Date;
     expirationDate: Date;
     currency: Currency;
     amount: number;
+    fee: number;
+    net: number;
     items: Pring.NestedCollection<OrderItem>;
     status: OrderStatus;
     paymentInformation: {
+        [key: string]: any;
+    };
+    transferInformation: {
         [key: string]: any;
     };
     refundInformation: {
@@ -130,7 +157,11 @@ export declare type RefundOptions = {
     vendorType: string;
     reason?: RefundReason;
 };
+export declare type TransferOptions = {
+    vendorType: string;
+};
 export interface PaymentDelegate {
     pay<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>;
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>;
+    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: TransferOptions): Promise<any>;
 }

@@ -1,6 +1,6 @@
-import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, TransactionProtocol, AccountProtocol, PaymentDelegate, PaymentOptions, RefundOptions } from "./index";
+import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, TransactionProtocol, AccountProtocol, PaymentDelegate, PaymentOptions, RefundOptions, TransferOptions } from "./index";
 export interface Process {
-    <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U): Promise<FirebaseFirestore.WriteBatch | void>;
+    <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
 }
 export declare class Manager<SKU extends SKUProtocol, Product extends ProductProtocol<SKU>, OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>, Transaction extends TransactionProtocol, Account extends AccountProtocol<Transaction>> {
     private _SKU;
@@ -36,12 +36,13 @@ export declare class Manager<SKU extends SKUProtocol, Product extends ProductPro
     });
     execute(order: Order, process: Process): Promise<void>;
     private validate(order);
-    private validateCurrency(order);
-    private validateAmount(order);
     private validateMinimumAmount(order);
+    private validateCurrency(order, orderItems);
+    private validateAmount(order, orderItems);
     delegate?: PaymentDelegate;
-    inventoryControl(order: Order): Promise<void>;
-    pay(order: Order, options: PaymentOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
+    inventoryControl(order: Order, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
+    pay(order: Order, options: PaymentOptions, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
     private transaction(order, type, currency, amount, batch);
     refund(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
+    transfer(order: Order, options: TransferOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
 }
