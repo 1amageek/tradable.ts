@@ -131,7 +131,7 @@ describe("Tradable", () => {
             orderItem.currency = finiteSKU.currency
             orderItem.quantity = 2
 
-            order.amount = finiteSKU.price
+            order.amount = finiteSKU.price * 2
             order.currency = finiteSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id

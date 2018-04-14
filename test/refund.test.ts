@@ -16,6 +16,8 @@ import { StripePaymentDelegate } from './stripePaymentDelegate'
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
+jest.setTimeout(10000)
+
 Pring.initialize({
     projectId: 'salada-f825d',
     keyFilename: './salada-f825d-firebase-adminsdk-19k25-ded6604978.json'
@@ -94,12 +96,12 @@ describe("Tradable", () => {
                 const _order: Order = await Order.get(order.id, Order)
 
                 order.status = Tradable.OrderStatus.received
-                await manager.execute(order, async (order) => {
-                    return await manager.pay(order, {
+                await manager.execute(order, async (_order, batch) => {
+                    return await manager.pay(_order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                }) 
             } catch (error) {
                 console.log(error)
                 expect(error).not.toBeNull()
@@ -115,12 +117,11 @@ describe("Tradable", () => {
 
             try {
                 const _order: Order = await Order.get(order.id, Order)
-                console.log(_order.value())
-                await manager.execute(_order, async (order) => {
+                await manager.execute(_order, async (order, batch) => {
                     return await manager.refund(order, {
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                }) 
             } catch (error) {
                 console.log(error)
                 expect(error).not.toBeNull()

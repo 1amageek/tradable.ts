@@ -19,6 +19,7 @@ import {
 } from "./index"
 import { Account } from "../test/account";
 import { FieldValue } from "@google-cloud/firestore";
+import { OrderItem } from "../test/orderItem";
 
 const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
@@ -66,7 +67,7 @@ export class Manager
     async execute(order: Order, process: Process) {
         try {
             // validation error
-            const validationError = this.validate(order)
+            const validationError =  await this.validate(order)
             if (validationError) {
                 order.status = OrderStatus.rejected
                 try {
@@ -86,20 +87,34 @@ export class Manager
         }
     }
 
-    private validate(order: Order): Error | void {
+    private async validate(order: Order) {
         if (isUndefined(order.buyer)) return Error(`[Tradable] Error: validation error, buyer is required`)
         if (isUndefined(order.selledBy)) return Error(`[Tradable] Error: validation error, selledBy is required`)
         if (isUndefined(order.expirationDate)) return Error(`[Tradable] Error: validation error, expirationDate is required`)
         if (isUndefined(order.currency)) return Error(`[Tradable] Error: validation error, currency is required`)
         if (isUndefined(order.amount)) return Error(`[Tradable] Error: validation error, amount is required`)
-        if (!this.validateCurrency(order)) return Error(`[Tradable] Error: validation error, Currency of OrderItem does not match Currency of Order.`)
-        // if (!this.validateAmount(order)) return Error(`[Tradable] Error: validation error, The sum of OrderItem does not match Amount of Order.`)
         if (!this.validateMinimumAmount(order)) return Error(`[Tradable] Error: validation error, Amount is below the lower limit.`)
+        try {
+            const items: OrderItem[] = await order.items.get(this._OrderItem)
+            if (!this.validateCurrency(order, items)) return Error(`[Tradable] Error: validation error, Currency of OrderItem does not match Currency of Order.`)
+            if (!this.validateAmount(order, items)) return Error(`[Tradable] Error: validation error, The sum of OrderItem does not match Amount of Order.`)
+        } catch (error) {
+            return error
+        }
+    }
+
+    private validateMinimumAmount(order: Order): boolean {
+        const currency: Currency = order.currency
+        const amount: number = order.amount
+        if (0 < amount && amount < Currency.minimum(currency)) {
+            return false
+        }
+        return true
     }
 
     // Returns true if there is no problem in the verification
-    private validateCurrency(order: Order): boolean {
-        for (const item of order.items.objects) {
+    private validateCurrency(order: Order, orderItems: OrderItem[]): boolean {
+        for (const item of orderItems) {
             if (item.currency !== order.currency) {
                 return false
             }
@@ -108,21 +123,13 @@ export class Manager
     }
 
     // Returns true if there is no problem in the verification
-    private validateAmount(order: Order): boolean {
+    private validateAmount(order: Order, orderItems: OrderItem[]) {
         let totalAmount: number = 0
-        for (const item of order.items.objects) {
-            totalAmount += item.amount
+
+        for (const item of orderItems) {
+            totalAmount += (item.amount * item.quantity)
         }
         if (totalAmount !== order.amount) {
-            return false
-        }
-        return true
-    }
-
-    private validateMinimumAmount(order: Order): boolean {
-        const currency: Currency = order.currency
-        const amount: number = order.amount
-        if (0 < amount && amount < Currency.minimum(currency)) {
             return false
         }
         return true
