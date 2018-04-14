@@ -35,23 +35,12 @@ export interface TransactionProtocol extends Pring.Base {
     type: TransactionType
     currency: string
     amount: number
+    fee: number
+    net: number // net = amount - fee
     order?: string
     transfer?: string
     payout?: string
-}
-
-export enum SaleStatus {
-    accountsReceivable = "accounts_receivable",
-    receive = "receive",
-    cancel = "cancel"
-}
-
-export interface SaleProtocol extends Pring.Base {
-    status: SaleStatus
-    currency: Currency
-    amount: number
-    order: string
-    transfer?: string
+    information: { [key: string]: any }
 }
 
 export type Balance = {
@@ -65,12 +54,13 @@ export type Balance = {
 
 /// AccountProtocol must have the same ID as UserProtocol.
 /// AccountPtotocol holds information that can not be accessed except for principals with a protocol with a high security level.
-export interface AccountProtocol<Sale extends SaleProtocol, Transaction extends TransactionProtocol> extends Pring.Base {
+export interface AccountProtocol<Transaction extends TransactionProtocol> extends Pring.Base {
     country: string
     isRejected: boolean
     isSigned: boolean
+    commissionRatio: number // 0 ~ 1
+    revenue: { [currency: string]: number }
     balance: Balance
-    sales: Pring.NestedCollection<Sale>
     transactions: Pring.NestedCollection<Transaction>
     fundInformation: { [key: string]: any }
 }
@@ -166,11 +156,14 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     parentID?: string
     buyer: string
     selledBy: string
-    shippingTo?: { [key: string]: string }
+    shippingTo: { [key: string]: string }
+    transferredTo: { [key: string]: true }
     paidAt?: Date
     expirationDate: Date
     currency: Currency
     amount: number
+    fee: number
+    net: number // net = amount - fee
     items: Pring.NestedCollection<OrderItem>
     status: OrderStatus
     paymentInformation: { [key: string]: any }
@@ -195,6 +188,11 @@ export type RefundOptions = {
     reason?: RefundReason
 }
 
+
+export type TransferOptions = {
+    vendorType: string
+}
+
 export interface PaymentDelegate {
 
     /// This function will make payment. The payment result is saved in the VendorType set in PaymentOptions.
@@ -204,7 +202,7 @@ export interface PaymentDelegate {
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>
 
     ///
-    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>
+    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: TransferOptions): Promise<any>
     // payout<U extends TransactionProtocol, T extends AccountProtocol<U>>(account: T, amount: number, currency: Currency): Promise<any>
 
     

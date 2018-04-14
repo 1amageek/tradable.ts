@@ -16,6 +16,8 @@ import { StripePaymentDelegate } from './stripePaymentDelegate'
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
+jest.setTimeout(10000)
+
 Pring.initialize({
     projectId: 'salada-f825d',
     keyFilename: './salada-f825d-firebase-adminsdk-19k25-ded6604978.json'
@@ -34,6 +36,20 @@ describe("Tradable", () => {
 
     beforeAll(async () => {
 
+        const stripeAccount: Stripe.accounts.IAccount = await stripe.accounts.create({
+            type: 'custom',
+            country: 'jp',
+            metadata: { id: shop.id }
+        })
+        const account: Account = new Account(shop.id)
+        account.commissionRatio = 0.1
+        account.country = 'jp'
+        account.fundInformation = { 'stripe': stripeAccount.id }
+        account.isRejected = false
+        account.isSigned = false
+        account.balance = { accountsReceivable: {}, available: {} }
+        await account.save()
+
         product.skus.insert(sku)
         product.title = "PRODUCT"
         product.createdBy = shop.id
@@ -48,6 +64,10 @@ describe("Tradable", () => {
         sku.inventory = {
             type: Tradable.StockType.infinite
         }
+
+        await product.save()
+        await shop.save()
+        await user.save()
 
         orderItem.order = order.id
         orderItem.selledBy = shop.id
@@ -64,49 +84,44 @@ describe("Tradable", () => {
         order.shippingTo = { address: "address" }
         order.expirationDate = new Date(date.setDate(date.getDate() + 14))
         order.items.insert(orderItem)
-        order.status = Tradable.OrderStatus.received
         await order.save()
-        await product.save()
-        await shop.save()
-        await user.save()
     })
 
     describe("Refund Test", async () => {
         test("Stripe's payment success", async () => {
-
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
             manager.delegate = new StripePaymentDelegate()
+
             try {
-                await manager.execute(order, async (order) => {
-                    return await manager.pay(order, {
+                const _order: Order = await Order.get(order.id, Order)
+
+                order.status = Tradable.OrderStatus.received
+                await manager.execute(order, async (_order, batch) => {
+                    return await manager.pay(_order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                }) 
             } catch (error) {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
-            await order.update()
-            const snapshot = await account.transactions.reference.where('order', '==', order.id).where('type', '==', Tradable.TransactionType.payment).get()
-            const doc = snapshot.docs[0]
-            const transaction: Transaction = new Transaction(doc.id, doc.data())
-            expect(transaction.order).toEqual(order.id)
-            expect(transaction.type).toEqual(Tradable.TransactionType.payment)
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
-        }, 10000)
+        }, 15000)
 
         test("Stripe's Refund success", async () => {
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
             manager.delegate = new StripePaymentDelegate()
+
             try {
-                await manager.execute(order, async (order) => {
+                const _order: Order = await Order.get(order.id, Order)
+                await manager.execute(_order, async (order, batch) => {
                     return await manager.refund(order, {
                         vendorType: 'stripe'
-                    })
-                })
+                    }, batch)
+                }) 
             } catch (error) {
                 console.log(error)
                 expect(error).not.toBeNull()
@@ -118,21 +133,17 @@ describe("Tradable", () => {
             expect(received.refundInformation['stripe']).not.toBeNull()
 
             const account = await Account.get(order.selledBy, Account)
-            const snapshot = await account.transactions.reference.where('order', '==', order.id).where('type', '==', Tradable.TransactionType.paymentRefund).get()
-            const doc = snapshot.docs[0]
-            const transaction: Transaction = new Transaction(doc.id, doc.data())
-            expect(transaction.order).toEqual(order.id)
-            expect(transaction.type).toEqual(Tradable.TransactionType.paymentRefund)
-            
-            expect(account.balance[order.currency]).toEqual(0)
+            expect(account.balance['accountsReceivable'][order.currency]).toEqual(90)
 
-        }, 10000)
+        }, 15000)
 
         test("Stripe's Refund failure, manager have already refunded", async () => {
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
             manager.delegate = new StripePaymentDelegate()
+
             try {
-                await manager.execute(order, async (order) => {
+                const _order: Order = await Order.get(order.id, Order)
+                await manager.execute(_order, async (order) => {
                     return await manager.refund(order, {
                         vendorType: 'stripe',
                         reason: Tradable.RefundReason.requestedByCustomer
@@ -149,15 +160,9 @@ describe("Tradable", () => {
             expect(received.refundInformation['stripe']).not.toBeNull()
 
             const account = await Account.get(order.selledBy, Account)
-            const snapshot = await account.transactions.reference.where('order', '==', order.id).where('type', '==', Tradable.TransactionType.paymentRefund).get()
-            const doc = snapshot.docs[0]
-            const transaction: Transaction = new Transaction(doc.id, doc.data())
-            expect(transaction.order).toEqual(order.id)
-            expect(transaction.type).toEqual(Tradable.TransactionType.paymentRefund)
-            
-            expect(account.balance[order.currency]).toEqual(0)
+            expect(account.balance['accountsReceivable'][order.currency]).toEqual(90)
 
-        }, 10000)
+        }, 15000)
     })
 
     afterAll(async () => {
