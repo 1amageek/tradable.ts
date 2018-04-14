@@ -275,7 +275,6 @@ export class Manager
                                 net: net,
                                 status: OrderStatus.paid
                             }, { merge: true })
-
                             resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
                         } catch (error) {
                             reject(`[Failure] pay ORDER/${order.id}, Account could not be fetched.`)

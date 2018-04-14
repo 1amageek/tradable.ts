@@ -14,6 +14,8 @@ import { Transaction } from './transaction'
 import { Account } from './account'
 import { StripePaymentDelegate } from './stripePaymentDelegate'
 
+jest.setTimeout(10000)
+
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
 Pring.initialize({
@@ -92,18 +94,16 @@ describe("Tradable", () => {
             await order.save()
             order.status = Tradable.OrderStatus.received
             try {
-                await manager.execute(order, async (order, batch) => {
-                    return await manager.pay(order, {
+                await manager.execute(order, async (_order, batch) => {
+                    return await manager.pay(_order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     }, batch)
-                })  
+                }) 
             } catch (error) {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
-
-
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
@@ -112,7 +112,7 @@ describe("Tradable", () => {
             expect(received.net).toEqual(order.amount * (1 - 0.1))
             await order.delete()
             await orderItem.delete()
-        }, 13000)
+        }, 30000)
 
         test("Stripe Payment use customer failure, customer and source are not set", async () => {
             const order: Order = new Order()
@@ -143,7 +143,6 @@ describe("Tradable", () => {
             try {
                 await manager.execute(order, async (order, batch) => {
                     return await manager.pay(order, {
-                        customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     }, batch)
                 })  
@@ -156,7 +155,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation).toBeUndefined()
             await order.delete()
             await orderItem.delete()
-        }, 13000)
+        }, 15000)
 
         test("Stripe Payment use customer failure, stripe error", async () => {
             const order: Order = new Order()
@@ -187,7 +186,7 @@ describe("Tradable", () => {
             try {
                 await manager.execute(order, async (order, batch) => {
                     return await manager.pay(order, {
-                        customer: Config.STRIPE_CUS_TOKEN,
+                        customer: "cus_xxxxxxxxxx",
                         vendorType: 'stripe'
                     }, batch)
                 })  
@@ -200,7 +199,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation).toBeUndefined()
             await order.delete()
             await orderItem.delete()
-        }, 13000)
+        }, 15000)
 
         test("Stripe Payment use customer failure, when Order is not a payable status.", async () => {
             const order: Order = new Order()
@@ -244,7 +243,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation).toBeUndefined()
             await order.delete()
             await orderItem.delete()
-        }, 13000)
+        }, 15000)
 
         test("Stripe Payment use customer failure, when Order already paid.", async () => {
             const order: Order = new Order()
@@ -289,7 +288,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation).toBeUndefined()
             await order.delete()
             await orderItem.delete()
-        }, 13000)
+        }, 15000)
 
     })
 
