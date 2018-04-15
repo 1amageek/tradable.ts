@@ -148,6 +148,7 @@ export class Manager
         }
 
         try {
+            order.status = OrderStatus.received
             await Pring.firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
 
@@ -242,6 +243,7 @@ export class Manager
 
         if (order.amount > 0) {
             try {
+                order.status = OrderStatus.paid
                 const result = await this.delegate.pay(order, options)
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
@@ -298,6 +300,7 @@ export class Manager
                 throw error
             }
         } else {
+            order.status = OrderStatus.paid
             batch.set(order.reference, {
                 updateAt: FieldValue.serverTimestamp(),
                 status: OrderStatus.paid
@@ -324,7 +327,7 @@ export class Manager
         if (order.status === OrderStatus.refunded) {
             return
         }
-        if (!(order.status === OrderStatus.paid || order.status === OrderStatus.completed)) {
+        if (!(order.status === OrderStatus.paid || order.status === OrderStatus.transferd)) {
             throw new Error(`[Failure] refund ORDER/${order.id}, Order is not a refundable status.`)
         }
         if (!options.vendorType) {
@@ -336,13 +339,14 @@ export class Manager
 
         if (order.amount > 0) {
             try {
+                order.status = OrderStatus.refunded
                 const result = await this.delegate.refund(order, options)
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
                             const account: Account = new this._Account(order.selledBy, {})
                             await account.fetch()
-                            if (order.status === OrderStatus.completed) {
+                            if (order.status === OrderStatus.transferd) {
                                 const currency: string = order.currency
                                 const net: number = order.net
                                 const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
@@ -395,9 +399,16 @@ export class Manager
                     })
                 })
             } catch (error) {
+                order.status = OrderStatus.waitingForRefund
+                try {
+                    await order.update()
+                } catch (error) {
+                    throw error
+                }
                 throw error
             }
         } else {
+            order.status = OrderStatus.refunded
             batch.set(order.reference, {
                 updateAt: FieldValue.serverTimestamp(),
                 status: OrderStatus.refunded
@@ -409,10 +420,10 @@ export class Manager
     async transfer(order: Order, options: TransferOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
 
         // Skip for 
-        if (order.status === OrderStatus.completed) {
+        if (order.status === OrderStatus.transferd) {
             return
         }
-        if (!(order.status === OrderStatus.paid)) {
+        if (!(order.status === OrderStatus.paid || order.status === OrderStatus.waitingForTransferrd)) {
             throw new Error(`[Failure] transfer ORDER/${order.id}, Order is not a transferable status.`)
         }
         if (!options.vendorType) {
@@ -424,6 +435,7 @@ export class Manager
 
         if (order.amount > 0) {
             try {
+                order.status = OrderStatus.transferd
                 const result = await this.delegate.transfer(order, options)
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
@@ -468,7 +480,7 @@ export class Manager
                                     [options.vendorType]: result
                                 },
                                 transferredTo: { [trans.id]: true },
-                                status: OrderStatus.completed
+                                status: OrderStatus.transferd
                             }, { merge: true })
 
                             resolve(`[Success] transfer ORDER/${order.id}, USER/${order.selledBy}, TRANSACTION/${trans.id}`)
@@ -478,12 +490,19 @@ export class Manager
                     })
                 })
             } catch (error) {
+                order.status = OrderStatus.waitingForTransferrd
+                try {
+                    await order.update()
+                } catch (error) {
+                    throw error
+                }
                 throw error
             }
         } else {
+            order.status = OrderStatus.transferd
             batch.set(order.reference, {
                 updateAt: FieldValue.serverTimestamp(),
-                status: OrderStatus.completed
+                status: OrderStatus.transferd
             }, { merge: true })
             return batch
         }

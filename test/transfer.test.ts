@@ -243,7 +243,7 @@ describe("Tradable", () => {
 
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
-            expect(status).toEqual(Tradable.OrderStatus.completed)
+            expect(status).toEqual(Tradable.OrderStatus.transferd)
             expect(received.paymentInformation['stripe']).not.toBeNull()
             expect(received.transferInformation['stripe']).not.toBeNull()
             const account: Account = await Account.get(order.selledBy, Account)

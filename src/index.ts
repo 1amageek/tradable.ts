@@ -127,17 +127,20 @@ export enum OrderStatus {
     /// Successful inventory processing but payment failed.
     waitingForPayment = 'waitingForPayment',
 
-    /// If payment was made, I failed in refunding.
-    waitingForRefund = 'waitingForRefund',
-
     /// Payment has been refunded.
     refunded = 'refunded',
+
+    /// If payment was made, I failed in refunding.
+    waitingForRefund = 'waitingForRefund',
 
     /// Everything including refunds was canceled. Inventory processing is not canceled
     canceled = 'canceled',
 
     /// It means that a payout has been made to the Account.
-    completed = 'completed'
+    transferd = 'transferd',
+
+    /// This means that the transfer failed.
+    waitingForTransferrd = 'waitingForTransferrd'
 }
 
 export interface OrderItemProtocol extends Pring.Base {
@@ -178,7 +181,7 @@ export type PaymentOptions = {
 }
 
 export enum RefundReason {
-    duplicate = 'duplicate', 
+    duplicate = 'duplicate',
     fraudulent = 'fraudulent',
     requestedByCustomer = 'requested_by_customer'
 }
@@ -205,6 +208,6 @@ export interface PaymentDelegate {
     transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: TransferOptions): Promise<any>
     // payout<U extends TransactionProtocol, T extends AccountProtocol<U>>(account: T, amount: number, currency: Currency): Promise<any>
 
-    
+
 
 }
