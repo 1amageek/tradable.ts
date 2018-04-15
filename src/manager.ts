@@ -76,8 +76,7 @@ export class Manager
                 }
                 throw validationError
             }
-            const firestore = new FirebaseFirestore.Firestore()
-            const _batch = batch || firestore.batch()
+            const _batch = batch || Pring.firestore.batch()
             const __batch = await process(order, _batch)
             if (__batch) {
                 await batch.commit()
