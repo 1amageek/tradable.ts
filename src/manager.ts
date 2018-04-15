@@ -63,7 +63,7 @@ export class Manager
         this._Account = account
     }
 
-    async execute(order: Order, process: Process) {
+    async execute(order: Order, process: Process, batch?: FirebaseFirestore.WriteBatch) {
         try {
             // validation error
             const validationError =  await this.validate(order)
@@ -76,9 +76,10 @@ export class Manager
                 }
                 throw validationError
             }
-            const _batch = Pring.batch()
-            const batch = await process(order, _batch)
-            if (batch) {
+            const firestore = new FirebaseFirestore.Firestore()
+            const _batch = batch || firestore.batch()
+            const __batch = await process(order, _batch)
+            if (__batch) {
                 await batch.commit()
             }
         } catch (error) {

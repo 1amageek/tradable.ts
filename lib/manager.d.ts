@@ -34,7 +34,7 @@ export declare class Manager<SKU extends SKUProtocol, Product extends ProductPro
             [key: string]: any;
         }): Account;
     });
-    execute(order: Order, process: Process): Promise<void>;
+    execute(order: Order, process: Process, batch?: FirebaseFirestore.WriteBatch): Promise<void>;
     private validate(order);
     private validateMinimumAmount(order);
     private validateCurrency(order, orderItems);

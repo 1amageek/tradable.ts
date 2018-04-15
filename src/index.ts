@@ -139,7 +139,7 @@ export enum OrderStatus {
     /// It means that a payout has been made to the Account.
     transferd = 'transferd',
 
-    /// This means that the transfer failed.
+    /// It means that the transfer failed.
     waitingForTransferrd = 'waitingForTransferrd'
 }
 
