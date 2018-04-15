@@ -1,12 +1,10 @@
-import { addListener } from 'cluster';
-import * as Pring from 'pring';
+import * as Pring from 'pring'
 import { Manager } from './manager'
 import { Currency } from './currency'
-import * as FirebaseFirestore from '@google-cloud/firestore';
-import * as admin from 'firebase-admin';
+import * as admin from 'firebase-admin'
 export { Currency, Manager }
 
-export let firestore: FirebaseFirestore.Firestore
+export let firestore: admin.firestore.Firestore
 
 export const initialize = (options?: any) => {
     Pring.initialize(options)
