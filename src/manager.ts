@@ -1,6 +1,7 @@
 import * as Pring from "pring"
 import { FieldValue } from "@google-cloud/firestore"
 import {
+    firestore,
     SKUProtocol,
     OrderItemProtocol,
     ProductProtocol,
@@ -76,7 +77,7 @@ export class Manager
                 }
                 throw validationError
             }
-            const _batch = batch || Pring.firestore.batch()
+            const _batch = batch || firestore.batch()
             const __batch = await process(order, _batch)
             if (__batch) {
                 await batch.commit()
@@ -149,7 +150,7 @@ export class Manager
 
         try {
             order.status = OrderStatus.received
-            await Pring.firestore.runTransaction(async (transaction) => {
+            await firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
 
                     const items: OrderItem[] = await order.items.get(this._OrderItem)
@@ -245,7 +246,7 @@ export class Manager
             try {
                 order.status = OrderStatus.paid
                 const result = await this.delegate.pay(order, options)
-                await Pring.firestore.runTransaction(async (transaction) => {
+                await firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
                             const account: Account = new this._Account(order.selledBy, {})
@@ -341,7 +342,7 @@ export class Manager
             try {
                 order.status = OrderStatus.refunded
                 const result = await this.delegate.refund(order, options)
-                await Pring.firestore.runTransaction(async (transaction) => {
+                await firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
                             const account: Account = new this._Account(order.selledBy, {})
@@ -437,7 +438,7 @@ export class Manager
             try {
                 order.status = OrderStatus.transferd
                 const result = await this.delegate.transfer(order, options)
-                await Pring.firestore.runTransaction(async (transaction) => {
+                await firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
                             const account: Account = new this._Account(order.selledBy, {})

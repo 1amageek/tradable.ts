@@ -22,6 +22,11 @@ Pring.initialize({
     keyFilename: './salada-f825d-firebase-adminsdk-19k25-ded6604978.json'
 })
 
+Tradable.initialize({
+    projectId: 'salada-f825d',
+    keyFilename: './salada-f825d-firebase-adminsdk-19k25-ded6604978.json'
+})
+
 describe("Tradable", () => {
 
     const shop: User = new User()

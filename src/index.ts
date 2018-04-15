@@ -1,9 +1,15 @@
 import * as Pring from "pring"
 import { Manager } from './manager'
 import { Currency } from './currency'
-import { Query } from '@google-cloud/firestore'
+import { Firestore, Query } from '@google-cloud/firestore'
 
 export { Currency, Manager }
+
+export let firestore: Firestore
+
+export const initialize = (options?: any) => {
+    firestore = new Firestore(options)
+}
 
 /// UserProtocol is a protocol that the user must retain to make it tradeable.
 export interface UserProtocol
@@ -191,7 +197,6 @@ export type RefundOptions = {
     reason?: RefundReason
 }
 
-
 export type TransferOptions = {
     vendorType: string
 }
@@ -207,7 +212,5 @@ export interface PaymentDelegate {
     ///
     transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: TransferOptions): Promise<any>
     // payout<U extends TransactionProtocol, T extends AccountProtocol<U>>(account: T, amount: number, currency: Currency): Promise<any>
-
-
 
 }
