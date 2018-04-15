@@ -1,5 +1,5 @@
 import * as Pring from 'pring'
-import * as admin from 'firebase-admin'
+import * as FirebaseFirestore from '@google-cloud/firestore'
 import {
     firestore,
     SKUProtocol,
@@ -169,7 +169,7 @@ export class Manager
                                 }
                                 const newUnitSales = sku.unitSales + quantity
                                 transaction.set(sku.reference, {
-                                    updateAt: admin.firestore.FieldValue.serverTimestamp(),
+                                    updateAt: FirebaseFirestore.FieldValue.serverTimestamp(),
                                     unitSales: newUnitSales
                                 }, { merge: true })
                                 break
@@ -182,7 +182,7 @@ export class Manager
                                     default: {
                                         const newUnitSales = sku.unitSales + quantity
                                         transaction.set(sku.reference, {
-                                            updateAt: admin.firestore.FieldValue.serverTimestamp(),
+                                            updateAt: FirebaseFirestore.FieldValue.serverTimestamp(),
                                             unitSales: newUnitSales
                                         }, { merge: true })
                                         break
@@ -193,7 +193,7 @@ export class Manager
                             case StockType.infinite: {
                                 const newUnitSales = sku.unitSales + quantity
                                 transaction.set(sku.reference, {
-                                    updateAt: admin.firestore.FieldValue.serverTimestamp(),
+                                    updateAt: FirebaseFirestore.FieldValue.serverTimestamp(),
                                     unitSales: newUnitSales
                                 }, { merge: true })
                                 break
@@ -202,7 +202,7 @@ export class Manager
                     }
 
                     transaction.set(order.reference, {
-                        updateAt: admin.firestore.FieldValue.serverTimestamp(),
+                        updateAt: FirebaseFirestore.FieldValue.serverTimestamp(),
                         status: OrderStatus.received
                     }, { merge: true })
                     resolve(`[Success] ORDER/${order.id}, USER/${order.selledBy}`)
@@ -267,7 +267,7 @@ export class Manager
 
                             // set account data
                             transaction.set(account.reference, {
-                                updateAt: admin.firestore.FieldValue.serverTimestamp(),
+                                updateAt: FirebaseFirestore.FieldValue.serverTimestamp(),
                                 revenue: { [currency]: newRevenue },
                                 balance: {
                                     accountsReceivable: { [currency]: newAmount }
@@ -276,7 +276,7 @@ export class Manager
 
                             // set order data
                             transaction.set(order.reference, {
-                                updateAt: admin.firestore.FieldValue.serverTimestamp(),
+                                updateAt: FirebaseFirestore.FieldValue.serverTimestamp(),
                                 paymentInformation: {
                                     [options.vendorType]: result
                                 },
@@ -302,7 +302,7 @@ export class Manager
         } else {
             order.status = OrderStatus.paid
             batch.set(order.reference, {
-                updateAt: admin.firestore.FieldValue.serverTimestamp(),
+                updateAt: FirebaseFirestore.FieldValue.serverTimestamp(),
                 status: OrderStatus.paid
             }, { merge: true })
             return batch
@@ -410,7 +410,7 @@ export class Manager
         } else {
             order.status = OrderStatus.refunded
             batch.set(order.reference, {
-                updateAt: admin.firestore.FieldValue.serverTimestamp(),
+                updateAt: FirebaseFirestore.FieldValue.serverTimestamp(),
                 status: OrderStatus.refunded
             }, { merge: true })
             return batch
@@ -501,7 +501,7 @@ export class Manager
         } else {
             order.status = OrderStatus.transferd
             batch.set(order.reference, {
-                updateAt: admin.firestore.FieldValue.serverTimestamp(),
+                updateAt: FirebaseFirestore.FieldValue.serverTimestamp(),
                 status: OrderStatus.transferd
             }, { merge: true })
             return batch

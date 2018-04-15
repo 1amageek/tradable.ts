@@ -1,10 +1,10 @@
 import * as Pring from 'pring'
+import * as FirebaseFirestore from '@google-cloud/firestore'
 import { Manager } from './manager'
 import { Currency } from './currency'
-import * as admin from 'firebase-admin'
 export { Currency, Manager }
 
-export let firestore: admin.firestore.Firestore
+export let firestore: FirebaseFirestore.Firestore
 
 export const initialize = (options?: any) => {
     Pring.initialize(options)

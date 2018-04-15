@@ -1,3 +1,4 @@
+import * as FirebaseFirestore from '@google-cloud/firestore';
 import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, TransactionProtocol, AccountProtocol, PaymentDelegate, PaymentOptions, RefundOptions, TransferOptions } from "./index";
 export interface Process {
     <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
