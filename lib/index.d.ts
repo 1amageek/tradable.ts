@@ -99,10 +99,11 @@ export declare enum OrderStatus {
     received = "received",
     paid = "paid",
     waitingForPayment = "waitingForPayment",
-    waitingForRefund = "waitingForRefund",
     refunded = "refunded",
+    waitingForRefund = "waitingForRefund",
     canceled = "canceled",
-    completed = "completed",
+    transferd = "transferd",
+    waitingForTransferrd = "waitingForTransferrd",
 }
 export interface OrderItemProtocol extends Pring.Base {
     order: string;
