@@ -1,5 +1,5 @@
 import * as Pring from "pring"
-import { FieldValue } from "@google-cloud/firestore"
+import * as Firestore from "@google-cloud/firestore"
 import {
     firestore,
     SKUProtocol,
@@ -20,13 +20,12 @@ import {
     TransferOptions
 } from "./index"
 
-
 const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
 }
 
 export interface Process {
-    <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>
+    <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, batch: Firestore.WriteBatch): Promise<Firestore.WriteBatch | void>
 }
 
 // 在庫の増減
@@ -64,7 +63,7 @@ export class Manager
         this._Account = account
     }
 
-    async execute(order: Order, process: Process, batch?: FirebaseFirestore.WriteBatch) {
+    async execute(order: Order, process: Process, batch?: Firestore.WriteBatch) {
         try {
             // validation error
             const validationError =  await this.validate(order)
@@ -137,7 +136,7 @@ export class Manager
 
     public delegate?: PaymentDelegate
 
-    async inventoryControl(order: Order, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+    async inventoryControl(order: Order, batch: Firestore.WriteBatch): Promise<Firestore.WriteBatch | void> {
         // Skip
         if (order.status === OrderStatus.received ||
             order.status === OrderStatus.waitingForRefund ||
@@ -170,7 +169,7 @@ export class Manager
                                 }
                                 const newUnitSales = sku.unitSales + quantity
                                 transaction.set(sku.reference, {
-                                    updateAt: FieldValue.serverTimestamp(),
+                                    updateAt: Firestore.FieldValue.serverTimestamp(),
                                     unitSales: newUnitSales
                                 }, { merge: true })
                                 break
@@ -183,7 +182,7 @@ export class Manager
                                     default: {
                                         const newUnitSales = sku.unitSales + quantity
                                         transaction.set(sku.reference, {
-                                            updateAt: FieldValue.serverTimestamp(),
+                                            updateAt: Firestore.FieldValue.serverTimestamp(),
                                             unitSales: newUnitSales
                                         }, { merge: true })
                                         break
@@ -194,7 +193,7 @@ export class Manager
                             case StockType.infinite: {
                                 const newUnitSales = sku.unitSales + quantity
                                 transaction.set(sku.reference, {
-                                    updateAt: FieldValue.serverTimestamp(),
+                                    updateAt: Firestore.FieldValue.serverTimestamp(),
                                     unitSales: newUnitSales
                                 }, { merge: true })
                                 break
@@ -203,7 +202,7 @@ export class Manager
                     }
 
                     transaction.set(order.reference, {
-                        updateAt: FieldValue.serverTimestamp(),
+                        updateAt: Firestore.FieldValue.serverTimestamp(),
                         status: OrderStatus.received
                     }, { merge: true })
                     resolve(`[Success] ORDER/${order.id}, USER/${order.selledBy}`)
@@ -220,7 +219,7 @@ export class Manager
         }
     }
 
-    async pay(order: Order, options: PaymentOptions, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+    async pay(order: Order, options: PaymentOptions, batch: Firestore.WriteBatch): Promise<Firestore.WriteBatch | void> {
 
         // Skip for paid, waitingForRefund, refunded
         if (order.status === OrderStatus.paid ||
@@ -268,7 +267,7 @@ export class Manager
 
                             // set account data
                             transaction.set(account.reference, {
-                                updateAt: FieldValue.serverTimestamp(),
+                                updateAt: Firestore.FieldValue.serverTimestamp(),
                                 revenue: { [currency]: newRevenue },
                                 balance: {
                                     accountsReceivable: { [currency]: newAmount }
@@ -277,7 +276,7 @@ export class Manager
 
                             // set order data
                             transaction.set(order.reference, {
-                                updateAt: FieldValue.serverTimestamp(),
+                                updateAt: Firestore.FieldValue.serverTimestamp(),
                                 paymentInformation: {
                                     [options.vendorType]: result
                                 },
@@ -303,14 +302,14 @@ export class Manager
         } else {
             order.status = OrderStatus.paid
             batch.set(order.reference, {
-                updateAt: FieldValue.serverTimestamp(),
+                updateAt: Firestore.FieldValue.serverTimestamp(),
                 status: OrderStatus.paid
             }, { merge: true })
             return batch
         }
     }
 
-    private async transaction(order: Order, type: TransactionType, currency: Currency, amount: number, batch: FirebaseFirestore.WriteBatch) {
+    private async transaction(order: Order, type: TransactionType, currency: Currency, amount: number, batch: Firestore.WriteBatch) {
         const account: Account = new this._Account(order.selledBy, {})
         const transaction: Transaction = new this._Transaction()
         transaction.amount = amount
@@ -322,7 +321,7 @@ export class Manager
         return batch
     }
 
-    async refund(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+    async refund(order: Order, options: RefundOptions, batch?: Firestore.WriteBatch): Promise<Firestore.WriteBatch | void> {
 
         // Skip for refunded
         if (order.status === OrderStatus.refunded) {
@@ -411,14 +410,14 @@ export class Manager
         } else {
             order.status = OrderStatus.refunded
             batch.set(order.reference, {
-                updateAt: FieldValue.serverTimestamp(),
+                updateAt: Firestore.FieldValue.serverTimestamp(),
                 status: OrderStatus.refunded
             }, { merge: true })
             return batch
         }
     }
 
-    async transfer(order: Order, options: TransferOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+    async transfer(order: Order, options: TransferOptions, batch?: Firestore.WriteBatch): Promise<Firestore.WriteBatch | void> {
 
         // Skip for 
         if (order.status === OrderStatus.transferd) {
@@ -502,14 +501,14 @@ export class Manager
         } else {
             order.status = OrderStatus.transferd
             batch.set(order.reference, {
-                updateAt: FieldValue.serverTimestamp(),
+                updateAt: Firestore.FieldValue.serverTimestamp(),
                 status: OrderStatus.transferd
             }, { merge: true })
             return batch
         }
     }
 
-    // async payout(account: Account, currency: Currency, batch?: FirebaseFirestore.WriteBatch) {
+    // async payout(account: Account, currency: Currency, batch?: Firestore.WriteBatch) {
 
     //     if (!account.isSigned) {
     //         throw new Error(`[Failure] ACCOUNT/${account.id}, This account has not agreed to the terms of service.`)

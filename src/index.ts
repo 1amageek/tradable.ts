@@ -1,14 +1,16 @@
-import * as Pring from "pring"
+import { addListener } from 'cluster';
+import * as Pring from 'pring';
 import { Manager } from './manager'
 import { Currency } from './currency'
-import { Firestore, Query } from '@google-cloud/firestore'
-
+import * as FirebaseFirestore from '@google-cloud/firestore';
+import * as admin from 'firebase-admin';
 export { Currency, Manager }
 
-export let firestore: Firestore
+export let firestore: FirebaseFirestore.Firestore
 
 export const initialize = (options?: any) => {
-    firestore = new Firestore(options)
+    Pring.initialize(options)
+    firestore = Pring.firestore
 }
 
 /// UserProtocol is a protocol that the user must retain to make it tradeable.
@@ -21,10 +23,10 @@ export interface UserProtocol
     > extends Pring.Base {
     isAvailabled: boolean
     country: string
-    products: Query
-    skus: Query
-    orders: Query
-    orderings: Query
+    products: FirebaseFirestore.Query
+    skus: FirebaseFirestore.Query
+    orders: FirebaseFirestore.Query
+    orderings: FirebaseFirestore.Query
 }
 
 export enum TransactionType {

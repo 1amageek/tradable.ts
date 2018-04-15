@@ -1,17 +1,17 @@
-import * as Pring from "pring";
+import * as Pring from 'pring';
 import { Manager } from './manager';
 import { Currency } from './currency';
-import { Firestore, Query } from '@google-cloud/firestore';
+import * as FirebaseFirestore from '@google-cloud/firestore';
 export { Currency, Manager };
-export declare let firestore: Firestore;
+export declare let firestore: FirebaseFirestore.Firestore;
 export declare const initialize: (options?: any) => void;
 export interface UserProtocol<SKU extends SKUProtocol, Product extends ProductProtocol<SKU>, OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>> extends Pring.Base {
     isAvailabled: boolean;
     country: string;
-    products: Query;
-    skus: Query;
-    orders: Query;
-    orderings: Query;
+    products: FirebaseFirestore.Query;
+    skus: FirebaseFirestore.Query;
+    orders: FirebaseFirestore.Query;
+    orderings: FirebaseFirestore.Query;
 }
 export declare enum TransactionType {
     payment = "payment",
