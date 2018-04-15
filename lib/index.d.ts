@@ -1,8 +1,10 @@
 import * as Pring from "pring";
 import { Manager } from './manager';
 import { Currency } from './currency';
-import { Query } from '@google-cloud/firestore';
+import { Firestore, Query } from '@google-cloud/firestore';
 export { Currency, Manager };
+export declare let firestore: Firestore;
+export declare const initialize: (options?: any) => void;
 export interface UserProtocol<SKU extends SKUProtocol, Product extends ProductProtocol<SKU>, OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>> extends Pring.Base {
     isAvailabled: boolean;
     country: string;
