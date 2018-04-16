@@ -25,7 +25,7 @@ export declare enum TransactionType {
 }
 export interface TransactionProtocol extends Pring.Base {
     type: TransactionType;
-    currency: string;
+    currency: Currency;
     amount: number;
     fee: number;
     net: number;

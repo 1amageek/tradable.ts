@@ -443,7 +443,7 @@ export class Manager
                         try {
                             const account: Account = new this._Account(order.selledBy, {})
                             await account.fetch()
-                            const currency: string = order.currency
+                            const currency: Currency = order.currency
                             const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
                             const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
                             const available: { [currency: string]: number } = balance.available

@@ -43,7 +43,7 @@ export enum TransactionType {
 /// Transaction is the history that changed Balance. Tranasaction is made from the ID of the event.
 export interface TransactionProtocol extends Pring.Base {
     type: TransactionType
-    currency: string
+    currency: Currency
     amount: number
     fee: number
     net: number // net = amount - fee
