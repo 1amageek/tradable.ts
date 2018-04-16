@@ -140,9 +140,12 @@ export class Manager
     async inventoryControl(order: Order, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
         // Skip
         if (order.status === OrderStatus.received ||
-            order.status === OrderStatus.waitingForRefund ||
             order.status === OrderStatus.paid ||
             order.status === OrderStatus.waitingForPayment ||
+            order.status === OrderStatus.transferd ||
+            order.status === OrderStatus.waitingForTransferrd ||
+            order.status === OrderStatus.refunded ||
+            order.status === OrderStatus.waitingForRefund ||
             order.status === OrderStatus.canceled
         ) {
             return
@@ -225,7 +228,9 @@ export class Manager
         // Skip for paid, waitingForRefund, refunded
         if (order.status === OrderStatus.paid ||
             order.status === OrderStatus.waitingForRefund ||
-            order.status === OrderStatus.refunded
+            order.status === OrderStatus.refunded ||
+            order.status === OrderStatus.transferd ||
+            order.status === OrderStatus.waitingForTransferrd
         ) {
             return
         }
@@ -249,14 +254,30 @@ export class Manager
                 await firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            const account: Account = new this._Account(order.selledBy, {})
+
+                            const targetOrder: Order = new this._Order(order.id, {})
+                            await targetOrder.fetch()
+
+                            if (targetOrder.status === OrderStatus.paid ||
+                                targetOrder.status === OrderStatus.waitingForRefund ||
+                                targetOrder.status === OrderStatus.refunded ||
+                                targetOrder.status === OrderStatus.transferd ||
+                                targetOrder.status === OrderStatus.waitingForTransferrd
+                            ) {
+                                resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
+                                return
+                            }
+
+                            const account: Account = new this._Account(targetOrder.selledBy, {})
                             await account.fetch()
-                            const amount: number = order.amount
+                            const amount: number = targetOrder.amount
                             const commissionRatio: number = account.commissionRatio
                             const fee: number = amount * commissionRatio
                             const net: number = amount - fee
 
-                            const currency: Currency = order.currency
+                            console.log(`[Tradable] pay currency: ${Currency} amount: ${amount} commissionRatio: ${commissionRatio} fee: ${fee} net: ${net}`)
+
+                            const currency: Currency = targetOrder.currency
                             const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
                             const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
                             const amountOfAccountsReceivable: number = accountsReceivable[currency] || 0
@@ -328,7 +349,7 @@ export class Manager
         if (order.status === OrderStatus.refunded) {
             return
         }
-        if (!(order.status === OrderStatus.paid || order.status === OrderStatus.transferd)) {
+        if (!(order.status === OrderStatus.paid || order.status === OrderStatus.transferd || order.status === OrderStatus.waitingForTransferrd)) {
             throw new Error(`[Failure] refund ORDER/${order.id}, Order is not a refundable status.`)
         }
         if (!options.vendorType) {
@@ -441,15 +462,24 @@ export class Manager
                 await firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            const account: Account = new this._Account(order.selledBy, {})
+
+                            const targetOrder: Order = new this._Order(order.id, {})
+                            await targetOrder.fetch()
+
+                            if (targetOrder.status === OrderStatus.transferd) {
+                                resolve(`[Success] transfer ORDER/${order.id}, USER/${order.selledBy}`)
+                                return
+                            }
+
+                            const account: Account = new this._Account(targetOrder.selledBy, {})
                             await account.fetch()
-                            const currency: Currency = order.currency
+                            const currency: Currency = targetOrder.currency
                             const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
                             const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
                             const available: { [currency: string]: number } = balance.available
-                            const net: number = order.net
-                            const accountsReceivableAmount: number = accountsReceivable[order.currency] || 0
-                            const availableAmount: number = available[order.currency] || 0
+                            const net: number = targetOrder.net
+                            const accountsReceivableAmount: number = accountsReceivable[targetOrder.currency] || 0
+                            const availableAmount: number = available[targetOrder.currency] || 0
                             const newAccountsReceivableAmount: number = accountsReceivableAmount - net
                             const newAvailableAmount: number = availableAmount + net
 
@@ -463,20 +493,20 @@ export class Manager
 
                             // set transaction data
                             const trans: Transaction = new this._Transaction()
-                            trans.amount = order.amount
-                            trans.fee = order.fee
-                            trans.net = order.net
+                            trans.amount = targetOrder.amount
+                            trans.fee = targetOrder.fee
+                            trans.net = targetOrder.net
                             trans.currency = currency
                             trans.type = TransactionType.transfer
                             trans.setParent(account.transactions)
-                            trans.order = order.id
+                            trans.order = targetOrder.id
                             trans.information = {
                                 [options.vendorType]: result
                             }
                             transaction.set(trans.reference, trans.value())
 
                             // set order data
-                            transaction.set(order.reference, {
+                            transaction.set(targetOrder.reference, {
                                 transferInformation: {
                                     [options.vendorType]: result
                                 },
