@@ -23,6 +23,8 @@ const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
 }
 
+console.log("Manager", firestore)
+
 export interface Process {
     <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>
 }
