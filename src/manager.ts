@@ -242,6 +242,7 @@ export class Manager
 
         if (order.amount > 0) {
             try {
+                console.log("Manager pay", firestore)
                 order.status = OrderStatus.paid
                 const result = await this.delegate.pay(order, options)
                 await firestore.runTransaction(async (transaction) => {
