@@ -55,14 +55,12 @@ export class Manager
         transaction: { new(id?: string, value?: { [key: string]: any }): Transaction },
         account: { new(id?: string, value?: { [key: string]: any }): Account },
     ) {
-        console.log("manager const 0", firestore)
         this._SKU = sku
         this._Product = product
         this._OrderItem = orderItem
         this._Order = order
         this._Transaction = transaction
         this._Account = account
-        console.log("manager const 1", firestore)
     }
 
     async execute(order: Order, process: Process, batch?: FirebaseFirestore.WriteBatch) {

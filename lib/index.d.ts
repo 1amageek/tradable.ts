@@ -3,10 +3,10 @@ import * as admin from 'firebase-admin';
 import * as FirebaseFirestore from '@google-cloud/firestore';
 import { Manager } from './manager';
 import { Currency } from './currency';
-import { Man } from './man';
-export { Currency, Manager, Man };
+export { Currency, Manager };
 export declare let firestore: FirebaseFirestore.Firestore;
-export declare const initialize: (app: admin.app.App) => void;
+export declare let timestamp: admin.firestore.FieldValue;
+export declare const initialize: (app: admin.app.App, serverTimestamp: FirebaseFirestore.FieldValue) => void;
 export interface UserProtocol<SKU extends SKUProtocol, Product extends ProductProtocol<SKU>, OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>> extends Pring.Base {
     isAvailabled: boolean;
     country: string;
