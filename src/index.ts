@@ -1,4 +1,5 @@
 import * as Pring from 'pring'
+import * as admin from 'firebase-admin'
 import * as FirebaseFirestore from '@google-cloud/firestore'
 import { Manager } from './manager'
 import { Currency } from './currency'
@@ -6,9 +7,9 @@ export { Currency, Manager }
 
 export let firestore: FirebaseFirestore.Firestore
 
-export const initialize = (options?: any) => {
-    Pring.initialize(options)
-    firestore = Pring.firestore
+export const initialize = (app: admin.app.App) => {
+    Pring.initialize(app)
+    firestore = app.firestore()
 }
 
 /// UserProtocol is a protocol that the user must retain to make it tradeable.

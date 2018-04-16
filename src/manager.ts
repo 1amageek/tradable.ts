@@ -1,4 +1,3 @@
-import * as Pring from 'pring'
 import * as FirebaseFirestore from '@google-cloud/firestore'
 import {
     firestore,
@@ -307,18 +306,6 @@ export class Manager
             }, { merge: true })
             return batch
         }
-    }
-
-    private async transaction(order: Order, type: TransactionType, currency: Currency, amount: number, batch: FirebaseFirestore.WriteBatch) {
-        const account: Account = new this._Account(order.selledBy, {})
-        const transaction: Transaction = new this._Transaction()
-        transaction.amount = amount
-        transaction.currency = currency
-        transaction.type = type
-        transaction.setParent(account.transactions)
-        transaction.order = order.id
-        batch.set(transaction.reference, transaction.value())
-        return batch
     }
 
     async refund(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {

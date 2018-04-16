@@ -1,5 +1,5 @@
 process.env.NODE_ENV = 'test';
-
+import * as admin from 'firebase-admin'
 import * as Pring from 'pring'
 import * as Tradable from '../src/index'
 import * as UUID from 'uuid'
@@ -18,15 +18,10 @@ jest.setTimeout(10000)
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
-Pring.initialize({
+Tradable.initialize(admin.initializeApp({
     projectId: 'salada-f825d',
     keyFilename: './salada-f825d-firebase-adminsdk-19k25-ded6604978.json'
-})
-
-Tradable.initialize({
-    projectId: 'salada-f825d',
-    keyFilename: './salada-f825d-firebase-adminsdk-19k25-ded6604978.json'
-})
+}))
 
 describe("Tradable", () => {
 
