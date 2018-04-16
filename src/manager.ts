@@ -1,3 +1,4 @@
+import * as Pring from 'pring'
 import * as FirebaseFirestore from '@google-cloud/firestore'
 import {
     firestore,
@@ -22,8 +23,6 @@ import {
 const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
 }
-
-console.log("Manager", firestore)
 
 export interface Process {
     <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>
@@ -56,12 +55,14 @@ export class Manager
         transaction: { new(id?: string, value?: { [key: string]: any }): Transaction },
         account: { new(id?: string, value?: { [key: string]: any }): Account },
     ) {
+        console.log("manager const 0", firestore)
         this._SKU = sku
         this._Product = product
         this._OrderItem = orderItem
         this._Order = order
         this._Transaction = transaction
         this._Account = account
+        console.log("manager const 1", firestore)
     }
 
     async execute(order: Order, process: Process, batch?: FirebaseFirestore.WriteBatch) {
@@ -244,7 +245,6 @@ export class Manager
 
         if (order.amount > 0) {
             try {
-                console.log("Manager pay", firestore)
                 order.status = OrderStatus.paid
                 const result = await this.delegate.pay(order, options)
                 await firestore.runTransaction(async (transaction) => {
@@ -309,6 +309,18 @@ export class Manager
             }, { merge: true })
             return batch
         }
+    }
+
+    private async transaction(order: Order, type: TransactionType, currency: Currency, amount: number, batch: FirebaseFirestore.WriteBatch) {
+        const account: Account = new this._Account(order.selledBy, {})
+        const transaction: Transaction = new this._Transaction()
+        transaction.amount = amount
+        transaction.currency = currency
+        transaction.type = type
+        transaction.setParent(account.transactions)
+        transaction.order = order.id
+        batch.set(transaction.reference, transaction.value())
+        return batch
     }
 
     async refund(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {

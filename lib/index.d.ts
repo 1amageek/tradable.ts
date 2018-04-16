@@ -3,7 +3,8 @@ import * as admin from 'firebase-admin';
 import * as FirebaseFirestore from '@google-cloud/firestore';
 import { Manager } from './manager';
 import { Currency } from './currency';
-export { Currency, Manager };
+import { Man } from './man';
+export { Currency, Manager, Man };
 export declare let firestore: FirebaseFirestore.Firestore;
 export declare const initialize: (app: admin.app.App) => void;
 export interface UserProtocol<SKU extends SKUProtocol, Product extends ProductProtocol<SKU>, OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>> extends Pring.Base {
