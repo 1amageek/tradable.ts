@@ -47,31 +47,31 @@ describe("Tradable", () => {
         product.createdBy = shop.id
         product.selledBy = shop.id
 
-        jpySKU.name = "InfiniteJPYSKU"
+        jpySKU.title = "InfiniteJPYSKU"
         jpySKU.selledBy = shop.id
         jpySKU.createdBy = shop.id
         jpySKU.product = product.id
-        jpySKU.price = 500
+        jpySKU.amount = 500
         jpySKU.currency = Tradable.Currency.JPY
         jpySKU.inventory = {
             type: Tradable.StockType.infinite
         }
 
-        usdSKU.name = "InfiniteUSDSKU"
+        usdSKU.title = "InfiniteUSDSKU"
         usdSKU.selledBy = shop.id
         usdSKU.createdBy = shop.id
         usdSKU.product = product.id
-        usdSKU.price = 50
+        usdSKU.amount = 50
         usdSKU.currency = Tradable.Currency.USD
         usdSKU.inventory = {
             type: Tradable.StockType.infinite
         }
 
-        failureSKU.name = "InfiniteFailSKU"
+        failureSKU.title = "InfiniteFailSKU"
         failureSKU.selledBy = shop.id
         failureSKU.createdBy = shop.id
         failureSKU.product = product.id
-        failureSKU.price = 1
+        failureSKU.amount = 1
         failureSKU.currency = Tradable.Currency.USD
         failureSKU.inventory = {
             type: Tradable.StockType.infinite
@@ -96,10 +96,10 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.sku = jpySKU.id
             orderItem.currency = jpySKU.currency
-            orderItem.amount = jpySKU.price
+            orderItem.amount = jpySKU.amount
             orderItem.quantity = 1
 
-            order.amount = jpySKU.price
+            order.amount = jpySKU.amount
             order.currency = jpySKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
@@ -124,7 +124,7 @@ describe("Tradable", () => {
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
             const account: Account = await Account.get(order.selledBy, Account)
-            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.price * (1 - 0.1))
+            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.amount * (1 - 0.1))
             
             await order.delete()
             await orderItem.delete()
@@ -143,10 +143,10 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.sku = jpySKU.id
             orderItem.currency = jpySKU.currency
-            orderItem.amount = jpySKU.price
+            orderItem.amount = jpySKU.amount
             orderItem.quantity = 1
 
-            order.amount = jpySKU.price
+            order.amount = jpySKU.amount
             order.currency = jpySKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
@@ -171,7 +171,7 @@ describe("Tradable", () => {
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
             const account: Account = await Account.get(order.selledBy, Account)
-            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.price * (1 - 0.1) * 2)
+            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.amount * (1 - 0.1) * 2)
             
             await order.delete()
             await orderItem.delete()
@@ -190,10 +190,10 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.sku = usdSKU.id
             orderItem.currency = usdSKU.currency
-            orderItem.amount = usdSKU.price
+            orderItem.amount = usdSKU.amount
             orderItem.quantity = 1
 
-            order.amount = usdSKU.price
+            order.amount = usdSKU.amount
             order.currency = usdSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
@@ -219,7 +219,7 @@ describe("Tradable", () => {
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
             const account: Account = await Account.get(order.selledBy, Account)
-            expect(account.balance['accountsReceivable'][Tradable.Currency.USD]).toEqual(usdSKU.price * (1 - 0.1))
+            expect(account.balance['accountsReceivable'][Tradable.Currency.USD]).toEqual(usdSKU.amount * (1 - 0.1))
             
             await order.delete()
             await orderItem.delete()
@@ -238,10 +238,10 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.sku = failureSKU.id
             orderItem.currency = failureSKU.currency
-            orderItem.amount = failureSKU.price
+            orderItem.amount = failureSKU.amount
             orderItem.quantity = 1
 
-            order.amount = failureSKU.price
+            order.amount = failureSKU.amount
             order.currency = failureSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
@@ -266,8 +266,8 @@ describe("Tradable", () => {
             expect(status).toEqual(Tradable.OrderStatus.rejected)
             expect(received.paymentInformation).toBeUndefined()
             const account: Account = await Account.get(order.selledBy, Account)
-            expect(account.balance['accountsReceivable'][Tradable.Currency.USD]).toEqual(usdSKU.price * (1 - 0.1))
-            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.price * 2 * (1 - 0.1))
+            expect(account.balance['accountsReceivable'][Tradable.Currency.USD]).toEqual(usdSKU.amount * (1 - 0.1))
+            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.amount * 2 * (1 - 0.1))
             
             await order.delete()
             await orderItem.delete()

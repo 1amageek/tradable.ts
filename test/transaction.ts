@@ -6,7 +6,7 @@ const property = Pring.property
 
 export class Transaction extends Pring.Base implements tradable.TransactionProtocol {
     @property type: tradable.TransactionType
-    @property currency: string
+    @property currency: tradable.Currency
     @property amount: number
     @property fee: number
     @property net: number 

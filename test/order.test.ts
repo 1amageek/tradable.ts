@@ -37,21 +37,21 @@ describe("Tradable", () => {
         product.createdBy = shop.id
         product.selledBy = shop.id
 
-        jpySKU.name = "InfiniteJPYSKU"
+        jpySKU.title = "InfiniteJPYSKU"
         jpySKU.selledBy = shop.id
         jpySKU.createdBy = shop.id
         jpySKU.product = product.id
-        jpySKU.price = 500
+        jpySKU.amount = 500
         jpySKU.currency = Tradable.Currency.JPY
         jpySKU.inventory = {
             type: Tradable.StockType.infinite
         }
 
-        usdSKU.name = "InfiniteUSDSKU"
+        usdSKU.title = "InfiniteUSDSKU"
         usdSKU.selledBy = shop.id
         usdSKU.createdBy = shop.id
         usdSKU.product = product.id
-        usdSKU.price = 5
+        usdSKU.amount = 5
         usdSKU.currency = Tradable.Currency.USD
         usdSKU.inventory = {
             type: Tradable.StockType.infinite
@@ -76,7 +76,7 @@ describe("Tradable", () => {
             jpyOrderItem.selledBy = shop.id
             jpyOrderItem.buyer = user.id
             jpyOrderItem.sku = jpySKU.id
-            jpyOrderItem.amount = jpySKU.price
+            jpyOrderItem.amount = jpySKU.amount
             jpyOrderItem.currency = jpySKU.currency
             jpyOrderItem.quantity = 1
 
@@ -85,7 +85,7 @@ describe("Tradable", () => {
             usdOrderItem.selledBy = shop.id
             usdOrderItem.buyer = user.id
             usdOrderItem.sku = usdOrderItem.id
-            usdOrderItem.amount = usdSKU.price
+            usdOrderItem.amount = usdSKU.amount
             usdOrderItem.currency = usdSKU.currency
             usdOrderItem.quantity = 1
 
@@ -126,7 +126,7 @@ describe("Tradable", () => {
             orderItem0.selledBy = shop.id
             orderItem0.buyer = user.id
             orderItem0.sku = jpySKU.id
-            orderItem0.amount = jpySKU.price
+            orderItem0.amount = jpySKU.amount
             orderItem0.currency = jpySKU.currency
             orderItem0.quantity = 1
 
@@ -135,7 +135,7 @@ describe("Tradable", () => {
             orderItem1.selledBy = shop.id
             orderItem1.buyer = user.id
             orderItem1.sku = jpySKU.id
-            orderItem1.amount = jpySKU.price
+            orderItem1.amount = jpySKU.amount
             orderItem1.currency = jpySKU.currency
             orderItem1.quantity = 1
 
@@ -176,11 +176,11 @@ describe("Tradable", () => {
             orderItem.selledBy = shop.id
             orderItem.buyer = user.id
             orderItem.sku = usdSKU.id
-            orderItem.amount = usdSKU.price
+            orderItem.amount = usdSKU.amount
             orderItem.currency = usdSKU.currency
             orderItem.quantity = 1
 
-            order.amount = usdSKU.price
+            order.amount = usdSKU.amount
             order.currency = usdSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id

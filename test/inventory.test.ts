@@ -35,9 +35,9 @@ describe("Tradable", () => {
         product.createdBy = shop.id
         product.selledBy = shop.id
 
-        finiteSKU.name = "FiniteSKU"
+        finiteSKU.title = "FiniteSKU"
         finiteSKU.currency = Tradable.Currency.JPY
-        finiteSKU.price = 100
+        finiteSKU.amount = 100
         finiteSKU.unitSales = 0
         finiteSKU.selledBy = shop.id
         finiteSKU.createdBy = shop.id
@@ -47,17 +47,17 @@ describe("Tradable", () => {
             quantity: 2
         }
 
-        finiteSKUFailure.name = "FiniteSKU failure"
+        finiteSKUFailure.title = "FiniteSKU failure"
         finiteSKUFailure.currency = Tradable.Currency.JPY
-        finiteSKUFailure.price = 100
+        finiteSKUFailure.amount = 100
         finiteSKUFailure.unitSales = 0
         finiteSKUFailure.selledBy = shop.id
         finiteSKUFailure.createdBy = shop.id
         finiteSKUFailure.product = product.id
 
-        infiniteSKU.name = "InfiniteSKU"
+        infiniteSKU.title = "InfiniteSKU"
         infiniteSKU.currency = Tradable.Currency.JPY
-        infiniteSKU.price = 100
+        infiniteSKU.amount = 100
         infiniteSKU.unitSales = 0
         infiniteSKU.selledBy = shop.id
         infiniteSKU.createdBy = shop.id
@@ -66,9 +66,9 @@ describe("Tradable", () => {
             type: Tradable.StockType.infinite
         }
 
-        inStockSKU.name = "InStockSKU"
+        inStockSKU.title = "InStockSKU"
         inStockSKU.currency = Tradable.Currency.JPY
-        inStockSKU.price = 100
+        inStockSKU.amount = 100
         inStockSKU.unitSales = 0
         inStockSKU.selledBy = shop.id
         inStockSKU.createdBy = shop.id
@@ -78,9 +78,9 @@ describe("Tradable", () => {
             value: Tradable.StockValue.inStock
         }
 
-        limitedSKU.name = "LimitedSKU"
+        limitedSKU.title = "LimitedSKU"
         limitedSKU.currency = Tradable.Currency.JPY
-        limitedSKU.price = 100
+        limitedSKU.amount = 100
         limitedSKU.unitSales = 0
         limitedSKU.selledBy = shop.id
         limitedSKU.createdBy = shop.id
@@ -90,9 +90,9 @@ describe("Tradable", () => {
             value: Tradable.StockValue.limited
         }
 
-        outOfStockSKU.name = "OutOfStockSKU"
+        outOfStockSKU.title = "OutOfStockSKU"
         outOfStockSKU.currency = Tradable.Currency.JPY
-        outOfStockSKU.price = 100
+        outOfStockSKU.amount = 100
         outOfStockSKU.unitSales = 0
         outOfStockSKU.selledBy = shop.id
         outOfStockSKU.createdBy = shop.id
@@ -127,11 +127,11 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.product = product.id
             orderItem.sku = finiteSKU.id
-            orderItem.amount = finiteSKU.price
+            orderItem.amount = finiteSKU.amount
             orderItem.currency = finiteSKU.currency
             orderItem.quantity = 2
 
-            order.amount = finiteSKU.price * 2
+            order.amount = finiteSKU.amount * 2
             order.currency = finiteSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
@@ -174,11 +174,11 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.product = product.id
             orderItem.sku = finiteSKUFailure.id
-            orderItem.amount = finiteSKUFailure.price
+            orderItem.amount = finiteSKUFailure.amount
             orderItem.currency = finiteSKUFailure.currency
             orderItem.quantity = 2
 
-            order.amount = finiteSKUFailure.price
+            order.amount = finiteSKUFailure.amount
             order.currency = finiteSKUFailure.currency
             order.selledBy = shop.id
             order.buyer = user.id
@@ -221,11 +221,11 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.product = product.id
             orderItem.sku = infiniteSKU.id
-            orderItem.amount = infiniteSKU.price
+            orderItem.amount = infiniteSKU.amount
             orderItem.currency = infiniteSKU.currency
             orderItem.quantity = 1
 
-            order.amount = infiniteSKU.price
+            order.amount = infiniteSKU.amount
             order.currency = infiniteSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
@@ -268,11 +268,11 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.product = product.id
             orderItem.sku = inStockSKU.id
-            orderItem.amount = inStockSKU.price
+            orderItem.amount = inStockSKU.amount
             orderItem.currency = inStockSKU.currency
             orderItem.quantity = 1
 
-            order.amount = inStockSKU.price
+            order.amount = inStockSKU.amount
             order.currency = inStockSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
@@ -316,11 +316,11 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.product = product.id
             orderItem.sku = limitedSKU.id
-            orderItem.amount = limitedSKU.price
+            orderItem.amount = limitedSKU.amount
             orderItem.currency = limitedSKU.currency
             orderItem.quantity = 1
 
-            order.amount = limitedSKU.price
+            order.amount = limitedSKU.amount
             order.currency = limitedSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
@@ -363,11 +363,11 @@ describe("Tradable", () => {
             orderItem.buyer = user.id
             orderItem.product = product.id
             orderItem.sku = outOfStockSKU.id
-            orderItem.amount = outOfStockSKU.price
+            orderItem.amount = outOfStockSKU.amount
             orderItem.currency = outOfStockSKU.currency
             orderItem.quantity = 1
 
-            order.amount = outOfStockSKU.price
+            order.amount = outOfStockSKU.amount
             order.currency = outOfStockSKU.currency
             order.selledBy = shop.id
             order.buyer = user.id
