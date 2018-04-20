@@ -84,8 +84,7 @@ export interface SKUProtocol extends Pring.Base {
     createdBy: string;
     currency: Currency;
     product: string;
-    name: string;
-    price: number;
+    amount: number;
     inventory: Inventory;
     unitSales: number;
     isPublished: boolean;
