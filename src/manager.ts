@@ -80,7 +80,7 @@ export class Manager
             const _batch = batch || firestore.batch()
             const __batch = await process(order, _batch)
             if (__batch) {
-                await batch.commit()
+                await __batch.commit()
             }
         } catch (error) {
             throw error
@@ -555,7 +555,7 @@ export class Manager
 
     // }
 
-    async complete(order: Order, options: TransferOptions, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+    async complete(order: Order, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
         if (order.status === OrderStatus.completed) {
             return
         }
