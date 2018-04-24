@@ -10,4 +10,7 @@ export class Product extends Pring.Base implements tradable.ProductProtocol<SKU>
     @property selledBy: string
     @property createdBy: string
     @property skus: Pring.NestedCollection<SKU> = new Pring.NestedCollection(this)
+    @property isPublished: boolean
+    @property isActived: boolean
+    @property isPrivated: boolean
 }
