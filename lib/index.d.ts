@@ -87,8 +87,6 @@ export interface SKUProtocol extends Pring.Base {
     amount: number;
     inventory: Inventory;
     unitSales: number;
-    isPublished: boolean;
-    isActive: boolean;
 }
 export declare enum OrderItemType {
     sku = "sku",
