@@ -257,9 +257,8 @@ export class Manager
                 await firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-
                             const targetOrder: Order = new this._Order(order.id, {})
-                            await targetOrder.fetch()
+                            await targetOrder.fetch(transaction)
 
                             if (targetOrder.status === OrderStatus.paid ||
                                 targetOrder.status === OrderStatus.waitingForRefund ||
@@ -272,7 +271,7 @@ export class Manager
                             }
 
                             const account: Account = new this._Account(targetOrder.selledBy, {})
-                            await account.fetch()
+                            await account.fetch(transaction)
                             const amount: number = targetOrder.amount
                             const commissionRatio: number = account.commissionRatio
                             const fee: number = amount * commissionRatio
@@ -311,7 +310,8 @@ export class Manager
                             }, { merge: true })
                             resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
                         } catch (error) {
-                            reject(`[Failure] pay ORDER/${order.id}, Account could not be fetched.`)
+                            let _error = new OrderError(order, error.message, error.stack)
+                            reject(_error)
                         }
                     })
                 })
@@ -370,7 +370,7 @@ export class Manager
                     return new Promise(async (resolve, reject) => {
                         try {
                             const account: Account = new this._Account(order.selledBy, {})
-                            await account.fetch()
+                            await account.fetch(transaction)
                             if (order.status === OrderStatus.transferred) {
                                 const currency: string = order.currency
                                 const net: number = order.net
@@ -419,7 +419,8 @@ export class Manager
                             }
                             resolve(`[Success] refund ORDER/${order.id}, USER/${order.selledBy}`)
                         } catch (error) {
-                            reject(`[Failure] refund ORDER/${order.id}, Account could not be fetched.`)
+                            let _error = new OrderError(order, error.message, error.stack)
+                            reject(_error)
                         }
                     })
                 })
@@ -467,7 +468,7 @@ export class Manager
                         try {
 
                             const targetOrder: Order = new this._Order(order.id, {})
-                            await targetOrder.fetch()
+                            await targetOrder.fetch(transaction)
 
                             if (targetOrder.status === OrderStatus.transferred) {
                                 resolve(`[Success] transfer ORDER/${order.id}, USER/${order.selledBy}`)
@@ -475,7 +476,7 @@ export class Manager
                             }
 
                             const account: Account = new this._Account(targetOrder.selledBy, {})
-                            await account.fetch()
+                            await account.fetch(transaction)
                             const currency: Currency = targetOrder.currency
                             const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
                             const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
@@ -519,7 +520,8 @@ export class Manager
 
                             resolve(`[Success] transfer ORDER/${order.id}, USER/${order.selledBy}, TRANSACTION/${trans.id}`)
                         } catch (error) {
-                            reject(`[Failure] transfer ORDER/${order.id}, Account could not be fetched.`)
+                            let _error = new OrderError(order, error.message, error.stack)
+                            reject(_error)
                         }
                     })
                 })

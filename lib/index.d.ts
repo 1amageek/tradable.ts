@@ -168,3 +168,10 @@ export interface PaymentDelegate {
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>;
     transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: TransferOptions): Promise<any>;
 }
+export declare class OrderError<T extends OrderItemProtocol, U extends OrderProtocol<T>> implements Error {
+    name: string;
+    message: string;
+    stack?: string;
+    order: U;
+    constructor(order: U, message: string, stack?: string);
+}
