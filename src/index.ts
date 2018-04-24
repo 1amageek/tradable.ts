@@ -146,10 +146,13 @@ export enum OrderStatus {
     canceled = 'canceled',
 
     /// It means that a payout has been made to the Account.
-    transferd = 'transferd',
+    transferred = 'transferred',
 
     /// It means that the transfer failed.
-    waitingForTransferrd = 'waitingForTransferrd'
+    waitingForTransferrd = 'waitingForTransferrd',
+
+    /// Completed
+    completed = 'completed'
 }
 
 export interface OrderItemProtocol extends Pring.Base {

@@ -67,7 +67,7 @@ export class Manager
     async execute(order: Order, process: Process, batch?: FirebaseFirestore.WriteBatch) {
         try {
             // validation error
-            const validationError =  await this.validate(order)
+            const validationError = await this.validate(order)
             if (validationError) {
                 order.status = OrderStatus.rejected
                 try {
@@ -142,7 +142,7 @@ export class Manager
         if (order.status === OrderStatus.received ||
             order.status === OrderStatus.paid ||
             order.status === OrderStatus.waitingForPayment ||
-            order.status === OrderStatus.transferd ||
+            order.status === OrderStatus.transferred ||
             order.status === OrderStatus.waitingForTransferrd ||
             order.status === OrderStatus.refunded ||
             order.status === OrderStatus.waitingForRefund ||
@@ -229,7 +229,7 @@ export class Manager
         if (order.status === OrderStatus.paid ||
             order.status === OrderStatus.waitingForRefund ||
             order.status === OrderStatus.refunded ||
-            order.status === OrderStatus.transferd ||
+            order.status === OrderStatus.transferred ||
             order.status === OrderStatus.waitingForTransferrd
         ) {
             return
@@ -261,7 +261,7 @@ export class Manager
                             if (targetOrder.status === OrderStatus.paid ||
                                 targetOrder.status === OrderStatus.waitingForRefund ||
                                 targetOrder.status === OrderStatus.refunded ||
-                                targetOrder.status === OrderStatus.transferd ||
+                                targetOrder.status === OrderStatus.transferred ||
                                 targetOrder.status === OrderStatus.waitingForTransferrd
                             ) {
                                 resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
@@ -349,7 +349,7 @@ export class Manager
         if (order.status === OrderStatus.refunded) {
             return
         }
-        if (!(order.status === OrderStatus.paid || order.status === OrderStatus.transferd || order.status === OrderStatus.waitingForTransferrd)) {
+        if (!(order.status === OrderStatus.paid || order.status === OrderStatus.transferred || order.status === OrderStatus.waitingForTransferrd)) {
             throw new Error(`[Failure] refund ORDER/${order.id}, Order is not a refundable status.`)
         }
         if (!options.vendorType) {
@@ -368,7 +368,7 @@ export class Manager
                         try {
                             const account: Account = new this._Account(order.selledBy, {})
                             await account.fetch()
-                            if (order.status === OrderStatus.transferd) {
+                            if (order.status === OrderStatus.transferred) {
                                 const currency: string = order.currency
                                 const net: number = order.net
                                 const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
@@ -442,7 +442,7 @@ export class Manager
     async transfer(order: Order, options: TransferOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
 
         // Skip for 
-        if (order.status === OrderStatus.transferd) {
+        if (order.status === OrderStatus.transferred) {
             return
         }
         if (!(order.status === OrderStatus.paid || order.status === OrderStatus.waitingForTransferrd)) {
@@ -457,7 +457,7 @@ export class Manager
 
         if (order.amount > 0) {
             try {
-                order.status = OrderStatus.transferd
+                order.status = OrderStatus.transferred
                 const result = await this.delegate.transfer(order, options)
                 await firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
@@ -466,7 +466,7 @@ export class Manager
                             const targetOrder: Order = new this._Order(order.id, {})
                             await targetOrder.fetch()
 
-                            if (targetOrder.status === OrderStatus.transferd) {
+                            if (targetOrder.status === OrderStatus.transferred) {
                                 resolve(`[Success] transfer ORDER/${order.id}, USER/${order.selledBy}`)
                                 return
                             }
@@ -511,7 +511,7 @@ export class Manager
                                     [options.vendorType]: result
                                 },
                                 transferredTo: { [trans.id]: true },
-                                status: OrderStatus.transferd
+                                status: OrderStatus.transferred
                             }, { merge: true })
 
                             resolve(`[Success] transfer ORDER/${order.id}, USER/${order.selledBy}, TRANSACTION/${trans.id}`)
@@ -530,10 +530,10 @@ export class Manager
                 throw error
             }
         } else {
-            order.status = OrderStatus.transferd
+            order.status = OrderStatus.transferred
             batch.set(order.reference, {
                 updateAt: timestamp,
-                status: OrderStatus.transferd
+                status: OrderStatus.transferred
             }, { merge: true })
             return batch
         }
@@ -554,4 +554,15 @@ export class Manager
     //     }
 
     // }
+
+    async complete(order: Order, options: TransferOptions, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+        if (order.status === OrderStatus.completed) {
+            return
+        }
+        batch.set(order.reference, {
+            updateAt: timestamp,
+            status: OrderStatus.completed
+        }, { merge: true })
+        return batch
+    }
 }
