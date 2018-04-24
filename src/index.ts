@@ -218,3 +218,17 @@ export interface PaymentDelegate {
     // payout<U extends TransactionProtocol, T extends AccountProtocol<U>>(account: T, amount: number, currency: Currency): Promise<any>
 
 }
+
+export class OrderError<T extends OrderItemProtocol, U extends OrderProtocol<T>> implements Error {
+    name: string
+    message: string
+    stack?: string
+    order: U
+
+    constructor(order: U, message: string, stack?: string) {
+        this.name = 'tradable.error'
+        this.order = order
+        this.message = message
+        this.stack = stack || new Error().stack
+    }
+}
