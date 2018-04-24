@@ -17,10 +17,11 @@ import { onRequest } from 'firebase-functions/lib/providers/https';
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
-Tradable.initialize(admin.initializeApp({
-    projectId: 'salada-f825d',
-    keyFilename: './salada-f825d-firebase-adminsdk-19k25-ded6604978.json'
-}), admin.firestore.FieldValue.serverTimestamp())
+var key = require("../salada-f825d-firebase-adminsdk-19k25-ded6604978.json")
+const app = admin.initializeApp({
+    credential: admin.credential.cert(key)
+})
+Tradable.initialize(app, admin.firestore.FieldValue.serverTimestamp())
 
 describe("Tradable", () => {
 
