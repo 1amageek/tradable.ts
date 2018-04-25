@@ -168,10 +168,21 @@ export interface PaymentDelegate {
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>;
     transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: TransferOptions): Promise<any>;
 }
-export declare class OrderError<T extends OrderItemProtocol, U extends OrderProtocol<T>> implements Error {
+export declare enum TradableErrorCode {
+    invalidArgument = "invalidArgument",
+    lessMinimumAmount = "lessMinimumAmount",
+    invalidCurrency = "invalidCurrency",
+    invalidAmount = "invalidAmount",
+    outOfStock = "outOfStock",
+    invalidStatus = "invalidStatus",
+    internal = "internal",
+}
+export declare class TradableError<T extends OrderItemProtocol, U extends OrderProtocol<T>> implements Error {
     name: string;
     message: string;
     stack?: string;
-    order: U;
-    constructor(order: U, message: string, stack?: string);
+    info: {
+        [key: string]: any;
+    };
+    constructor(code: TradableErrorCode, order: U, message: string, stack?: string);
 }
