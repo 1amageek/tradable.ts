@@ -219,15 +219,30 @@ export interface PaymentDelegate {
 
 }
 
-export class OrderError<T extends OrderItemProtocol, U extends OrderProtocol<T>> implements Error {
+export enum TradableErrorCode {
+    invalidArgument = 'invalidArgument',
+    lessMinimumAmount = 'lessMinimumAmount',
+    invalidCurrency = 'invalidCurrency',
+    invalidAmount = 'invalidAmount',
+    outOfStock = 'outOfStock',
+    invalidStatus = 'invalidStatus',
+    internal = 'internal'
+}
+
+export class TradableError<T extends OrderItemProtocol, U extends OrderProtocol<T>> implements Error {
     name: string
     message: string
     stack?: string
-    order: U
+    info: { [key: string]: any }
 
-    constructor(order: U, message: string, stack?: string) {
+    constructor(code: TradableErrorCode, order: U, message: string, stack?: string) {
         this.name = 'tradable.error'
-        this.order = order
+        this.info = { 
+            code: code,
+            order: {
+                [order.id]: order.value() 
+            }
+        }
         this.message = message
         this.stack = stack || new Error().stack
     }

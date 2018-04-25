@@ -19,7 +19,8 @@ import {
     TransactionType,
     Balance,
     TransferOptions,
-    OrderError
+    TradableErrorCode,
+    TradableError
 } from "./index"
 
 const isUndefined = (value: any): boolean => {
@@ -89,16 +90,16 @@ export class Manager
     }
 
     private async validate(order: Order) {
-        if (isUndefined(order.buyer)) return new OrderError(order, `[Tradable] Error: validation error, buyer is required`)
-        if (isUndefined(order.selledBy)) return new OrderError(order, `[Tradable] Error: validation error, selledBy is required`)
-        if (isUndefined(order.expirationDate)) return new OrderError(order, `[Tradable] Error: validation error, expirationDate is required`)
-        if (isUndefined(order.currency)) return new OrderError(order, `[Tradable] Error: validation error, currency is required`)
-        if (isUndefined(order.amount)) return new OrderError(order, `[Tradable] Error: validation error, amount is required`)
-        if (!this.validateMinimumAmount(order)) return new OrderError(order, `[Tradable] Error: validation error, Amount is below the lower limit.`)
+        if (isUndefined(order.buyer)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, buyer is required`)
+        if (isUndefined(order.selledBy)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, selledBy is required`)
+        if (isUndefined(order.expirationDate)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, expirationDate is required`)
+        if (isUndefined(order.currency)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, currency is required`)
+        if (isUndefined(order.amount)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, amount is required`)
+        if (!this.validateMinimumAmount(order)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, Amount is below the lower limit.`)
         try {
             const items: OrderItem[] = await order.items.get(this._OrderItem)
-            if (!this.validateCurrency(order, items)) return new OrderError(order, `[Tradable] Error: validation error, Currency of OrderItem does not match Currency of Order.`)
-            if (!this.validateAmount(order, items)) return new OrderError(order, `[Tradable] Error: validation error, The sum of OrderItem does not match Amount of Order.`)
+            if (!this.validateCurrency(order, items)) return new TradableError(TradableErrorCode.invalidCurrency, order, `[Tradable] Error: validation error, Currency of OrderItem does not match Currency of Order.`)
+            if (!this.validateAmount(order, items)) return new TradableError(TradableErrorCode.invalidAmount, order, `[Tradable] Error: validation error, The sum of OrderItem does not match Amount of Order.`)
         } catch (error) {
             return error
         }
@@ -170,7 +171,7 @@ export class Manager
                             case StockType.finite: {
                                 const remaining: number = sku.inventory.quantity - (sku.unitSales + quantity)
                                 if (remaining < 0) {
-                                    const error = new OrderError(order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
+                                    const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                                     reject(error)
                                 }
                                 const newUnitSales = sku.unitSales + quantity
@@ -183,7 +184,7 @@ export class Manager
                             case StockType.bucket: {
                                 switch (sku.inventory.value) {
                                     case StockValue.outOfStock: {
-                                        const error = new OrderError(order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
+                                        const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                                         reject(error)
                                     }
                                     default: {
@@ -238,16 +239,16 @@ export class Manager
             return
         }
         if (!(order.status === OrderStatus.received || order.status === OrderStatus.waitingForPayment)) {
-            throw new OrderError(order, `[Failure] pay ORDER/${order.id}, Order is not a payable status.`)
+            throw new TradableError(TradableErrorCode.invalidStatus, order, `[Failure] pay ORDER/${order.id}, Order is not a payable status.`)
         }
         if (!options.customer && !options.source) {
-            throw new OrderError(order, `[Failure] pay ORDER/${order.id}, PaymentOptions required customer or source`)
+            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] pay ORDER/${order.id}, PaymentOptions required customer or source`)
         }
         if (!options.vendorType) {
-            throw new OrderError(order, `[Failure] pay ORDER/${order.id}, PaymentOptions required vendorType`)
+            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] pay ORDER/${order.id}, PaymentOptions required vendorType`)
         }
         if (!this.delegate) {
-            throw new OrderError(order, `[Failure] pay ORDER/${order.id}, Manager required delegate`)
+            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] pay ORDER/${order.id}, Manager required delegate`)
         }
 
         if (order.amount > 0) {
@@ -310,7 +311,7 @@ export class Manager
                             }, { merge: true })
                             resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
                         } catch (error) {
-                            let _error = new OrderError(order, error.message, error.stack)
+                            let _error = new TradableError(TradableErrorCode.internal, order, error.message, error.stack)
                             reject(_error)
                         }
                     })
@@ -353,13 +354,13 @@ export class Manager
             return
         }
         if (!(order.status === OrderStatus.paid || order.status === OrderStatus.transferred || order.status === OrderStatus.waitingForTransferrd)) {
-            throw new OrderError(order, `[Failure] refund ORDER/${order.id}, Order is not a refundable status.`)
+            throw new TradableError(TradableErrorCode.invalidStatus, order, `[Failure] refund ORDER/${order.id}, Order is not a refundable status.`)
         }
         if (!options.vendorType) {
-            throw new OrderError(order, `[Failure] refund ORDER/${order.id}, PaymentOptions required vendorType`)
+            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] refund ORDER/${order.id}, PaymentOptions required vendorType`)
         }
         if (!this.delegate) {
-            throw new OrderError(order, `[Failure] refund ORDER/${order.id}, Manager required delegate`)
+            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] refund ORDER/${order.id}, Manager required delegate`)
         }
 
         if (order.amount > 0) {
@@ -419,7 +420,7 @@ export class Manager
                             }
                             resolve(`[Success] refund ORDER/${order.id}, USER/${order.selledBy}`)
                         } catch (error) {
-                            let _error = new OrderError(order, error.message, error.stack)
+                            let _error = new TradableError(TradableErrorCode.internal, order, error.message, error.stack)
                             reject(_error)
                         }
                     })
@@ -450,13 +451,13 @@ export class Manager
             return
         }
         if (!(order.status === OrderStatus.paid || order.status === OrderStatus.waitingForTransferrd)) {
-            throw new OrderError(order, `[Failure] transfer ORDER/${order.id}, Order is not a transferable status.`)
+            throw new TradableError(TradableErrorCode.invalidStatus, order, `[Failure] transfer ORDER/${order.id}, Order is not a transferable status.`)
         }
         if (!options.vendorType) {
-            throw new OrderError(order, `[Failure] transfer ORDER/${order.id}, PaymentOptions required vendorType`)
+            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] transfer ORDER/${order.id}, PaymentOptions required vendorType`)
         }
         if (!this.delegate) {
-            throw new OrderError(order, `[Failure] transfer ORDER/${order.id}, Manager required delegate`)
+            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] transfer ORDER/${order.id}, Manager required delegate`)
         }
 
         if (order.amount > 0) {
@@ -520,7 +521,7 @@ export class Manager
 
                             resolve(`[Success] transfer ORDER/${order.id}, USER/${order.selledBy}, TRANSACTION/${trans.id}`)
                         } catch (error) {
-                            let _error = new OrderError(order, error.message, error.stack)
+                            let _error = new TradableError(TradableErrorCode.internal, order, error.message, error.stack)
                             reject(_error)
                         }
                     })
@@ -547,7 +548,7 @@ export class Manager
     // async payout(account: Account, currency: Currency, batch?: FirebaseFirestore.WriteBatch) {
 
     //     if (!account.isSigned) {
-    //         throw new OrderError(order, `[Failure] ACCOUNT/${account.id}, This account has not agreed to the terms of service.`)
+    //         throw new TradableError(order, `[Failure] ACCOUNT/${account.id}, This account has not agreed to the terms of service.`)
     //     }
     //     const balance = account.balance
     //     const amount: number = balance[currency]
