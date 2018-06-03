@@ -26,4 +26,5 @@ export class Order extends Pring.Base implements tradable.OrderProtocol<OrderIte
     @property paymentInformation: { [key: string]: any }
     @property transferInformation: { [key: string]: any }
     @property refundInformation: { [key: string]: any }
+    @property changeInformations: { [key: string]: { [orderItemID: string]: any } }
 }

@@ -20,7 +20,8 @@ import {
     Balance,
     TransferOptions,
     TradableErrorCode,
-    TradableError
+    TradableError,
+    ChangeOptions
 } from "./index"
 
 const isUndefined = (value: any): boolean => {
@@ -186,6 +187,7 @@ export class Manager
                                     case StockValue.outOfStock: {
                                         const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                                         reject(error)
+                                        break
                                     }
                                     default: {
                                         const newUnitSales = sku.unitSales + quantity
@@ -251,7 +253,7 @@ export class Manager
             throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] pay ORDER/${order.id}, Manager required delegate`)
         }
 
-        if (order.amount > 0) {
+        if (order.amount === 0) {
             try {
                 order.status = OrderStatus.paid
                 const result = await this.delegate.pay(order, options)
@@ -266,7 +268,7 @@ export class Manager
                                 targetOrder.status === OrderStatus.refunded ||
                                 targetOrder.status === OrderStatus.transferred ||
                                 targetOrder.status === OrderStatus.waitingForTransferrd
-                            ) {                                
+                            ) {
                                 resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
                                 return
                             }
@@ -335,16 +337,112 @@ export class Manager
         }
     }
 
-    private async transaction(order: Order, type: TransactionType, currency: Currency, amount: number, batch: FirebaseFirestore.WriteBatch) {
-        const account: Account = new this._Account(order.selledBy, {})
-        const transaction: Transaction = new this._Transaction()
-        transaction.amount = amount
-        transaction.currency = currency
-        transaction.type = type
-        transaction.setParent(account.transactions)
-        transaction.order = order.id
-        batch.set(transaction.reference, transaction.value())
-        return batch
+    private async inventry<T>(order: Order, item: OrderItem, transaction: FirebaseFirestore.Transaction, resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any | PromiseLike<T>) => void) {
+        const productID: string = item.product
+        const skuID: string = item.sku
+        const quantity: number = item.quantity
+        const product: Product = new this._Product(productID, {})
+        const sku: SKU = await product.skus.doc(skuID, this._SKU, transaction)
+        switch (sku.inventory.type) {
+            case StockType.finite: {
+                const remaining: number = sku.inventory.quantity - (sku.unitSales + quantity)
+                if (remaining < 0) {
+                    const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
+                    reject(error)
+                }
+                const newUnitSales = sku.unitSales + quantity
+                transaction.set(sku.reference, {
+                    updateAt: timestamp,
+                    unitSales: newUnitSales
+                }, { merge: true })
+                break
+            }
+            case StockType.bucket: {
+                switch (sku.inventory.value) {
+                    case StockValue.outOfStock: {
+                        if (quantity > 0) {
+                            const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
+                            reject(error)
+                        }
+                        break
+                    }
+                    default: {
+                        const newUnitSales = sku.unitSales + quantity
+                        transaction.set(sku.reference, {
+                            updateAt: timestamp,
+                            unitSales: newUnitSales
+                        }, { merge: true })
+                        break
+                    }
+                }
+                break
+            }
+            case StockType.infinite: {
+                const newUnitSales = sku.unitSales + quantity
+                transaction.set(sku.reference, {
+                    updateAt: timestamp,
+                    unitSales: newUnitSales
+                }, { merge: true })
+                break
+            }
+        }
+    }
+
+    async change(order: Order, item: OrderItem, options: ChangeOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+        // Skip for refunded
+        if (order.status === OrderStatus.refunded) {
+            return
+        }
+        if (!(order.status === OrderStatus.paid)) {
+            throw new TradableError(TradableErrorCode.invalidStatus, order, `[Failure] refund ORDER/${order.id}, Order is not a changeable status.`)
+        }
+        if (!options.vendorType) {
+            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] refund ORDER/${order.id}, PaymentOptions required vendorType`)
+        }
+        if (!this.delegate) {
+            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] refund ORDER/${order.id}, Manager required delegate`)
+        }
+
+        const result = await this.delegate.change(order, item, options)
+
+        try {
+            await firestore.runTransaction(async (transaction) => {
+                return new Promise(async (resolve, reject) => {
+                    try {
+
+                        this.inventry(order, item, transaction, resolve, reject)
+
+                        const account: Account = new this._Account(order.selledBy, {})
+                        await account.fetch(transaction)
+                        const currency: string = order.currency
+                        const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
+                        const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
+                        const amountAccountsReceivable: number = accountsReceivable[order.currency] || 0
+                        const newAmount: number = amountAccountsReceivable - item.amount
+
+                        // set account data
+                        transaction.set(account.reference, {
+                            accountsReceivable: {
+                                available: { [currency]: newAmount }
+                            }
+                        }, { merge: true })
+
+                        // set order data
+                        transaction.set(order.reference, {
+                            refundInformation: {
+                                [options.vendorType]: result
+                            }
+                        }, { merge: true })
+                        resolve(`[Success] change ORDER/${order.id}/${item.id}, USER/${order.selledBy}`)
+                    } catch (error) {
+                        let _error = new TradableError(TradableErrorCode.internal, order, error.message, error.stack)
+                        reject(_error)
+                    }
+                })
+            })
+        } catch (error) {
+            throw error
+        }        
     }
 
     async refund(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
@@ -363,7 +461,7 @@ export class Manager
             throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] refund ORDER/${order.id}, Manager required delegate`)
         }
 
-        if (order.amount > 0) {
+        if (order.amount === 0) {
             try {
                 order.status = OrderStatus.refunded
                 const result = await this.delegate.refund(order, options)

@@ -21,7 +21,7 @@ export declare enum TransactionType {
     transfer = "transfer",
     transferRefund = "transfer_refund",
     payout = "payout",
-    payoutCancel = "payout_cancel",
+    payoutCancel = "payout_cancel"
 }
 export interface TransactionProtocol extends Pring.Base {
     type: TransactionType;
@@ -67,12 +67,12 @@ export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
 export declare enum StockType {
     bucket = "bucket",
     finite = "finite",
-    infinite = "infinite",
+    infinite = "infinite"
 }
 export declare enum StockValue {
     inStock = "in_stock",
     limited = "limited",
-    outOfStock = "out_of_stock",
+    outOfStock = "out_of_stock"
 }
 export declare type Inventory = {
     type: StockType;
@@ -92,7 +92,7 @@ export declare enum OrderItemType {
     sku = "sku",
     tax = "tax",
     shipping = "shipping",
-    discount = "discount",
+    discount = "discount"
 }
 export declare enum OrderStatus {
     created = "created",
@@ -105,7 +105,7 @@ export declare enum OrderStatus {
     canceled = "canceled",
     transferred = "transferred",
     waitingForTransferrd = "waitingForTransferrd",
-    completed = "completed",
+    completed = "completed"
 }
 export interface OrderItemProtocol extends Pring.Base {
     order: string;
@@ -151,10 +151,13 @@ export declare type PaymentOptions = {
     customer?: string;
     vendorType: string;
 };
+export declare type ChangeOptions = {
+    vendorType: string;
+};
 export declare enum RefundReason {
     duplicate = "duplicate",
     fraudulent = "fraudulent",
-    requestedByCustomer = "requested_by_customer",
+    requestedByCustomer = "requested_by_customer"
 }
 export declare type RefundOptions = {
     vendorType: string;
@@ -166,6 +169,7 @@ export declare type TransferOptions = {
 export interface PaymentDelegate {
     pay<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>;
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>;
+    change<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, item: U, options: ChangeOptions): Promise<any>;
     transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: TransferOptions): Promise<any>;
 }
 export declare enum TradableErrorCode {
@@ -175,7 +179,7 @@ export declare enum TradableErrorCode {
     invalidAmount = "invalidAmount",
     outOfStock = "outOfStock",
     invalidStatus = "invalidStatus",
-    internal = "internal",
+    internal = "internal"
 }
 export declare class TradableError<T extends OrderItemProtocol, U extends OrderProtocol<T>> implements Error {
     name: string;

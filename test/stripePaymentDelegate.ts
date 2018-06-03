@@ -60,6 +60,10 @@ export class StripePaymentDelegate implements tradable.PaymentDelegate {
         }
     }
 
+    async change<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, item: U, options: tradable.ChangeOptions): Promise<any> {
+
+    }
+
     // async payout<U extends tradable.TransactionProtocol, T extends tradable.AccountProtocol<U>>(account: T, amount: number, currency: tradable.Currency): Promise<any> {
     //     const stripeAccountID = account.fundInformation['stripe']
     //     const destinationAmount = amount * (1 - 0.2)

@@ -134,7 +134,7 @@ declare enum Currency {
     VND = "vnd",
     XOF = "xof",
     YER = "yer",
-    ZMW = "zmw",
+    ZMW = "zmw"
 }
 declare namespace Currency {
     const minimum: (currency: Currency) => number;
