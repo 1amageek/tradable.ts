@@ -343,14 +343,15 @@ export class Manager
         const quantity: number = item.quantity
         const product: Product = new this._Product(productID, {})
         const sku: SKU = await product.skus.doc(skuID, this._SKU, transaction)
+        const unitSales: number = sku.unitSales || 0
         switch (sku.inventory.type) {
             case StockType.finite: {
-                const remaining: number = sku.inventory.quantity - (sku.unitSales + quantity)
+                const newUnitSales = unitSales + quantity
+                const remaining: number = sku.inventory.quantity - newUnitSales
                 if (remaining < 0) {
                     const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                     reject(error)
-                }
-                const newUnitSales = sku.unitSales + quantity
+                }                
                 transaction.set(sku.reference, {
                     updateAt: timestamp,
                     unitSales: newUnitSales
@@ -367,7 +368,7 @@ export class Manager
                         break
                     }
                     default: {
-                        const newUnitSales = sku.unitSales + quantity
+                        const newUnitSales = unitSales + quantity
                         transaction.set(sku.reference, {
                             updateAt: timestamp,
                             unitSales: newUnitSales
@@ -378,7 +379,7 @@ export class Manager
                 break
             }
             case StockType.infinite: {
-                const newUnitSales = sku.unitSales + quantity
+                const newUnitSales = unitSales + quantity
                 transaction.set(sku.reference, {
                     updateAt: timestamp,
                     unitSales: newUnitSales
@@ -415,15 +416,18 @@ export class Manager
                         const account: Account = new this._Account(order.selledBy, {})
                         await account.fetch(transaction)
                         const currency: string = order.currency
+                        const amount: number = item.amount
+                        const fee: number = amount * account.commissionRatio
+                        const net: number = amount - fee
                         const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
                         const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
-                        const amountAccountsReceivable: number = accountsReceivable[order.currency] || 0
-                        const newAmount: number = amountAccountsReceivable - item.amount
+                        const accountsReceivableWithCurrency: number = accountsReceivable[order.currency] || 0
+                        const newAccountsReceivable: number = accountsReceivableWithCurrency - net
 
                         // set account data
                         transaction.set(account.reference, {
                             accountsReceivable: {
-                                available: { [currency]: newAmount }
+                                available: { [currency]: newAccountsReceivable }
                             }
                         }, { merge: true })
 
