@@ -49,7 +49,7 @@
     "@types/node": "^9.6.20",
     "@types/stripe": "^5.0.12",
     "jest": "^22.4.4",
-    "stripe": "^5.10.0",
+    "stripe": "^6.1.0",
     "ts-jest": "^22.4.6",
     "tslint": "^5.10.0",
     "typescript": "^2.9.1"

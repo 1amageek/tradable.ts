@@ -140,7 +140,7 @@ export enum OrderStatus {
     /// If payment was made, I failed in refunding.
     waitingForRefund = 'waitingForRefund',
 
-    /// Everything including refunds was canceled. Inventory processing is not canceled
+    /// Everything including refunds was canceled.
     canceled = 'canceled',
 
     /// It means that a payout has been made to the Account.
@@ -190,14 +190,15 @@ export type PaymentOptions = {
     vendorType: string
 }
 
-export type CancelOptions = {
-    vendorType: string
-}
-
 export enum RefundReason {
     duplicate = 'duplicate',
     fraudulent = 'fraudulent',
     requestedByCustomer = 'requested_by_customer'
+}
+
+export type CancelOptions = {
+    vendorType: string
+    reason?: RefundReason
 }
 
 export type RefundOptions = {

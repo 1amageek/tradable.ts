@@ -372,57 +372,76 @@ export class Manager
             throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] cancel ORDER/${order.id}, Manager required delegate`)
         }
 
-        const result = await this.delegate.cancel(order, options)
-
-        try {
-            await firestore.runTransaction(async (transaction) => {
-                return new Promise(async (resolve, reject) => {
-                    try {
-
-                        const items: OrderItem[] = await order.items.get(this._OrderItem, transaction)
-                        for (const item of items) {
-                            this.inventory(InventoryControlType.increase, order, item, transaction, resolve, reject)
-                        }
-
-                        const account: Account = new this._Account(order.selledBy, {})
-                        await account.fetch(transaction)
-                        const currency: string = order.currency
-                        const amount: number = order.amount
-                        const fee: number = amount * account.commissionRatio
-                        const net: number = amount - fee
-                        const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
-                        const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
-                        const accountsReceivableWithCurrency: number = accountsReceivable[order.currency] || 0
-                        const newAccountsReceivable: number = accountsReceivableWithCurrency - net
-
-                        // set account data
-                        transaction.set(account.reference, {
-                            accountsReceivable: {
-                                available: { [currency]: newAccountsReceivable }
-                            }
-                        }, { merge: true })
-
-                        // set order data
-                        transaction.set(order.reference, {
-                            refundInformation: {
-                                [options.vendorType]: result
-                            }
-                        }, { merge: true })
-                        resolve(`[Success] change ORDER/${order.id}, USER/${order.selledBy}`)
-                    } catch (error) {
-                        let _error = new TradableError(TradableErrorCode.internal, order, error.message, error.stack)
-                        reject(_error)
-                    }
-                })
-            })
-        } catch (error) {
-            order.status = OrderStatus.waitingForRefund
+        if (order.amount === 0) {
             try {
-                await order.update()
+                await firestore.runTransaction(async (transaction) => {
+                    return new Promise(async (resolve, reject) => {
+                        try {
+                            const items: OrderItem[] = await order.items.get(this._OrderItem, transaction)
+                            for (const item of items) {
+                                this.inventory(InventoryControlType.decrease, order, item, transaction, resolve, reject)
+                            }
+                            transaction.set(order.reference, {
+                                status: OrderStatus.canceled
+                            }, { merge: true })
+                            resolve(`[Success] cancel ORDER/${order.id}, USER/${order.selledBy}`)
+                        } catch (error) {
+                            let _error = new TradableError(TradableErrorCode.internal, order, error.message, error.stack)
+                            reject(_error)
+                        }
+                    })
+                })
+            } catch (error) {               
+                throw error
+            }
+        } else {            
+            try {
+                await firestore.runTransaction(async (transaction) => {
+                    return new Promise(async (resolve, reject) => {
+                        try {
+
+                            const items: OrderItem[] = await order.items.get(this._OrderItem, transaction)
+                            for (const item of items) {
+                                this.inventory(InventoryControlType.decrease, order, item, transaction, resolve, reject)
+                            }
+
+                            const account: Account = new this._Account(order.selledBy, {})
+                            await account.fetch(transaction)
+                            const currency: string = order.currency
+                            const amount: number = order.amount
+                            const fee: number = amount * account.commissionRatio
+                            const net: number = amount - fee
+                            const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
+                            const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
+                            const accountsReceivableWithCurrency: number = accountsReceivable[order.currency] || 0
+                            const newAccountsReceivable: number = accountsReceivableWithCurrency - net
+
+                            const result = await this.delegate.cancel(order, options)
+
+                            // set account data
+                            transaction.set(account.reference, {
+                                accountsReceivable: {
+                                    available: { [currency]: newAccountsReceivable }
+                                }
+                            }, { merge: true })
+                            
+                            // set order data
+                            transaction.set(order.reference, {
+                                status: OrderStatus.canceled,
+                                refundInformation: {
+                                    [options.vendorType]: result
+                                }
+                            }, { merge: true })
+                            resolve(`[Success] cancel ORDER/${order.id}, USER/${order.selledBy}`)
+                        } catch (error) {
+                            let _error = new TradableError(TradableErrorCode.internal, order, error.message, error.stack)
+                            reject(_error)
+                        }
+                    })
+                })
             } catch (error) {
                 throw error
             }
-            throw error
         }
     }
 
