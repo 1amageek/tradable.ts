@@ -254,6 +254,13 @@ export class Manager
         }
 
         if (order.amount === 0) {
+            order.status = OrderStatus.paid
+            batch.set(order.reference, {
+                updateAt: timestamp,
+                status: OrderStatus.paid
+            }, { merge: true })
+            return batch
+        } else {
             try {
                 order.status = OrderStatus.paid
                 const result = await this.delegate.pay(order, options)
@@ -327,13 +334,6 @@ export class Manager
                 }
                 throw error
             }
-        } else {
-            order.status = OrderStatus.paid
-            batch.set(order.reference, {
-                updateAt: timestamp,
-                status: OrderStatus.paid
-            }, { merge: true })
-            return batch
         }
     }
 
@@ -449,7 +449,7 @@ export class Manager
         }        
     }
 
-    async refund(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+    async cancel(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
 
         // Skip for refunded
         if (order.status === OrderStatus.refunded) {
@@ -466,6 +466,13 @@ export class Manager
         }
 
         if (order.amount === 0) {
+            order.status = OrderStatus.refunded
+            batch.set(order.reference, {
+                updateAt: timestamp,
+                status: OrderStatus.refunded
+            }, { merge: true })
+            return batch
+        } else {
             try {
                 order.status = OrderStatus.refunded
                 const result = await this.delegate.refund(order, options)
@@ -536,13 +543,6 @@ export class Manager
                 }
                 throw error
             }
-        } else {
-            order.status = OrderStatus.refunded
-            batch.set(order.reference, {
-                updateAt: timestamp,
-                status: OrderStatus.refunded
-            }, { merge: true })
-            return batch
         }
     }
 
@@ -562,7 +562,14 @@ export class Manager
             throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] transfer ORDER/${order.id}, Manager required delegate`)
         }
 
-        if (order.amount > 0) {
+        if (order.amount === 0) {
+            order.status = OrderStatus.transferred
+            batch.set(order.reference, {
+                updateAt: timestamp,
+                status: OrderStatus.transferred
+            }, { merge: true })
+            return batch
+        } else {
             try {
                 order.status = OrderStatus.transferred
                 const result = await this.delegate.transfer(order, options)
@@ -637,13 +644,6 @@ export class Manager
                 }
                 throw error
             }
-        } else {
-            order.status = OrderStatus.transferred
-            batch.set(order.reference, {
-                updateAt: timestamp,
-                status: OrderStatus.transferred
-            }, { merge: true })
-            return batch
         }
     }
 
