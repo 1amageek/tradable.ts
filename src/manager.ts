@@ -32,6 +32,11 @@ export interface Process {
     <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>
 }
 
+enum InventoryControlType {
+    increase = 'increase',
+    decrease = 'decrease'
+}
+
 // 在庫の増減
 // StripeAPIに接続
 export class Manager
@@ -140,10 +145,20 @@ export class Manager
 
     public delegate?: PaymentDelegate
 
-    private async inventoryControlItem<T>(order: Order, item: OrderItem, transaction: FirebaseFirestore.Transaction, resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any | PromiseLike<T>) => void) {
+    private async inventory<T>(type: InventoryControlType, order: Order, item: OrderItem, transaction: FirebaseFirestore.Transaction, resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any | PromiseLike<T>) => void) {
         const productID: string = item.product
         const skuID: string = item.sku
-        const quantity: number = item.quantity
+        let quantity: number = 0
+
+        switch (type) {
+            case InventoryControlType.increase:
+                quantity = item.quantity
+                break
+            case InventoryControlType.decrease:
+                quantity = -item.quantity
+                break
+        }
+
         const product: Product = new this._Product(productID, {})
         const sku: SKU = await product.skus.doc(skuID, this._SKU, transaction)
         const unitSales: number = sku.unitSales || 0
@@ -213,7 +228,7 @@ export class Manager
 
                     const items: OrderItem[] = await order.items.get(this._OrderItem, transaction)
                     for (const item of items) {
-                        this.inventoryControlItem(order, item, transaction, resolve, reject)
+                        this.inventory(InventoryControlType.increase, order, item, transaction, resolve, reject)
                     }
 
                     transaction.set(order.reference, {
@@ -348,13 +363,13 @@ export class Manager
             return
         }
         if (!(order.status === OrderStatus.paid)) {
-            throw new TradableError(TradableErrorCode.invalidStatus, order, `[Failure] refund ORDER/${order.id}, Order is not a changeable status.`)
+            throw new TradableError(TradableErrorCode.invalidStatus, order, `[Failure] cancel ORDER/${order.id}, Order is not a changeable status.`)
         }
         if (!options.vendorType) {
-            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] refund ORDER/${order.id}, PaymentOptions required vendorType`)
+            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] cancel ORDER/${order.id}, PaymentOptions required vendorType`)
         }
         if (!this.delegate) {
-            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] refund ORDER/${order.id}, Manager required delegate`)
+            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] cancel ORDER/${order.id}, Manager required delegate`)
         }
 
         const result = await this.delegate.cancel(order, options)
@@ -366,7 +381,7 @@ export class Manager
 
                         const items: OrderItem[] = await order.items.get(this._OrderItem, transaction)
                         for (const item of items) {
-                            this.inventoryControlItem(order, item, transaction, resolve, reject)
+                            this.inventory(InventoryControlType.increase, order, item, transaction, resolve, reject)
                         }
 
                         const account: Account = new this._Account(order.selledBy, {})
@@ -401,6 +416,12 @@ export class Manager
                 })
             })
         } catch (error) {
+            order.status = OrderStatus.waitingForRefund
+            try {
+                await order.update()
+            } catch (error) {
+                throw error
+            }
             throw error
         }
     }
