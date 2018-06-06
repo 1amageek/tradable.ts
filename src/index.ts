@@ -190,7 +190,7 @@ export type PaymentOptions = {
     vendorType: string
 }
 
-export type ChangeOptions = {
+export type CancelOptions = {
     vendorType: string
 }
 
@@ -217,8 +217,8 @@ export interface PaymentDelegate {
     /// This functioin will make a refund. The refund result is saved in the VendorType set in RefundOptions.
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>
 
-    /// This functioin will make a change. The change result is saved in the VendorType set in ChangeOptions.
-    change<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, item: U, options: ChangeOptions): Promise<any>
+    /// This functioin will make a change. The change result is saved in the VendorType set in CancelOptions.
+    cancel<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: CancelOptions): Promise<any>
 
     ///
     transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: TransferOptions): Promise<any>

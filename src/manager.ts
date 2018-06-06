@@ -15,13 +15,13 @@ import {
     PaymentDelegate,
     PaymentOptions,
     RefundOptions,
+    CancelOptions,
     Currency,
     TransactionType,
     Balance,
     TransferOptions,
     TradableErrorCode,
-    TradableError,
-    ChangeOptions
+    TradableError
 } from "./index"
 
 const isUndefined = (value: any): boolean => {
@@ -140,6 +140,58 @@ export class Manager
 
     public delegate?: PaymentDelegate
 
+    private async inventoryControlItem<T>(order: Order, item: OrderItem, transaction: FirebaseFirestore.Transaction, resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any | PromiseLike<T>) => void) {
+        const productID: string = item.product
+        const skuID: string = item.sku
+        const quantity: number = item.quantity
+        const product: Product = new this._Product(productID, {})
+        const sku: SKU = await product.skus.doc(skuID, this._SKU, transaction)
+        const unitSales: number = sku.unitSales || 0
+        switch (sku.inventory.type) {
+            case StockType.finite: {
+                const newUnitSales = unitSales + quantity
+                const remaining: number = sku.inventory.quantity - newUnitSales
+                if (remaining < 0) {
+                    const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
+                    reject(error)
+                }
+                transaction.set(sku.reference, {
+                    updateAt: timestamp,
+                    unitSales: newUnitSales
+                }, { merge: true })
+                break
+            }
+            case StockType.bucket: {
+                switch (sku.inventory.value) {
+                    case StockValue.outOfStock: {
+                        if (quantity > 0) {
+                            const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
+                            reject(error)
+                        }
+                        break
+                    }
+                    default: {
+                        const newUnitSales = unitSales + quantity
+                        transaction.set(sku.reference, {
+                            updateAt: timestamp,
+                            unitSales: newUnitSales
+                        }, { merge: true })
+                        break
+                    }
+                }
+                break
+            }
+            case StockType.infinite: {
+                const newUnitSales = unitSales + quantity
+                transaction.set(sku.reference, {
+                    updateAt: timestamp,
+                    unitSales: newUnitSales
+                }, { merge: true })
+                break
+            }
+        }
+    }
+
     async inventoryControl(order: Order, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
         // Skip
         if (order.status === OrderStatus.received ||
@@ -159,56 +211,9 @@ export class Manager
             await firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
 
-                    const items: OrderItem[] = await order.items.get(this._OrderItem)
-
-                    // Stock control
+                    const items: OrderItem[] = await order.items.get(this._OrderItem, transaction)
                     for (const item of items) {
-                        const productID: string = item.product
-                        const skuID: string = item.sku
-                        const quantity: number = item.quantity
-                        const product: Product = new this._Product(productID, {})
-                        const sku: SKU = await product.skus.doc(skuID, this._SKU)
-                        switch (sku.inventory.type) {
-                            case StockType.finite: {
-                                const remaining: number = sku.inventory.quantity - (sku.unitSales + quantity)
-                                if (remaining < 0) {
-                                    const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
-                                    reject(error)
-                                }
-                                const newUnitSales = sku.unitSales + quantity
-                                transaction.set(sku.reference, {
-                                    updateAt: timestamp,
-                                    unitSales: newUnitSales
-                                }, { merge: true })
-                                break
-                            }
-                            case StockType.bucket: {
-                                switch (sku.inventory.value) {
-                                    case StockValue.outOfStock: {
-                                        const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
-                                        reject(error)
-                                        break
-                                    }
-                                    default: {
-                                        const newUnitSales = sku.unitSales + quantity
-                                        transaction.set(sku.reference, {
-                                            updateAt: timestamp,
-                                            unitSales: newUnitSales
-                                        }, { merge: true })
-                                        break
-                                    }
-                                }
-                                break
-                            }
-                            case StockType.infinite: {
-                                const newUnitSales = sku.unitSales + quantity
-                                transaction.set(sku.reference, {
-                                    updateAt: timestamp,
-                                    unitSales: newUnitSales
-                                }, { merge: true })
-                                break
-                            }
-                        }
+                        this.inventoryControlItem(order, item, transaction, resolve, reject)
                     }
 
                     transaction.set(order.reference, {
@@ -337,59 +342,7 @@ export class Manager
         }
     }
 
-    private async inventry<T>(order: Order, item: OrderItem, transaction: FirebaseFirestore.Transaction, resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any | PromiseLike<T>) => void) {
-        const productID: string = item.product
-        const skuID: string = item.sku
-        const quantity: number = item.quantity
-        const product: Product = new this._Product(productID, {})
-        const sku: SKU = await product.skus.doc(skuID, this._SKU, transaction)
-        const unitSales: number = sku.unitSales || 0
-        switch (sku.inventory.type) {
-            case StockType.finite: {
-                const newUnitSales = unitSales + quantity
-                const remaining: number = sku.inventory.quantity - newUnitSales
-                if (remaining < 0) {
-                    const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
-                    reject(error)
-                }                
-                transaction.set(sku.reference, {
-                    updateAt: timestamp,
-                    unitSales: newUnitSales
-                }, { merge: true })
-                break
-            }
-            case StockType.bucket: {
-                switch (sku.inventory.value) {
-                    case StockValue.outOfStock: {
-                        if (quantity > 0) {
-                            const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
-                            reject(error)
-                        }
-                        break
-                    }
-                    default: {
-                        const newUnitSales = unitSales + quantity
-                        transaction.set(sku.reference, {
-                            updateAt: timestamp,
-                            unitSales: newUnitSales
-                        }, { merge: true })
-                        break
-                    }
-                }
-                break
-            }
-            case StockType.infinite: {
-                const newUnitSales = unitSales + quantity
-                transaction.set(sku.reference, {
-                    updateAt: timestamp,
-                    unitSales: newUnitSales
-                }, { merge: true })
-                break
-            }
-        }
-    }
-
-    async change(order: Order, item: OrderItem, options: ChangeOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+    async cancel(order: Order, options: CancelOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
         // Skip for refunded
         if (order.status === OrderStatus.refunded) {
             return
@@ -404,19 +357,22 @@ export class Manager
             throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] refund ORDER/${order.id}, Manager required delegate`)
         }
 
-        const result = await this.delegate.change(order, item, options)
+        const result = await this.delegate.cancel(order, options)
 
         try {
             await firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
                     try {
 
-                        this.inventry(order, item, transaction, resolve, reject)
+                        const items: OrderItem[] = await order.items.get(this._OrderItem, transaction)
+                        for (const item of items) {
+                            this.inventoryControlItem(order, item, transaction, resolve, reject)
+                        }
 
                         const account: Account = new this._Account(order.selledBy, {})
                         await account.fetch(transaction)
                         const currency: string = order.currency
-                        const amount: number = item.amount
+                        const amount: number = order.amount
                         const fee: number = amount * account.commissionRatio
                         const net: number = amount - fee
                         const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
@@ -437,7 +393,7 @@ export class Manager
                                 [options.vendorType]: result
                             }
                         }, { merge: true })
-                        resolve(`[Success] change ORDER/${order.id}/${item.id}, USER/${order.selledBy}`)
+                        resolve(`[Success] change ORDER/${order.id}, USER/${order.selledBy}`)
                     } catch (error) {
                         let _error = new TradableError(TradableErrorCode.internal, order, error.message, error.stack)
                         reject(_error)
@@ -446,10 +402,10 @@ export class Manager
             })
         } catch (error) {
             throw error
-        }        
+        }
     }
 
-    async cancel(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+    async refund(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
 
         // Skip for refunded
         if (order.status === OrderStatus.refunded) {
