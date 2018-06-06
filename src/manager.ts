@@ -149,7 +149,6 @@ export class Manager
         const productID: string = item.product
         const skuID: string = item.sku
         let quantity: number = 0
-
         switch (type) {
             case InventoryControlType.increase:
                 quantity = item.quantity
@@ -158,13 +157,12 @@ export class Manager
                 quantity = -item.quantity
                 break
         }
-
         const product: Product = new this._Product(productID, {})
         const sku: SKU = await product.skus.doc(skuID, this._SKU, transaction)
         const unitSales: number = sku.unitSales || 0
         switch (sku.inventory.type) {
             case StockType.finite: {
-                const newUnitSales = unitSales + quantity
+                const newUnitSales: number = unitSales + quantity
                 const remaining: number = sku.inventory.quantity - newUnitSales
                 if (remaining < 0) {
                     const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
@@ -186,7 +184,7 @@ export class Manager
                         break
                     }
                     default: {
-                        const newUnitSales = unitSales + quantity
+                        const newUnitSales: number = unitSales + quantity
                         transaction.set(sku.reference, {
                             updateAt: timestamp,
                             unitSales: newUnitSales
@@ -197,7 +195,7 @@ export class Manager
                 break
             }
             case StockType.infinite: {
-                const newUnitSales = unitSales + quantity
+                const newUnitSales: number = unitSales + quantity
                 transaction.set(sku.reference, {
                     updateAt: timestamp,
                     unitSales: newUnitSales
@@ -228,7 +226,7 @@ export class Manager
 
                     const items: OrderItem[] = await order.items.get(this._OrderItem, transaction)
                     for (const item of items) {
-                        this.inventory(InventoryControlType.increase, order, item, transaction, resolve, reject)
+                        await this.inventory(InventoryControlType.increase, order, item, transaction, resolve, reject)
                     }
 
                     transaction.set(order.reference, {
@@ -379,7 +377,7 @@ export class Manager
                         try {
                             const items: OrderItem[] = await order.items.get(this._OrderItem, transaction)
                             for (const item of items) {
-                                this.inventory(InventoryControlType.decrease, order, item, transaction, resolve, reject)
+                                await this.inventory(InventoryControlType.decrease, order, item, transaction, resolve, reject)
                             }
                             transaction.set(order.reference, {
                                 status: OrderStatus.canceled
