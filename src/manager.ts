@@ -163,14 +163,18 @@ export class Manager
         switch (sku.inventory.type) {
             case StockType.finite: {
                 const newUnitSales: number = unitSales + quantity
-                const remaining: number = sku.inventory.quantity - newUnitSales
+                const skuQuantity: number = sku.inventory.quantity
+                const remaining: number = skuQuantity - newUnitSales
                 if (remaining < 0) {
                     const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                     reject(error)
                 }
                 transaction.set(sku.reference, {
                     updateAt: timestamp,
-                    unitSales: newUnitSales
+                    unitSales: newUnitSales,
+                    inventory: {
+                        quantity: remaining
+                    }
                 }, { merge: true })
                 break
             }
@@ -352,6 +356,15 @@ export class Manager
                 }
                 throw error
             }
+        }
+    }
+
+    async order(order: Order, options: PaymentOptions, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+        try {
+            await this.inventoryControl(order, batch)
+            return await this.pay(order, options, batch)
+        } catch (error) {
+            throw error
         }
     }
 
