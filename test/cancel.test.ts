@@ -102,7 +102,7 @@ describe("Tradable", () => {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     }, batch)
-                }) 
+                })
             } catch (error) {
                 console.log(error)
                 expect(error).not.toBeNull()
@@ -120,7 +120,10 @@ describe("Tradable", () => {
             const account = await Account.get(order.selledBy, Account)
             expect(account.balance['accountsReceivable'][order.currency]).toEqual(90)
 
-            const changedSKU: SKU = new SKU(sku.id, {})            
+            // revenue
+            expect(account.revenue[order.currency]).toEqual(100)
+
+            const changedSKU: SKU = new SKU(sku.id, {})
             changedSKU.setParent(product.skus)
             await changedSKU.fetch()
 
@@ -142,7 +145,7 @@ describe("Tradable", () => {
                     return await manager.cancel(_order, {
                         vendorType: 'stripe'
                     }, batch)
-                }) 
+                })
             } catch (error) {
                 console.log(error)
                 expect(error).not.toBeNull()
@@ -159,9 +162,12 @@ describe("Tradable", () => {
             const account: Account = await Account.get(order.selledBy, Account)
 
             // accountsReceivable
-            expect(account.balance['accountsReceivable'][order.currency]).toEqual(0)            
+            expect(account.balance['accountsReceivable'][order.currency]).toEqual(0)
 
-            const changedSKU: SKU = new SKU(sku.id, {})            
+            // revenue
+            expect(account.revenue[order.currency]).toEqual(0)
+
+            const changedSKU: SKU = new SKU(sku.id, {})
             changedSKU.setParent(product.skus)
             await changedSKU.fetch()
 
@@ -199,14 +205,17 @@ describe("Tradable", () => {
             const account = await Account.get(order.selledBy, Account)
             expect(account.balance['accountsReceivable'][order.currency]).toEqual(0)
 
+            // revenue
+            expect(account.revenue[order.currency]).toEqual(0)
+
         }, 15000)
     })
 
     afterAll(async () => {
-        // await account.delete()
-        // await shop.delete()
-        // await user.delete()
-        // await product.delete()
-        // await sku.delete()
+        await account.delete()
+        await shop.delete()
+        await user.delete()
+        await product.delete()
+        await sku.delete()
     })
 })
