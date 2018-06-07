@@ -107,78 +107,99 @@ describe("Tradable", () => {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
+
+            // Status
             const received: Order = await Order.get(order.id, Order)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
 
+            // PaymentInfomation
+            expect(received.paymentInformation['stripe']).not.toBeNull()
+
+            // accountsReceivable
+            const account = await Account.get(order.selledBy, Account)
+            expect(account.balance['accountsReceivable'][order.currency]).toEqual(90)
+
             const changedSKU: SKU = new SKU(sku.id, {})            
             changedSKU.setParent(product.skus)
             await changedSKU.fetch()
-            console.log("aaaa", changedSKU.value())
+
+            // unitSales
             expect(changedSKU.unitSales).toEqual(1)
             const inventory: Tradable.Inventory = changedSKU.inventory
+
+            // quantity
             expect(inventory.quantity).toEqual(5)
         }, 15000)
 
-        // test("Stripe's cancel success", async () => {
-        //     const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
-        //     manager.delegate = new StripePaymentDelegate()
+        test("Stripe's cancel success", async () => {
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
+            manager.delegate = new StripePaymentDelegate()
 
-        //     try {
-        //         const _order: Order = await Order.get(order.id, Order)
-        //         await manager.execute(_order, async (order, batch) => {
-        //             return await manager.cancel(order, {
-        //                 vendorType: 'stripe'
-        //             }, batch)
-        //         }) 
-        //     } catch (error) {
-        //         console.log(error)
-        //         expect(error).not.toBeNull()
-        //     }
-        //     const received: Order = await Order.get(order.id, Order)
-        //     const status: Tradable.OrderStatus = received.status
+            try {
+                const myOrder: Order = await Order.get(order.id, Order)
+                await manager.execute(myOrder, async (_order, batch) => {
+                    return await manager.cancel(_order, {
+                        vendorType: 'stripe'
+                    }, batch)
+                }) 
+            } catch (error) {
+                console.log(error)
+                expect(error).not.toBeNull()
+            }
+            const received: Order = await Order.get(order.id, Order)
+            const status: Tradable.OrderStatus = received.status
 
-        //     expect(status).toEqual(Tradable.OrderStatus.canceled)
-        //     expect(received.refundInformation['stripe']).not.toBeNull()
+            // status
+            expect(status).toEqual(Tradable.OrderStatus.canceled)
 
-        //     const account = await Account.get(order.selledBy, Account)
-        //     expect(account.balance['accountsReceivable'][order.currency]).toEqual(90)
+            // refundInformation
+            expect(received.refundInformation['stripe']).not.toBeNull()
 
-        //     const changedSKU: SKU = new SKU(sku.id, {})            
-        //     changedSKU.setParent(product.skus)
-        //     await changedSKU.fetch()
-        //     expect(changedSKU.unitSales).toEqual(0)
-        //     const inventory: Tradable.Inventory = changedSKU.inventory
-        //     expect(inventory.quantity).toEqual(6)
+            const account: Account = await Account.get(order.selledBy, Account)
 
-        // }, 15000)
+            // accountsReceivable
+            expect(account.balance['accountsReceivable'][order.currency]).toEqual(0)            
 
-        // test("Stripe's Cancel failure, manager have already cancelled", async () => {
-        //     const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
-        //     manager.delegate = new StripePaymentDelegate()
+            const changedSKU: SKU = new SKU(sku.id, {})            
+            changedSKU.setParent(product.skus)
+            await changedSKU.fetch()
 
-        //     try {
-        //         const _order: Order = await Order.get(order.id, Order)
-        //         await manager.execute(_order, async (order) => {
-        //             return await manager.cancel(order, {
-        //                 vendorType: 'stripe',
-        //                 reason: Tradable.RefundReason.requestedByCustomer
-        //             })
-        //         })
-        //     } catch (error) {
-        //         console.log(error)
-        //         expect(error).not.toBeNull()
-        //     }
-        //     const received: Order = await Order.get(order.id, Order)
-        //     const status: Tradable.OrderStatus = received.status
+            // unitSales
+            expect(changedSKU.unitSales).toEqual(0)
+            const inventory: Tradable.Inventory = changedSKU.inventory
 
-        //     expect(status).toEqual(Tradable.OrderStatus.refunded)
-        //     expect(received.refundInformation['stripe']).not.toBeNull()
+            // quantity
+            expect(inventory.quantity).toEqual(6)
 
-        //     const account = await Account.get(order.selledBy, Account)
-        //     expect(account.balance['accountsReceivable'][order.currency]).toEqual(90)
+        }, 15000)
 
-        // }, 15000)
+        test("Stripe's cancel failure, manager have already cancelled", async () => {
+            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
+            manager.delegate = new StripePaymentDelegate()
+
+            try {
+                const _order: Order = await Order.get(order.id, Order)
+                await manager.execute(_order, async (order) => {
+                    return await manager.cancel(order, {
+                        vendorType: 'stripe',
+                        reason: Tradable.RefundReason.requestedByCustomer
+                    })
+                })
+            } catch (error) {
+                console.log(error)
+                expect(error).not.toBeNull()
+            }
+            const received: Order = await Order.get(order.id, Order)
+            const status: Tradable.OrderStatus = received.status
+
+            expect(status).toEqual(Tradable.OrderStatus.canceled)
+            expect(received.refundInformation['stripe']).not.toBeNull()
+
+            const account = await Account.get(order.selledBy, Account)
+            expect(account.balance['accountsReceivable'][order.currency]).toEqual(0)
+
+        }, 15000)
     })
 
     afterAll(async () => {

@@ -162,9 +162,9 @@ export class Manager
         const unitSales: number = sku.unitSales || 0
         switch (sku.inventory.type) {
             case StockType.finite: {
-                const newUnitSales: number = unitSales + quantity
                 const skuQuantity: number = sku.inventory.quantity
-                const remaining: number = skuQuantity - newUnitSales
+                const newUnitSales: number = unitSales + quantity                
+                const remaining: number = skuQuantity - quantity
                 if (remaining < 0) {
                     const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                     reject(error)
@@ -420,8 +420,9 @@ export class Manager
                             await account.fetch(transaction)
                             const currency: string = order.currency
                             const amount: number = order.amount
-                            const fee: number = amount * account.commissionRatio
-                            const net: number = amount - fee
+                            const net: number = order.net
+                            const revenueWithCurrency: number = account.revenue[order.currency] || 0
+                            const newRevenueWithCurrency: number = revenueWithCurrency - amount
                             const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
                             const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
                             const accountsReceivableWithCurrency: number = accountsReceivable[order.currency] || 0
@@ -431,8 +432,10 @@ export class Manager
 
                             // set account data
                             transaction.set(account.reference, {
-                                accountsReceivable: {
-                                    available: { [currency]: newAccountsReceivable }
+                                updateAt: timestamp,
+                                revenue: { [currency]: newRevenueWithCurrency },
+                                balance: {
+                                    accountsReceivable: { [currency]: newAccountsReceivable }
                                 }
                             }, { merge: true })
                             
