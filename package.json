@@ -1,7 +1,7 @@
 {
   "private": false,
   "name": "@1amageek/tradable",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "scripts": {
     "lint": "./node_modules/.bin/tslint -p tslint.json",
     "build": "./node_modules/.bin/tsc -d",
@@ -40,8 +40,8 @@
   "dependencies": {
     "@google-cloud/firestore": "^0.14.1",
     "firebase-admin": "^5.12.1",
-    "firebase-functions": "^1.0.3",
-    "pring": "^0.11.3",
+    "firebase-functions": "^1.0.4",
+    "pring": "^0.11.4",
     "reflect-metadata": "^0.1.12"
   },
   "devDependencies": {
