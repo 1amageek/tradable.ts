@@ -160,7 +160,7 @@ describe("Tradable", () => {
             await changedSKU.fetch()
             expect(changedSKU.unitSales).toEqual(2)
             const inventory: Tradable.Inventory = changedSKU.inventory
-            expect(inventory.quantity).toEqual(2)
+            expect(inventory.quantity).toEqual(0)
 
         }, 10000)
 
