@@ -151,14 +151,15 @@ export declare type PaymentOptions = {
     customer?: string;
     vendorType: string;
 };
-export declare type ChangeOptions = {
-    vendorType: string;
-};
 export declare enum RefundReason {
     duplicate = "duplicate",
     fraudulent = "fraudulent",
     requestedByCustomer = "requested_by_customer"
 }
+export declare type CancelOptions = {
+    vendorType: string;
+    reason?: RefundReason;
+};
 export declare type RefundOptions = {
     vendorType: string;
     reason?: RefundReason;
@@ -169,7 +170,7 @@ export declare type TransferOptions = {
 export interface PaymentDelegate {
     pay<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>;
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>;
-    change<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, item: U, options: ChangeOptions): Promise<any>;
+    cancel<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: CancelOptions): Promise<any>;
     transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: TransferOptions): Promise<any>;
 }
 export declare enum TradableErrorCode {

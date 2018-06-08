@@ -1,5 +1,5 @@
 import * as FirebaseFirestore from '@google-cloud/firestore';
-import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, TransactionProtocol, AccountProtocol, PaymentDelegate, PaymentOptions, RefundOptions, TransferOptions, ChangeOptions } from "./index";
+import { SKUProtocol, OrderItemProtocol, ProductProtocol, OrderProtocol, TransactionProtocol, AccountProtocol, PaymentDelegate, PaymentOptions, RefundOptions, CancelOptions, TransferOptions } from "./index";
 export interface Process {
     <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
 }
@@ -41,10 +41,11 @@ export declare class Manager<SKU extends SKUProtocol, Product extends ProductPro
     private validateCurrency;
     private validateAmount;
     delegate?: PaymentDelegate;
+    private inventory;
     inventoryControl(order: Order, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
     pay(order: Order, options: PaymentOptions, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
-    private inventry;
-    change(order: Order, item: OrderItem, options: ChangeOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
+    order(order: Order, options: PaymentOptions, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
+    cancel(order: Order, options: CancelOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
     refund(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
     transfer(order: Order, options: TransferOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
     complete(order: Order, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>;
