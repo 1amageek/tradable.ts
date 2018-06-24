@@ -265,9 +265,6 @@ export class Manager
         if (!(order.status === OrderStatus.received || order.status === OrderStatus.waitingForPayment)) {
             throw new TradableError(TradableErrorCode.invalidStatus, order, `[Failure] pay ORDER/${order.id}, Order is not a payable status.`)
         }
-        if (!options.customer && !options.source) {
-            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] pay ORDER/${order.id}, PaymentOptions required customer or source`)
-        }
         if (!options.vendorType) {
             throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] pay ORDER/${order.id}, PaymentOptions required vendorType`)
         }
@@ -283,6 +280,9 @@ export class Manager
             }, { merge: true })
             return batch
         } else {
+            if (!options.customer && !options.source) {
+                throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] pay ORDER/${order.id}, PaymentOptions required customer or source`)
+            }
             try {
                 order.status = OrderStatus.paid
                 const result = await this.delegate.pay(order, options)
