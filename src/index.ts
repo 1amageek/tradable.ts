@@ -12,7 +12,6 @@ export let timestamp: admin.firestore.FieldValue
 export const initialize = (app: admin.app.App, serverTimestamp: admin.firestore.FieldValue) => {
     Pring.initialize(app, serverTimestamp)
     firestore = app.firestore()
-    firestore.settings({timestampsInSnapshots: true})
     timestamp = serverTimestamp
 }
 
