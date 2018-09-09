@@ -1,13 +1,13 @@
 process.env.NODE_ENV = 'test';
 import * as admin from 'firebase-admin'
 import * as Tradable from '../src/index'
-import { User } from './user'
-import { Product } from './product'
-import { SKU } from './sku'
-import { Order } from './order'
-import { OrderItem } from './orderItem'
-import { Transaction } from './transaction'
-import { Account } from './account'
+import { User } from './models/user'
+import { Product } from './models/product'
+import { SKU } from './models/sku'
+import { Order } from './models/order'
+import { OrderItem } from './models/orderItem'
+import { Transaction } from './models/transaction'
+import { Account } from './models/account'
 
 var key = require("../salada-f825d-firebase-adminsdk-19k25-ded6604978.json")
 const app = admin.initializeApp({

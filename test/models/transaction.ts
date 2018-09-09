@@ -1,5 +1,5 @@
 import * as Pring from 'pring'
-import * as tradable from '../src/index'
+import * as tradable from '../../src'
 import "reflect-metadata"
 
 const property = Pring.property

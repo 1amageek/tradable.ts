@@ -12,13 +12,13 @@ const app = admin.initializeApp({
 })
 Tradable.initialize(app, admin.firestore.FieldValue.serverTimestamp())
 
-import { User } from './user'
-import { Product } from './product'
-import { SKU } from './sku'
-import { Order } from './order'
-import { OrderItem } from './orderItem'
-import { Transaction } from './transaction'
-import { Account } from './account'
+import { User } from './models/user'
+import { Product } from './models/product'
+import { SKU } from './models/sku'
+import { Order } from './models/order'
+import { OrderItem } from './models/orderItem'
+import { Transaction } from './models/transaction'
+import { Account } from './models/account'
 import { StripePaymentDelegate } from './stripePaymentDelegate'
 
 describe("Tradable", () => {
