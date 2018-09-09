@@ -1,8 +1,6 @@
 process.env.NODE_ENV = 'test'
 import * as admin from 'firebase-admin'
-import * as Pring from 'pring'
 import * as Tradable from '../src/index'
-import * as UUID from 'uuid'
 import * as Config from './config'
 import * as Stripe from 'stripe'
 import { User } from './user'
@@ -13,7 +11,6 @@ import { OrderItem } from './orderItem'
 import { Transaction } from './transaction'
 import { Account } from './account'
 import { StripePaymentDelegate } from './stripePaymentDelegate'
-import { onRequest } from 'firebase-functions/lib/providers/https';
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 

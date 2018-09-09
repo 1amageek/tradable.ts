@@ -2,7 +2,6 @@ import * as Pring from 'pring'
 import * as tradable from '../src/index'
 import { Transaction } from './transaction'
 import "reflect-metadata"
-import { bankAccounts } from 'stripe'
 
 const property = Pring.property
 

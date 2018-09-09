@@ -1,18 +1,8 @@
 process.env.NODE_ENV = 'test';
 import * as admin from 'firebase-admin'
-import * as Pring from 'pring'
 import * as Tradable from '../src/index'
-import * as UUID from 'uuid'
 import * as Config from './config'
 import * as Stripe from 'stripe'
-import { User } from './user'
-import { Product } from './product'
-import { SKU } from './sku'
-import { Order } from './order'
-import { OrderItem } from './orderItem'
-import { Transaction } from './transaction'
-import { Account } from './account'
-import { StripePaymentDelegate } from './stripePaymentDelegate'
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
@@ -21,6 +11,15 @@ const app = admin.initializeApp({
     credential: admin.credential.cert(key)
 })
 Tradable.initialize(app, admin.firestore.FieldValue.serverTimestamp())
+
+import { User } from './user'
+import { Product } from './product'
+import { SKU } from './sku'
+import { Order } from './order'
+import { OrderItem } from './orderItem'
+import { Transaction } from './transaction'
+import { Account } from './account'
+import { StripePaymentDelegate } from './stripePaymentDelegate'
 
 describe("Tradable", () => {
 

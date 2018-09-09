@@ -10,7 +10,7 @@ export let firestore: FirebaseFirestore.Firestore
 export let timestamp: admin.firestore.FieldValue
 
 export const initialize = (app: admin.app.App, serverTimestamp: admin.firestore.FieldValue) => {
-    Pring.initialize(app, serverTimestamp)
+    Pring.initialize(app.firestore(), serverTimestamp)
     firestore = app.firestore()
     timestamp = serverTimestamp
 }

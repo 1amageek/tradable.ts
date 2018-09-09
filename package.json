@@ -41,18 +41,18 @@
     "@google-cloud/firestore": "^0.16.1",
     "firebase-admin": "^6.0.0",
     "firebase-functions": "^2.0.5",
-    "pring": "^0.13.1",
+    "pring": "^0.18.1",
     "reflect-metadata": "^0.1.12"
   },
   "devDependencies": {
-    "@types/jest": "^22.2.3",
-    "@types/node": "^9.6.28",
-    "@types/stripe": "^5.0.21",
+    "@types/jest": "^23.3.2",
+    "@types/node": "^10.9.4",
+    "@types/stripe": "^5.0.24",
     "jest": "^22.4.4",
     "stripe": "^6.7.0",
     "ts-jest": "^22.4.6",
     "tslint": "^5.11.0",
-    "typescript": "^2.9.2"
+    "typescript": "^3.0.3"
   },
   "jest": {
     "transform": {

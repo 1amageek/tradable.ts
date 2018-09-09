@@ -169,7 +169,7 @@ export class Manager
                     const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
                     reject(error)
                 }
-                transaction.set(sku.reference, {
+                transaction.set(sku.reference as FirebaseFirestore.DocumentReference, {
                     updateAt: timestamp,
                     unitSales: newUnitSales,
                     inventory: {
@@ -189,7 +189,7 @@ export class Manager
                     }
                     default: {
                         const newUnitSales: number = unitSales + quantity
-                        transaction.set(sku.reference, {
+                        transaction.set(sku.reference as FirebaseFirestore.DocumentReference, {
                             updateAt: timestamp,
                             unitSales: newUnitSales
                         }, { merge: true })
@@ -200,7 +200,7 @@ export class Manager
             }
             case StockType.infinite: {
                 const newUnitSales: number = unitSales + quantity
-                transaction.set(sku.reference, {
+                transaction.set(sku.reference as FirebaseFirestore.DocumentReference, {
                     updateAt: timestamp,
                     unitSales: newUnitSales
                 }, { merge: true })
@@ -233,7 +233,7 @@ export class Manager
                         await this.inventory(InventoryControlType.increase, order, item, transaction, resolve, reject)
                     }
 
-                    transaction.set(order.reference, {
+                    transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
                         updateAt: timestamp,
                         status: OrderStatus.received
                     }, { merge: true })
@@ -274,7 +274,7 @@ export class Manager
 
         if (order.amount === 0) {
             order.status = OrderStatus.paid
-            batch.set(order.reference, {
+            batch.set(order.reference as FirebaseFirestore.DocumentReference, {
                 updateAt: timestamp,
                 status: OrderStatus.paid
             }, { merge: true })
@@ -322,7 +322,7 @@ export class Manager
                             const newRevenue: number = amountOfRevenue + amount
 
                             // set account data
-                            transaction.set(account.reference, {
+                            transaction.set(account.reference as FirebaseFirestore.DocumentReference, {
                                 updateAt: timestamp,
                                 revenue: { [currency]: newRevenue },
                                 balance: {
@@ -331,7 +331,7 @@ export class Manager
                             }, { merge: true })
 
                             // set order data
-                            transaction.set(order.reference, {
+                            transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
                                 updateAt: timestamp,
                                 paymentInformation: {
                                     [options.vendorType]: result
@@ -392,7 +392,7 @@ export class Manager
                             for (const item of items) {
                                 await this.inventory(InventoryControlType.decrease, order, item, transaction, resolve, reject)
                             }
-                            transaction.set(order.reference, {
+                            transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
                                 status: OrderStatus.canceled
                             }, { merge: true })
                             resolve(`[Success] cancel ORDER/${order.id}, USER/${order.selledBy}`)
@@ -431,7 +431,7 @@ export class Manager
                             const result = await this.delegate.cancel(order, options)
 
                             // set account data
-                            transaction.set(account.reference, {
+                            transaction.set(account.reference as FirebaseFirestore.DocumentReference, {
                                 updateAt: timestamp,
                                 revenue: { [currency]: newRevenueWithCurrency },
                                 balance: {
@@ -440,7 +440,7 @@ export class Manager
                             }, { merge: true })
                             
                             // set order data
-                            transaction.set(order.reference, {
+                            transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
                                 status: OrderStatus.canceled,
                                 refundInformation: {
                                     [options.vendorType]: result
@@ -477,7 +477,7 @@ export class Manager
 
         if (order.amount === 0) {
             order.status = OrderStatus.refunded
-            batch.set(order.reference, {
+            batch.set(order.reference as FirebaseFirestore.DocumentReference, {
                 updateAt: timestamp,
                 status: OrderStatus.refunded
             }, { merge: true })
@@ -500,14 +500,14 @@ export class Manager
                                 const newAmount: number = amountOfAvailable - net
 
                                 // set account data
-                                transaction.set(account.reference, {
+                                transaction.set(account.reference as FirebaseFirestore.DocumentReference, {
                                     balance: {
                                         available: { [currency]: newAmount }
                                     }
                                 }, { merge: true })
 
                                 // set order data
-                                transaction.set(order.reference, {
+                                transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
                                     refundInformation: {
                                         [options.vendorType]: result
                                     },
@@ -523,14 +523,14 @@ export class Manager
                                 const newAmount: number = amountAccountsReceivable - net
 
                                 // set account data
-                                transaction.set(account.reference, {
+                                transaction.set(account.reference as FirebaseFirestore.DocumentReference, {
                                     accountsReceivable: {
                                         available: { [currency]: newAmount }
                                     }
                                 }, { merge: true })
 
                                 // set order data
-                                transaction.set(order.reference, {
+                                transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
                                     refundInformation: {
                                         [options.vendorType]: result
                                     },
@@ -574,7 +574,7 @@ export class Manager
 
         if (order.amount === 0) {
             order.status = OrderStatus.transferred
-            batch.set(order.reference, {
+            batch.set(order.reference as FirebaseFirestore.DocumentReference, {
                 updateAt: timestamp,
                 status: OrderStatus.transferred
             }, { merge: true })
@@ -608,7 +608,7 @@ export class Manager
                             const newAvailableAmount: number = availableAmount + net
 
                             // set account data
-                            transaction.set(account.reference, {
+                            transaction.set(account.reference as FirebaseFirestore.DocumentReference, {
                                 balance: {
                                     accountsReceivable: { [currency]: newAccountsReceivableAmount },
                                     available: { [currency]: newAvailableAmount }
@@ -627,10 +627,10 @@ export class Manager
                             trans.information = {
                                 [options.vendorType]: result
                             }
-                            transaction.set(trans.reference, trans.value())
+                            transaction.set(trans.reference as FirebaseFirestore.DocumentReference, trans.value())
 
                             // set order data
-                            transaction.set(targetOrder.reference, {
+                            transaction.set(targetOrder.reference as FirebaseFirestore.DocumentReference, {
                                 transferInformation: {
                                     [options.vendorType]: result
                                 },
@@ -677,7 +677,7 @@ export class Manager
         if (order.status === OrderStatus.completed) {
             return
         }
-        batch.set(order.reference, {
+        batch.set(order.reference as FirebaseFirestore.DocumentReference, {
             updateAt: timestamp,
             status: OrderStatus.completed
         }, { merge: true })
