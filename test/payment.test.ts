@@ -105,7 +105,7 @@ describe("Tradable", () => {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
@@ -150,7 +150,7 @@ describe("Tradable", () => {
             } catch (error) {
                 expect(error).not.toBeNull()
             }
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.received)
             expect(received.paymentInformation).toBeUndefined()
@@ -194,7 +194,7 @@ describe("Tradable", () => {
             } catch (error) {
                 expect(error).not.toBeNull()
             }
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.waitingForPayment)
             expect(received.paymentInformation).toBeUndefined()
@@ -238,7 +238,7 @@ describe("Tradable", () => {
                 // console.log(error)
                 expect(error).not.toBeNull()
             }
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.created)
             expect(received.paymentInformation).toBeUndefined()
@@ -283,7 +283,7 @@ describe("Tradable", () => {
                 // console.log(error)
                 expect(error).not.toBeNull()
             }
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation).toBeUndefined()

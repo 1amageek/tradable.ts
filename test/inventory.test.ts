@@ -148,7 +148,7 @@ describe("Tradable", () => {
                 // console.log(error)
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.received)
 
@@ -195,7 +195,7 @@ describe("Tradable", () => {
                 console.log(error)
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.rejected)
 
@@ -242,7 +242,7 @@ describe("Tradable", () => {
                 // console.log(error)
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.received)
 
@@ -289,7 +289,7 @@ describe("Tradable", () => {
                 // console.log(error)
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.received)
 
@@ -336,7 +336,7 @@ describe("Tradable", () => {
                 // console.log(error)
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.received)
 
@@ -384,7 +384,7 @@ describe("Tradable", () => {
                 // console.log(error)
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.rejected)
 

@@ -87,7 +87,7 @@ describe("Tradable", () => {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.completed)
             expect(received.paymentInformation).toBeUndefined()

@@ -96,7 +96,7 @@ describe("Tradable", () => {
                 console.log(error)
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
@@ -140,7 +140,7 @@ describe("Tradable", () => {
                 // console.log(error)
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
@@ -185,7 +185,7 @@ describe("Tradable", () => {
                 // console.log(error)
             }
             
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.created)
             expect(received.paymentInformation).toBeUndefined()
@@ -230,7 +230,7 @@ describe("Tradable", () => {
                 // console.log(error)
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.created)
             expect(received.paymentInformation).toBeUndefined()
@@ -275,7 +275,7 @@ describe("Tradable", () => {
                 // console.log(error)
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation).toBeUndefined()
@@ -320,7 +320,7 @@ describe("Tradable", () => {
                 // console.log(error)
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.waitingForRefund)
             expect(received.paymentInformation).toBeUndefined()
@@ -365,7 +365,7 @@ describe("Tradable", () => {
                 // console.log(error)
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.refunded)
             expect(received.paymentInformation).toBeUndefined()
@@ -410,7 +410,7 @@ describe("Tradable", () => {
                 // console.log(error)
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.canceled)
             expect(received.paymentInformation).toBeUndefined()

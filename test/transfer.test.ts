@@ -119,11 +119,11 @@ describe("Tradable", () => {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
-            const account: Account = await Account.get(order.selledBy, Account)
+            const account: Account = await Account.get(order.selledBy)
             expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.amount * (1 - 0.1))
 
         }, 15000)
@@ -164,11 +164,11 @@ describe("Tradable", () => {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
             expect(received.paymentInformation['stripe']).not.toBeNull()
-            const account: Account = await Account.get(order.selledBy, Account)
+            const account: Account = await Account.get(order.selledBy)
             expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.amount * (1 - 0.1) * 2)
 
             await order.delete()
@@ -224,7 +224,7 @@ describe("Tradable", () => {
         // }, 10000)
 
         test("Transfer succeeds after payment jpy", async () => {
-            const order: Order = await Order.get(targetOrder.id, Order)
+            const order: Order = await Order.get(targetOrder.id)
             const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
             manager.delegate = new StripePaymentDelegate()
 
@@ -239,12 +239,12 @@ describe("Tradable", () => {
                 expect(error).not.toBeNull()
             }
 
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.transferred)
             expect(received.paymentInformation['stripe']).not.toBeNull()
             expect(received.transferInformation['stripe']).not.toBeNull()
-            const account: Account = await Account.get(order.selledBy, Account)
+            const account: Account = await Account.get(order.selledBy)
             expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(order.net)
             expect(account.balance['available'][Tradable.Currency.JPY]).toEqual(order.net)
             expect(received.transferredTo).not.toBeNull()

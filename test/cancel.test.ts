@@ -96,7 +96,7 @@ describe("Tradable", () => {
             manager.delegate = new StripePaymentDelegate()
 
             try {
-                const myOrder: Order = await Order.get(order.id, Order)
+                const myOrder: Order = await Order.get(order.id)
                 await manager.execute(myOrder, async (_order, batch) => {
                     return await manager.order(_order, {
                         customer: Config.STRIPE_CUS_TOKEN,
@@ -109,7 +109,7 @@ describe("Tradable", () => {
             }
 
             // Status
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
 
@@ -117,7 +117,7 @@ describe("Tradable", () => {
             expect(received.paymentInformation['stripe']).not.toBeNull()
 
             // accountsReceivable
-            const account = await Account.get(order.selledBy, Account)
+            const account = await Account.get(order.selledBy)
             expect(account.balance['accountsReceivable'][order.currency]).toEqual(90)
 
             // revenue
@@ -140,7 +140,7 @@ describe("Tradable", () => {
             manager.delegate = new StripePaymentDelegate()
 
             try {
-                const myOrder: Order = await Order.get(order.id, Order)
+                const myOrder: Order = await Order.get(order.id)
                 await manager.execute(myOrder, async (_order, batch) => {
                     return await manager.cancel(_order, {
                         vendorType: 'stripe'
@@ -150,7 +150,7 @@ describe("Tradable", () => {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
 
             // status
@@ -159,7 +159,7 @@ describe("Tradable", () => {
             // refundInformation
             expect(received.refundInformation['stripe']).not.toBeNull()
 
-            const account: Account = await Account.get(order.selledBy, Account)
+            const account: Account = await Account.get(order.selledBy)
 
             // accountsReceivable
             expect(account.balance['accountsReceivable'][order.currency]).toEqual(0)
@@ -185,7 +185,7 @@ describe("Tradable", () => {
             manager.delegate = new StripePaymentDelegate()
 
             try {
-                const _order: Order = await Order.get(order.id, Order)
+                const _order: Order = await Order.get(order.id)
                 await manager.execute(_order, async (order) => {
                     return await manager.cancel(order, {
                         vendorType: 'stripe',
@@ -196,13 +196,13 @@ describe("Tradable", () => {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
 
             expect(status).toEqual(Tradable.OrderStatus.canceled)
             expect(received.refundInformation['stripe']).not.toBeNull()
 
-            const account = await Account.get(order.selledBy, Account)
+            const account = await Account.get(order.selledBy)
             expect(account.balance['accountsReceivable'][order.currency]).toEqual(0)
 
             // revenue

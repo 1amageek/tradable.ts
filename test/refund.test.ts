@@ -94,7 +94,7 @@ describe("Tradable", () => {
             manager.delegate = new StripePaymentDelegate()
 
             try {
-                const _order: Order = await Order.get(order.id, Order)
+                const _order: Order = await Order.get(order.id)
 
                 order.status = Tradable.OrderStatus.received
                 await manager.execute(order, async (_order, batch) => {
@@ -107,7 +107,7 @@ describe("Tradable", () => {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
             expect(status).toEqual(Tradable.OrderStatus.paid)
         }, 15000)
@@ -117,7 +117,7 @@ describe("Tradable", () => {
             manager.delegate = new StripePaymentDelegate()
 
             try {
-                const _order: Order = await Order.get(order.id, Order)
+                const _order: Order = await Order.get(order.id)
                 await manager.execute(_order, async (order, batch) => {
                     return await manager.refund(order, {
                         vendorType: 'stripe'
@@ -127,13 +127,13 @@ describe("Tradable", () => {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
 
             expect(status).toEqual(Tradable.OrderStatus.refunded)
             expect(received.refundInformation['stripe']).not.toBeNull()
 
-            const account = await Account.get(order.selledBy, Account)
+            const account = await Account.get(order.selledBy)
             expect(account.balance['accountsReceivable'][order.currency]).toEqual(90)
 
         }, 15000)
@@ -143,7 +143,7 @@ describe("Tradable", () => {
             manager.delegate = new StripePaymentDelegate()
 
             try {
-                const _order: Order = await Order.get(order.id, Order)
+                const _order: Order = await Order.get(order.id)
                 await manager.execute(_order, async (order) => {
                     return await manager.refund(order, {
                         vendorType: 'stripe',
@@ -154,13 +154,13 @@ describe("Tradable", () => {
                 console.log(error)
                 expect(error).not.toBeNull()
             }
-            const received: Order = await Order.get(order.id, Order)
+            const received: Order = await Order.get(order.id)
             const status: Tradable.OrderStatus = received.status
 
             expect(status).toEqual(Tradable.OrderStatus.refunded)
             expect(received.refundInformation['stripe']).not.toBeNull()
 
-            const account = await Account.get(order.selledBy, Account)
+            const account = await Account.get(order.selledBy)
             expect(account.balance['accountsReceivable'][order.currency]).toEqual(90)
 
         }, 15000)
