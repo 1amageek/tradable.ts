@@ -18,10 +18,8 @@ export const initialize = (app: admin.app.App, serverTimestamp: admin.firestore.
 /// UserProtocol is a protocol that the user must retain to make it tradeable.
 export interface UserProtocol
     <
-    SKU extends SKUProtocol,
-    Product extends ProductProtocol<SKU>,
-    OrderItem extends OrderItemProtocol,
-    Order extends OrderProtocol<OrderItem>
+    TradeTransaction extends TradeTransactionProtocol,
+    Item extends ItemProtocol
     > extends Pring.Base {
     isAvailabled: boolean
     country: string
@@ -29,15 +27,25 @@ export interface UserProtocol
     skus: FirebaseFirestore.Query
     orders: FirebaseFirestore.Query
     orderings: FirebaseFirestore.Query
+    items: Pring.NestedCollection<Item>
+    tradeTransactions: Pring.NestedCollection<TradeTransaction>
 }
 
-export enum TradeType {
-    payment = 'payment',
-    paymentRefund = 'payment_refund'
+export enum TradeTransactionType {
+    order = 'order',
+    orderCancel = 'order_cancel',
+    storage = 'storage',
+    retrieval = 'retrieval'
 }
 
-export interface TradeProtocol extends Pring.Base {
-
+export interface TradeTransactionProtocol extends Pring.Base {
+    type: TradeTransactionType
+    quantity: number
+    selledBy: string
+    purchasedBy: string
+    order: string
+    product: string
+    sku: string
 }
 
 export enum BalanceTransactionType {
@@ -85,11 +93,12 @@ export interface AccountProtocol<Transaction extends BalanceTransactionProtocol>
     fundInformation: { [key: string]: any }
 }
 
-export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
+export interface ProductProtocol<SKU extends SKUProtocol, TradeTransaction extends TradeTransactionProtocol> extends Pring.Base {
     title: string
     selledBy: string
     createdBy: string
     skus: Pring.NestedCollection<SKU>
+    tradeTransactions: Pring.NestedCollection<TradeTransaction>
 }
 
 export enum StockType {
@@ -190,6 +199,14 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     paymentInformation: { [key: string]: any }
     transferInformation: { [key: string]: any }
     refundInformation: { [key: string]: any }
+}
+
+export interface ItemProtocol extends Pring.Base {
+    selledBy: string
+    order: string
+    product: string
+    sku: string
+    isCanceled: boolean
 }
 
 export type TransactionOptions = {
