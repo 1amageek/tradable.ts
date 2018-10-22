@@ -6,9 +6,9 @@ import { Order } from './models/order'
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
-export class StripePaymentDelegate implements tradable.PaymentDelegate {
+export class StripePaymentDelegate implements tradable.TransactionDelegate {
 
-    async pay<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.PaymentOptions): Promise<any> {
+    async charge<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.ChargeOptions): Promise<any> {
 
         const amount = order.amount
         const currency = order.currency

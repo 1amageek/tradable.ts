@@ -14,7 +14,7 @@ import { StripePaymentDelegate } from './stripePaymentDelegate'
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
-var key = require("../salada-f825d-firebase-adminsdk-19k25-ded6604978.json")
+const key = require("../key.json")
 const app = admin.initializeApp({
     credential: admin.credential.cert(key)
 })

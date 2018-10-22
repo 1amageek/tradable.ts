@@ -16,7 +16,7 @@ import { StripePaymentDelegate } from './stripePaymentDelegate'
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
-var key = require("../salada-f825d-firebase-adminsdk-19k25-ded6604978.json")
+const key = require("../key.json")
 const app = admin.initializeApp({
     credential: admin.credential.cert(key)
 })
@@ -87,7 +87,7 @@ describe("Tradable", () => {
 
             try {
                 await manager.execute(order, async (order, batch) => {
-                    return await manager.pay(order, {
+                    return await manager.charge(order, {
                         customer: Config.STRIPE_CUS_TOKEN,
                         vendorType: 'stripe'
                     }, batch)

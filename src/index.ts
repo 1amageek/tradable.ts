@@ -31,7 +31,16 @@ export interface UserProtocol
     orderings: FirebaseFirestore.Query
 }
 
-export enum TransactionType {
+export enum TradeType {
+    payment = 'payment',
+    paymentRefund = 'payment_refund'
+}
+
+export interface TradeProtocol extends Pring.Base {
+
+}
+
+export enum BalanceTransactionType {
     payment = 'payment',
     paymentRefund = 'payment_refund',
     transfer = 'transfer',
@@ -41,12 +50,12 @@ export enum TransactionType {
 }
 
 /// Transaction is the history that changed Balance. Tranasaction is made from the ID of the event.
-export interface TransactionProtocol extends Pring.Base {
-    type: TransactionType
+export interface BalanceTransactionProtocol extends Pring.Base {
+    type: BalanceTransactionType
     currency: Currency
     amount: number
-    fee: number
-    net: number // net = amount - fee
+    from?: string
+    to?: string
     order?: string
     transfer?: string
     payout?: string
@@ -64,12 +73,13 @@ export type Balance = {
 
 /// AccountProtocol must have the same ID as UserProtocol.
 /// AccountPtotocol holds information that can not be accessed except for principals with a protocol with a high security level.
-export interface AccountProtocol<Transaction extends TransactionProtocol> extends Pring.Base {
+export interface AccountProtocol<Transaction extends BalanceTransactionProtocol> extends Pring.Base {
     country: string
     isRejected: boolean
     isSigned: boolean
-    commissionRatio: number // 0 ~ 1
+    commissionRate: number // 0 ~ 1
     revenue: { [currency: string]: number }
+    sales: { [currency: string]: number }
     balance: Balance
     transactions: Pring.NestedCollection<Transaction>
     fundInformation: { [key: string]: any }
@@ -172,11 +182,9 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     shippingTo: { [key: string]: string }
     transferredTo: { [key: string]: true }
     paidAt?: Date
-    expirationDate: Date
+    expirationDate?: Date
     currency: Currency
     amount: number
-    fee: number
-    net: number // net = amount - fee
     items: Pring.NestedCollection<OrderItem>
     status: OrderStatus
     paymentInformation: { [key: string]: any }
@@ -184,10 +192,17 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     refundInformation: { [key: string]: any }
 }
 
-export type PaymentOptions = {
+export type TransactionOptions = {
     source?: string
     customer?: string
     vendorType: string
+}
+
+export type ChargeOptions = {
+    source?: string
+    customer?: string
+    vendorType: string
+    commissionRate: number
 }
 
 export enum RefundReason {
@@ -210,10 +225,10 @@ export type TransferOptions = {
     vendorType: string
 }
 
-export interface PaymentDelegate {
+export interface TransactionDelegate {
 
-    /// This function will make payment. The payment result is saved in the VendorType set in PaymentOptions.
-    pay<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>
+    /// This function will make payment. The payment result is saved in the VendorType set in ChargeOptions.
+    charge<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: ChargeOptions): Promise<any>
 
     /// This functioin will make a refund. The refund result is saved in the VendorType set in RefundOptions.
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>
@@ -245,10 +260,10 @@ export class TradableError<T extends OrderItemProtocol, U extends OrderProtocol<
 
     constructor(code: TradableErrorCode, order: U, message: string, stack?: string) {
         this.name = 'tradable.error'
-        this.info = { 
+        this.info = {
             code: code,
             order: {
-                [order.id]: order.value() 
+                [order.id]: order.value()
             }
         }
         this.message = message
