@@ -25,85 +25,279 @@ export class BalanceManager
         this._Account = account
     }
 
-    payment(order: string, currency: Currency, amount: number, batch: FirebaseFirestore.Transaction): FirebaseFirestore.Transaction {
-        const transaction: BalanceTransaction = new this._BalanceTransaction()
-        transaction.type = BalanceTransactionType.payment
-        transaction.currency = currency
-        transaction.amount = amount
-        transaction.order = order
-        batch.set(transaction.reference as FirebaseFirestore.DocumentReference, transaction.value(), { merge: true })
-        return batch
+    platform: string = "platform"
+
+    bankAccount: string = "bank_account"
+
+    /// Purchaser -> Platform
+    async payment(purchasedBy: string, order: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+
+        const purchaser: Account = new this._Account(purchasedBy, {})
+        const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
+        balanceTransaction.type = BalanceTransactionType.payment
+        balanceTransaction.currency = currency
+        balanceTransaction.amount = amount
+        balanceTransaction.order = order
+        balanceTransaction.from = purchasedBy
+        balanceTransaction.to = this.platform
+
+        transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
+        transaction.set(purchaser.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
+        return transaction
     }
 
-    paymentRefund(order: string, currency: Currency, amount: number, batch: FirebaseFirestore.Transaction): FirebaseFirestore.Transaction {
-        const transaction: BalanceTransaction = new this._BalanceTransaction()
-        transaction.type = BalanceTransactionType.paymentRefund
-        transaction.currency = currency
-        transaction.amount = amount
-        transaction.order = order
-        batch.set(transaction.reference as FirebaseFirestore.DocumentReference, transaction.value(), { merge: true })
-        return batch
+    /// Platform -> Purchaser
+    async paymentRefund(purchasedBy: string, order: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+
+        const purchaser: Account = new this._Account(purchasedBy, {})
+        const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
+        balanceTransaction.type = BalanceTransactionType.paymentRefund
+        balanceTransaction.currency = currency
+        balanceTransaction.amount = amount
+        balanceTransaction.order = order
+        balanceTransaction.from = this.platform
+        balanceTransaction.to = purchasedBy
+
+        transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
+        transaction.set(purchaser.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
+        return transaction
     }
 
-    transfer(order: string, currency: Currency, amount: number, accountID: string, batch: FirebaseFirestore.Transaction): FirebaseFirestore.Transaction {
-        const send: BalanceTransaction = new this._BalanceTransaction()
-        send.type = BalanceTransactionType.transfer
-        send.currency = currency
-        send.amount = -amount
-        send.order = order
-        send.to = accountID
-        batch.set(send.reference as FirebaseFirestore.DocumentReference, send.value(), { merge: true })
+    /// User -> User        from: userID, to: userID
+    /// Platform -> User    from: "platform", to: userID   
+    /// User -> Platform    from: userID, to: platform
+    async transfer(from: string, to: string, order: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
 
-        const account: Account = new this._Account(accountID, {})
-        const receive: BalanceTransaction = new this._BalanceTransaction(send.id)
-        receive.type = BalanceTransactionType.transfer
-        receive.currency = currency
-        receive.amount = amount
-        receive.order = order
-        account.transactions.insert(receive)
-        batch.set(receive.reference as FirebaseFirestore.DocumentReference, receive.value(), { merge: true })
-        return batch
+        if (from === this.platform) {
+            const receiver: Account = new this._Account(to, {})
+            await receiver.fetch(transaction)
+
+            const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
+            balanceTransaction.type = BalanceTransactionType.transfer
+            balanceTransaction.currency = currency
+            balanceTransaction.amount = amount
+            balanceTransaction.order = order
+            balanceTransaction.from = from
+            balanceTransaction.to = to
+            transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference,
+                balanceTransaction.value(),
+                { merge: true })
+            transaction.set(receiver.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+                balanceTransaction.value(),
+                { merge: true })
+
+            const receiverBalance = (receiver.balance.available[currency] || 0) + amount
+            transaction.set(receiver.reference as FirebaseFirestore.DocumentReference, {
+                balance: {
+                    available: {
+                        [currency]: receiverBalance
+                    }
+                }
+            })
+        } else if (to === this.platform) {
+            const sender: Account = new this._Account(from, {})
+            await sender.fetch(transaction)
+
+            const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
+            balanceTransaction.type = BalanceTransactionType.transfer
+            balanceTransaction.currency = currency
+            balanceTransaction.amount = amount
+            balanceTransaction.order = order
+            balanceTransaction.from = from
+            balanceTransaction.to = to
+            transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+                balanceTransaction.value(),
+                { merge: true })
+
+            const senderBalance = (sender.balance.available[currency] || 0) - amount
+            transaction.set(sender.reference as FirebaseFirestore.DocumentReference, {
+                balance: {
+                    available: {
+                        [currency]: senderBalance
+                    }
+                }
+            })
+        } else {
+            const sender: Account = new this._Account(from, {})
+            const receiver: Account = new this._Account(to, {})
+            await Promise.all([sender.fetch(transaction), receiver.fetch(transaction)])
+
+            const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
+            balanceTransaction.type = BalanceTransactionType.transfer
+            balanceTransaction.currency = currency
+            balanceTransaction.amount = amount
+            balanceTransaction.order = order
+            balanceTransaction.from = from
+            balanceTransaction.to = to
+            transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference,
+                balanceTransaction.value(),
+                { merge: true })
+            transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+                balanceTransaction.value(),
+                { merge: true })
+            transaction.set(receiver.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+                balanceTransaction.value(),
+                { merge: true })
+
+            const senderBalance = (sender.balance.available[currency] || 0) - amount
+            const receiverBalance = (receiver.balance.available[currency] || 0) + amount
+
+            transaction.set(sender.reference as FirebaseFirestore.DocumentReference, {
+                balance: {
+                    available: {
+                        [currency]: senderBalance
+                    }
+                }
+            })
+            transaction.set(receiver.reference as FirebaseFirestore.DocumentReference, {
+                balance: {
+                    available: {
+                        [currency]: receiverBalance
+                    }
+                }
+            })
+        }
+        return transaction
     }
 
-    transferRefund(order: string, currency: Currency, amount: number, accountID: string, batch: FirebaseFirestore.Transaction): FirebaseFirestore.Transaction {
-        const account: Account = new this._Account(accountID, {})
-        const send: BalanceTransaction = new this._BalanceTransaction()
-        send.type = BalanceTransactionType.transferRefund
-        send.currency = currency
-        send.amount = -amount
-        send.order = order
-        account.transactions.insert(send)
-        batch.set(send.reference as FirebaseFirestore.DocumentReference, send.value(), { merge: true })
+    /// User -> User        from: userID, to: userID
+    /// Platform -> User    from: "platform", to: userID   
+    /// User -> Platform    from: userID, to: platform
+    async transferRefund(from: string, to: string, order: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
 
-        const receive: BalanceTransaction = new this._BalanceTransaction(send.id)
-        receive.type = BalanceTransactionType.transferRefund
-        receive.currency = currency
-        receive.amount = amount
-        receive.order = order
-        receive.from = accountID
-        batch.set(receive.reference as FirebaseFirestore.DocumentReference, receive.value(), { merge: true })
-        return batch
+        if (from === this.platform) {
+            const receiver: Account = new this._Account(to, {})
+            await receiver.fetch(transaction)
+
+            const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
+            balanceTransaction.type = BalanceTransactionType.transferRefund
+            balanceTransaction.currency = currency
+            balanceTransaction.amount = amount
+            balanceTransaction.order = order
+            balanceTransaction.from = from
+            balanceTransaction.to = to
+            transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference,
+                balanceTransaction.value(),
+                { merge: true })
+            transaction.set(receiver.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+                balanceTransaction.value(),
+                { merge: true })
+
+            const receiverBalance = (receiver.balance.available[currency] || 0) + amount
+            transaction.set(receiver.reference as FirebaseFirestore.DocumentReference, {
+                balance: {
+                    available: {
+                        [currency]: receiverBalance
+                    }
+                }
+            })
+        } else if (to === this.platform) {
+            const sender: Account = new this._Account(from, {})
+            await sender.fetch(transaction)
+
+            const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
+            balanceTransaction.type = BalanceTransactionType.transferRefund
+            balanceTransaction.currency = currency
+            balanceTransaction.amount = amount
+            balanceTransaction.order = order
+            balanceTransaction.from = from
+            balanceTransaction.to = to
+            transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+                balanceTransaction.value(),
+                { merge: true })
+
+            const senderBalance = (sender.balance.available[currency] || 0) - amount
+            transaction.set(sender.reference as FirebaseFirestore.DocumentReference, {
+                balance: {
+                    available: {
+                        [currency]: senderBalance
+                    }
+                }
+            })
+        } else {
+            const sender: Account = new this._Account(from, {})
+            const receiver: Account = new this._Account(to, {})
+            await Promise.all([sender.fetch(transaction), receiver.fetch(transaction)])
+
+            const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
+            balanceTransaction.type = BalanceTransactionType.transferRefund
+            balanceTransaction.currency = currency
+            balanceTransaction.amount = amount
+            balanceTransaction.order = order
+            balanceTransaction.from = from
+            balanceTransaction.to = to
+            transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference,
+                balanceTransaction.value(),
+                { merge: true })
+            transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+                balanceTransaction.value(),
+                { merge: true })
+            transaction.set(receiver.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+                balanceTransaction.value(),
+                { merge: true })
+
+            const senderBalance = (sender.balance.available[currency] || 0) - amount
+            const receiverBalance = (receiver.balance.available[currency] || 0) + amount
+
+            transaction.set(sender.reference as FirebaseFirestore.DocumentReference, {
+                balance: {
+                    available: {
+                        [currency]: senderBalance
+                    }
+                }
+            })
+            transaction.set(receiver.reference as FirebaseFirestore.DocumentReference, {
+                balance: {
+                    available: {
+                        [currency]: receiverBalance
+                    }
+                }
+            })
+        }
+        return transaction
     }
 
-    payout(order: string, currency: Currency, amount: number, accountID: string, batch: FirebaseFirestore.Transaction): FirebaseFirestore.Transaction {
-        const transaction: BalanceTransaction = new this._BalanceTransaction()
-        transaction.type = BalanceTransactionType.payout
-        transaction.currency = currency
-        transaction.amount = -amount
-        transaction.order = order
-        transaction.from = accountID
-        batch.set(transaction.reference as FirebaseFirestore.DocumentReference, transaction.value(), { merge: true })
-        return batch
+    async payout(accountID: string, order: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+        const sender: Account = new this._Account(accountID, {})
+        await sender.fetch(transaction)
+        const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
+        balanceTransaction.type = BalanceTransactionType.payout
+        balanceTransaction.currency = currency
+        balanceTransaction.amount = amount
+        balanceTransaction.order = order
+        balanceTransaction.from = accountID
+        balanceTransaction.to = this.bankAccount
+        transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
+        const senderBalance = (sender.balance.available[currency] || 0) - amount
+        transaction.set(sender.reference as FirebaseFirestore.DocumentReference, {
+            balance: {
+                available: {
+                    [currency]: senderBalance
+                }
+            }
+        })
+        return transaction
     }
 
-    payoutCancel(order: string, currency: Currency, amount: number, accountID: string, batch: FirebaseFirestore.Transaction): FirebaseFirestore.Transaction {
-        const transaction: BalanceTransaction = new this._BalanceTransaction()
-        transaction.type = BalanceTransactionType.payoutCancel
-        transaction.currency = currency
-        transaction.amount = amount
-        transaction.order = order
-        transaction.from = accountID
-        batch.set(transaction.reference as FirebaseFirestore.DocumentReference, transaction.value(), { merge: true })
-        return batch
+    async payoutCancel(accountID: string, order: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+        const receiver: Account = new this._Account(accountID, {})
+        await receiver.fetch(transaction)
+        const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
+        balanceTransaction.type = BalanceTransactionType.payoutCancel
+        balanceTransaction.currency = currency
+        balanceTransaction.amount = amount
+        balanceTransaction.order = order
+        balanceTransaction.from = this.bankAccount
+        balanceTransaction.to = accountID
+        transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
+        const receiverBalance = (receiver.balance.available[currency] || 0) + amount
+        transaction.set(receiver.reference as FirebaseFirestore.DocumentReference, {
+            balance: {
+                available: {
+                    [currency]: receiverBalance
+                }
+            }
+        })
+        return transaction
     }
 }

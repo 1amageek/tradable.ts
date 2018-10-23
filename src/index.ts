@@ -89,16 +89,15 @@ export interface AccountProtocol<Transaction extends BalanceTransactionProtocol>
     revenue: { [currency: string]: number }
     sales: { [currency: string]: number }
     balance: Balance
-    transactions: Pring.NestedCollection<Transaction>
+    balanceTransactions: Pring.NestedCollection<Transaction>
     fundInformation: { [key: string]: any }
 }
 
-export interface ProductProtocol<SKU extends SKUProtocol, TradeTransaction extends TradeTransactionProtocol> extends Pring.Base {
+export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
     title: string
     selledBy: string
     createdBy: string
     skus: Pring.NestedCollection<SKU>
-    tradeTransactions: Pring.NestedCollection<TradeTransaction>
 }
 
 export enum StockType {
