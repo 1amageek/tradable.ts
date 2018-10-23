@@ -30,7 +30,9 @@ import {
 
 export class StockManager
     <
-    User extends UserProtocol<TradeTransaction, Item>,
+    Order extends OrderProtocol<OrderItem>,
+    OrderItem extends OrderItemProtocol,
+    User extends UserProtocol<Order, OrderItem, TradeTransaction, Item>,
     Product extends ProductProtocol<SKU>,
     SKU extends SKUProtocol,
     Item extends ItemProtocol,

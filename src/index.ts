@@ -18,6 +18,8 @@ export const initialize = (app: admin.app.App, serverTimestamp: admin.firestore.
 /// UserProtocol is a protocol that the user must retain to make it tradeable.
 export interface UserProtocol
     <
+    Order extends OrderProtocol<OrderItem>,
+    OrderItem extends OrderItemProtocol,
     TradeTransaction extends TradeTransactionProtocol,
     Item extends ItemProtocol
     > extends Pring.Base {
@@ -25,8 +27,7 @@ export interface UserProtocol
     country: string
     products: FirebaseFirestore.Query
     skus: FirebaseFirestore.Query
-    orders: FirebaseFirestore.Query
-    orderings: FirebaseFirestore.Query
+    orders: Pring.NestedCollection<Order>
     items: Pring.NestedCollection<Item>
     tradeTransactions: Pring.NestedCollection<TradeTransaction>
 }
@@ -67,7 +68,9 @@ export interface BalanceTransactionProtocol extends Pring.Base {
     order?: string
     transfer?: string
     payout?: string
-    information: { [key: string]: any }
+    paymentInformation: { [key: string]: any }
+    transferInformation: { [key: string]: any }
+    payoutInformation: { [key: string]: any }
 }
 
 export type Balance = {
@@ -173,7 +176,7 @@ export enum OrderStatus {
 
 export interface OrderItemProtocol extends Pring.Base {
     order: string
-    buyer: string
+    purchasedBy: string
     selledBy: string
     type: OrderItemType
     product?: string
@@ -185,7 +188,7 @@ export interface OrderItemProtocol extends Pring.Base {
 
 export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Pring.Base {
     parentID?: string
-    buyer: string
+    purchasedBy: string
     selledBy: string
     shippingTo: { [key: string]: string }
     transferredTo: { [key: string]: true }

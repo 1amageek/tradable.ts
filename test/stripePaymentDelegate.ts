@@ -16,15 +16,16 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
         const data: Stripe.charges.IChargeCreationOptions = {
             amount: order.amount,
             currency: order.currency,
-            description: `Charge for user/${order.buyer}`
+            description: `Charge for user/${order.purchasedBy}`
         }
 
-        if (options.customer) {
-            data.customer = options.customer
-        }
-
-        if (options.source) {
-            data.source = options.source
+        if (options) {
+            if (options.customer) {
+                data.customer = options.customer
+            }
+            if (options.source) {
+                data.source = options.source
+            }
         }
 
         try {

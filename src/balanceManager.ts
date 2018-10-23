@@ -30,31 +30,31 @@ export class BalanceManager
     bankAccount: string = "bank_account"
 
     /// Purchaser -> Platform
-    async payment(purchasedBy: string, order: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+    async payment(purchasedBy: string, orderID: string, currency: Currency, amount: number, paymentInformation: { [key: string]: any }, transaction: FirebaseFirestore.Transaction) {
 
         const purchaser: Account = new this._Account(purchasedBy, {})
         const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
         balanceTransaction.type = BalanceTransactionType.payment
         balanceTransaction.currency = currency
         balanceTransaction.amount = amount
-        balanceTransaction.order = order
+        balanceTransaction.order = orderID
         balanceTransaction.from = purchasedBy
         balanceTransaction.to = this.platform
-
+        balanceTransaction.paymentInformation = paymentInformation
         transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
         transaction.set(purchaser.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
         return transaction
     }
 
     /// Platform -> Purchaser
-    async paymentRefund(purchasedBy: string, order: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+    async paymentRefund(purchasedBy: string, orderID: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
 
         const purchaser: Account = new this._Account(purchasedBy, {})
         const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
         balanceTransaction.type = BalanceTransactionType.paymentRefund
         balanceTransaction.currency = currency
         balanceTransaction.amount = amount
-        balanceTransaction.order = order
+        balanceTransaction.order = orderID
         balanceTransaction.from = this.platform
         balanceTransaction.to = purchasedBy
 
@@ -66,7 +66,7 @@ export class BalanceManager
     /// User -> User        from: userID, to: userID
     /// Platform -> User    from: "platform", to: userID   
     /// User -> Platform    from: userID, to: platform
-    async transfer(from: string, to: string, order: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+    async transfer(from: string, to: string, orderID: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
 
         if (from === this.platform) {
             const receiver: Account = new this._Account(to, {})
@@ -76,7 +76,7 @@ export class BalanceManager
             balanceTransaction.type = BalanceTransactionType.transfer
             balanceTransaction.currency = currency
             balanceTransaction.amount = amount
-            balanceTransaction.order = order
+            balanceTransaction.order = orderID
             balanceTransaction.from = from
             balanceTransaction.to = to
             transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference,
@@ -102,7 +102,7 @@ export class BalanceManager
             balanceTransaction.type = BalanceTransactionType.transfer
             balanceTransaction.currency = currency
             balanceTransaction.amount = amount
-            balanceTransaction.order = order
+            balanceTransaction.order = orderID
             balanceTransaction.from = from
             balanceTransaction.to = to
             transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
@@ -126,7 +126,7 @@ export class BalanceManager
             balanceTransaction.type = BalanceTransactionType.transfer
             balanceTransaction.currency = currency
             balanceTransaction.amount = amount
-            balanceTransaction.order = order
+            balanceTransaction.order = orderID
             balanceTransaction.from = from
             balanceTransaction.to = to
             transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference,
@@ -163,7 +163,7 @@ export class BalanceManager
     /// User -> User        from: userID, to: userID
     /// Platform -> User    from: "platform", to: userID   
     /// User -> Platform    from: userID, to: platform
-    async transferRefund(from: string, to: string, order: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+    async transferRefund(from: string, to: string, orderID: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
 
         if (from === this.platform) {
             const receiver: Account = new this._Account(to, {})
@@ -173,7 +173,7 @@ export class BalanceManager
             balanceTransaction.type = BalanceTransactionType.transferRefund
             balanceTransaction.currency = currency
             balanceTransaction.amount = amount
-            balanceTransaction.order = order
+            balanceTransaction.order = orderID
             balanceTransaction.from = from
             balanceTransaction.to = to
             transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference,
@@ -199,7 +199,7 @@ export class BalanceManager
             balanceTransaction.type = BalanceTransactionType.transferRefund
             balanceTransaction.currency = currency
             balanceTransaction.amount = amount
-            balanceTransaction.order = order
+            balanceTransaction.order = orderID
             balanceTransaction.from = from
             balanceTransaction.to = to
             transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
@@ -223,7 +223,7 @@ export class BalanceManager
             balanceTransaction.type = BalanceTransactionType.transferRefund
             balanceTransaction.currency = currency
             balanceTransaction.amount = amount
-            balanceTransaction.order = order
+            balanceTransaction.order = orderID
             balanceTransaction.from = from
             balanceTransaction.to = to
             transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference,
@@ -257,14 +257,14 @@ export class BalanceManager
         return transaction
     }
 
-    async payout(accountID: string, order: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+    async payout(accountID: string, orderID: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
         const sender: Account = new this._Account(accountID, {})
         await sender.fetch(transaction)
         const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
         balanceTransaction.type = BalanceTransactionType.payout
         balanceTransaction.currency = currency
         balanceTransaction.amount = amount
-        balanceTransaction.order = order
+        balanceTransaction.order = orderID
         balanceTransaction.from = accountID
         balanceTransaction.to = this.bankAccount
         transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
@@ -279,14 +279,14 @@ export class BalanceManager
         return transaction
     }
 
-    async payoutCancel(accountID: string, order: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+    async payoutCancel(accountID: string, orderID: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
         const receiver: Account = new this._Account(accountID, {})
         await receiver.fetch(transaction)
         const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
         balanceTransaction.type = BalanceTransactionType.payoutCancel
         balanceTransaction.currency = currency
         balanceTransaction.amount = amount
-        balanceTransaction.order = order
+        balanceTransaction.order = orderID
         balanceTransaction.from = this.bankAccount
         balanceTransaction.to = accountID
         transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })

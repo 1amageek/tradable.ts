@@ -1,4 +1,7 @@
 import * as FirebaseFirestore from '@google-cloud/firestore'
+import { StockManager } from './stockManager'
+import { BalanceManager } from './balanceManager'
+import { OrderValidator } from './orderValidator'
 import * as Pring from 'pring'
 import {
     firestore,
@@ -7,7 +10,8 @@ import {
     OrderItemProtocol,
     ProductProtocol,
     OrderProtocol,
-    TransactionProtocol,
+    TradeTransactionProtocol,
+    BalanceTransactionProtocol,
     AccountProtocol,
     StockType,
     StockValue,
@@ -17,11 +21,13 @@ import {
     RefundOptions,
     CancelOptions,
     Currency,
-    TransactionType,
+    BalanceTransactionType,
     Balance,
     TransferOptions,
     TradableErrorCode,
-    TradableError
+    TradableError,
+    ItemProtocol,
+    UserProtocol
 } from "./index"
 
 const isUndefined = (value: any): boolean => {
@@ -49,15 +55,21 @@ export class Manager
     Product extends ProductProtocol<SKU>,
     OrderItem extends OrderItemProtocol,
     Order extends OrderProtocol<OrderItem>,
-    Transaction extends TransactionProtocol,
-    Account extends AccountProtocol<Transaction>
+    Item extends ItemProtocol,
+    TradeTransaction extends TradeTransactionProtocol,
+    BalanceTransaction extends BalanceTransactionProtocol,
+    User extends UserProtocol<Order, OrderItem, TradeTransaction, Item>,
+    Account extends AccountProtocol<BalanceTransaction>
     > {
 
     private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
     private _Product: { new(id?: string, value?: { [key: string]: any }): Product }
     private _OrderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem }
     private _Order: { new(id?: string, value?: { [key: string]: any }): Order }
-    private _Transaction: { new(id?: string, value?: { [key: string]: any }): Transaction }
+    private _Item: { new(id?: string, value?: { [key: string]: any }): Item }
+    private _TradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction }
+    private _BalanceTransaction: { new(id?: string, value?: { [key: string]: any }): BalanceTransaction }
+    private _User: { new(id?: string, value?: { [key: string]: any }): User }
     private _Account: { new(id?: string, value?: { [key: string]: any }): Account }
 
     constructor(
@@ -65,21 +77,106 @@ export class Manager
         product: { new(id?: string, value?: { [key: string]: any }): Product },
         orderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem },
         order: { new(id?: string, value?: { [key: string]: any }): Order },
-        transaction: { new(id?: string, value?: { [key: string]: any }): Transaction },
-        account: { new(id?: string, value?: { [key: string]: any }): Account },
+        item: { new(id?: string, value?: { [key: string]: any }): Item },
+        tradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction },
+        balanceTransaction: { new(id?: string, value?: { [key: string]: any }): BalanceTransaction },
+        user: { new(id?: string, value?: { [key: string]: any }): User },
+        account: { new(id?: string, value?: { [key: string]: any }): Account }
     ) {
         this._SKU = sku
         this._Product = product
         this._OrderItem = orderItem
         this._Order = order
-        this._Transaction = transaction
+        this._Item = item
+        this._TradeTransaction = tradeTransaction
+        this._BalanceTransaction = balanceTransaction
+        this._User = user
         this._Account = account
+    }
+
+    stockManager: StockManager<Order, OrderItem, User, Product, SKU, Item, TradeTransaction> = new StockManager(this._User, this._Product, this._SKU, this._Item, this._TradeTransaction)
+
+    balanceManager: BalanceManager<BalanceTransaction, Account> = new BalanceManager(this._BalanceTransaction, this._Account)
+
+    public delegate?: TransactionDelegate
+
+    public chargeOptions?: ChargeOptions
+
+    async order(order: Order, orderItems: OrderItem[]) {
+        try {
+            // const order: Order = new this._Order(orderID, {})
+            // const results = await Promise.all([order.fetch(), order.items.get(this._OrderItem)])
+            // const items: OrderItem[] = results[1] as OrderItem[]
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] cancel ORDER/${order.id}, Manager required delegate`)
+            }
+
+            const chargeOptions: ChargeOptions | undefined = this.chargeOptions
+            if (!chargeOptions) {
+                throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] cancel ORDER/${order.id}, Manager required charge options`)
+            }
+
+            const validator = new OrderValidator(this._Order, this._OrderItem)
+            const validationError = validator.validate(order, orderItems)
+            if (validationError) {
+                order.status = OrderStatus.rejected
+                try {
+                    await order.update()
+                } catch (error) {
+                    throw error
+                }
+                throw validationError
+            }
+
+            if (order.amount === 0) {
+                order.status = OrderStatus.paid
+                await order.update()
+                return
+            } else {
+                const chargeResult = await delegate.charge(order, chargeOptions)
+                await firestore.runTransaction(async (transaction) => {
+                    return new Promise(async (resolve, reject) => {
+    
+                        // payment
+                        this.balanceManager.payment(order.purchasedBy, 
+                            order.id, 
+                            order.currency, 
+                            order.amount, 
+                            { [chargeOptions.vendorType]: chargeResult }
+                            , transaction)
+    
+                        // stock
+                        for (const orderItem of orderItems) {
+                            const productID = orderItem.product
+                            const skuID = orderItem.sku
+                            const quantity = orderItem.quantity
+                            if (productID && skuID) {
+                                this.stockManager.order(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                            }
+                        }
+    
+                        transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
+                            updateAt: timestamp,
+                            paymentInformation: {
+                                [chargeOptions.vendorType]: chargeResult
+                            },
+                            status: OrderStatus.paid
+                        }, { merge: true })
+                        resolve(`[Success] ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+                    })
+                })
+            }
+        } catch (error) {
+            throw error
+        }
     }
 
     async execute(order: Order, process: OrderProcess, batch?: FirebaseFirestore.WriteBatch) {
         try {
             // validation error
-            const validationError = await this.validate(order)
+            const validator = new OrderValidator(this._Order, this._OrderItem)
+            const validationError = validator.validate(order)
             if (validationError) {
                 order.status = OrderStatus.rejected
                 try {
@@ -98,56 +195,7 @@ export class Manager
             throw error
         }
     }
-
-    private async validate(order: Order) {
-        if (isUndefined(order.buyer)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, buyer is required`)
-        if (isUndefined(order.selledBy)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, selledBy is required`)
-        if (isUndefined(order.expirationDate)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, expirationDate is required`)
-        if (isUndefined(order.currency)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, currency is required`)
-        if (isUndefined(order.amount)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, amount is required`)
-        if (!this.validateMinimumAmount(order)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, Amount is below the lower limit.`)
-        try {
-            const items: OrderItem[] = await order.items.get(this._OrderItem)
-            if (!this.validateCurrency(order, items)) return new TradableError(TradableErrorCode.invalidCurrency, order, `[Tradable] Error: validation error, Currency of OrderItem does not match Currency of Order.`)
-            if (!this.validateAmount(order, items)) return new TradableError(TradableErrorCode.invalidAmount, order, `[Tradable] Error: validation error, The sum of OrderItem does not match Amount of Order.`)
-        } catch (error) {
-            return error
-        }
-    }
-
-    private validateMinimumAmount(order: Order): boolean {
-        const currency: Currency = order.currency
-        const amount: number = order.amount
-        if (0 < amount && amount < Currency.minimum(currency)) {
-            return false
-        }
-        return true
-    }
-
-    // Returns true if there is no problem in the verification
-    private validateCurrency(order: Order, orderItems: OrderItem[]): boolean {
-        for (const item of orderItems) {
-            if (item.currency !== order.currency) {
-                return false
-            }
-        }
-        return true
-    }
-
-    // Returns true if there is no problem in the verification
-    private validateAmount(order: Order, orderItems: OrderItem[]) {
-        let totalAmount: number = 0
-
-        for (const item of orderItems) {
-            totalAmount += (item.amount * item.quantity)
-        }
-        if (totalAmount !== order.amount) {
-            return false
-        }
-        return true
-    }
-
-    public delegate?: TransactionDelegate
+    
 
     private async inventory<T>(type: InventoryControlType, order: Order, item: OrderItem, transaction: FirebaseFirestore.Transaction, resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any | PromiseLike<T>) => void) {
         const productID: string | undefined = item.product
@@ -403,14 +451,14 @@ export class Manager
         }
     }
 
-    async order(order: Order, options: ChargeOptions, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
-        try {
-            await this.inventoryControl(order, batch)
-            return await this.charge(order, options, batch)
-        } catch (error) {
-            throw error
-        }
-    }
+    // async order(order: Order, options: ChargeOptions, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+    //     try {
+    //         await this.inventoryControl(order, batch)
+    //         return await this.charge(order, options, batch)
+    //     } catch (error) {
+    //         throw error
+    //     }
+    // }
 
     async cancel(order: Order, options: CancelOptions, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
         // Skip for refunded
