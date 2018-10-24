@@ -17,7 +17,7 @@ import {
     StockValue,
     OrderStatus,
     TransactionDelegate,
-    ChargeOptions,
+    PaymentOptions,
     RefundOptions,
     CancelOptions,
     Currency,
@@ -100,7 +100,7 @@ export class Manager
 
     public delegate?: TransactionDelegate
 
-    public chargeOptions?: ChargeOptions
+    public paymentOptions?: PaymentOptions
 
     async order(order: Order, orderItems: OrderItem[]) {
         try {
@@ -112,9 +112,9 @@ export class Manager
                 throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] cancel ORDER/${order.id}, Manager required delegate`)
             }
 
-            const chargeOptions: ChargeOptions | undefined = this.chargeOptions
-            if (!chargeOptions) {
-                throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] cancel ORDER/${order.id}, Manager required charge options`)
+            const paymentOptions: PaymentOptions | undefined = this.paymentOptions
+            if (!paymentOptions) {
+                throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] cancel ORDER/${order.id}, Manager required payment options`)
             }
 
             const validator = new OrderValidator(this._Order, this._OrderItem)
@@ -134,38 +134,47 @@ export class Manager
                 await order.update()
                 return
             } else {
-                const chargeResult = await delegate.charge(order, chargeOptions)
-                await firestore.runTransaction(async (transaction) => {
-                    return new Promise(async (resolve, reject) => {
-    
-                        // payment
-                        this.balanceManager.payment(order.purchasedBy, 
-                            order.id, 
-                            order.currency, 
-                            order.amount, 
-                            { [chargeOptions.vendorType]: chargeResult }
-                            , transaction)
-    
-                        // stock
-                        for (const orderItem of orderItems) {
-                            const productID = orderItem.product
-                            const skuID = orderItem.sku
-                            const quantity = orderItem.quantity
-                            if (productID && skuID) {
-                                this.stockManager.order(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                try {
+                    const chargeResult = await delegate.payment(order, paymentOptions)
+                    await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+        
+                            // payment
+                            this.balanceManager.payment(order.purchasedBy, 
+                                order.id, 
+                                order.currency, 
+                                order.amount, 
+                                { [paymentOptions.vendorType]: chargeResult }
+                                , transaction)
+        
+                            // stock
+                            for (const orderItem of orderItems) {
+                                const productID = orderItem.product
+                                const skuID = orderItem.sku
+                                const quantity = orderItem.quantity
+                                if (productID && skuID) {
+                                    this.stockManager.order(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                }
                             }
-                        }
-    
-                        transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
-                            updateAt: timestamp,
-                            paymentInformation: {
-                                [chargeOptions.vendorType]: chargeResult
-                            },
-                            status: OrderStatus.paid
-                        }, { merge: true })
-                        resolve(`[Success] ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+        
+                            transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
+                                updateAt: timestamp,
+                                paymentInformation: {
+                                    [paymentOptions.vendorType]: chargeResult
+                                },
+                                status: OrderStatus.paid
+                            }, { merge: true })
+                            resolve(`[Success] ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+                        })
                     })
-                })
+                } catch (error) {
+                    try {
+                        await delegate.refund(order, paymentOptions, `[Failure] refund ORDER/${order.id}, transaction failure`)
+                    } catch (error) {
+                        console.log(error)
+                        throw error
+                    }
+                }
             }
         } catch (error) {
             throw error

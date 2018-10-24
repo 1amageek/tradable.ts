@@ -8,7 +8,7 @@ export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
 export class StripePaymentDelegate implements tradable.TransactionDelegate {
 
-    async charge<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.ChargeOptions): Promise<any> {
+    async payment<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options: tradable.PaymentOptions): Promise<any> {
 
         const amount = order.amount
         const currency = order.currency
@@ -38,7 +38,7 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
         }
     }
 
-    async refund<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.RefundOptions): Promise<any> {
+    async refund<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options: tradable.PaymentOptions, reason?: string): Promise<any> {
 
         const charegeID = order.paymentInformation[options.vendorType]['id']
         const amount = order.amount
@@ -47,8 +47,8 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
 
         let data: Stripe.refunds.IRefundCreationOptions = {}
 
-        if (options.reason) {
-            data.reason = options.reason
+        if (reason) {
+            data.reason = reason
         }
 
         try {
