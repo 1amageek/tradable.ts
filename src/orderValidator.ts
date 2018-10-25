@@ -16,7 +16,7 @@ import {
     StockValue,
     OrderStatus,
     TransactionDelegate,
-    ChargeOptions,
+    PaymentOptions,
     RefundOptions,
     CancelOptions,
     Currency,

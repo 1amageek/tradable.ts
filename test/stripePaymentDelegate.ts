@@ -61,11 +61,9 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
         }
     }
 
-    async cancel<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.CancelOptions): Promise<any> {
+    async cancel<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, amount: number, options: tradable.CancelOptions): Promise<any> {
 
         const charegeID = order.paymentInformation[options.vendorType]['id']
-        const amount = order.net
-        const currency = order.currency
         const idempotency_key = `refund:${order.id}`
 
         let data: Stripe.refunds.IRefundCreationOptions = {

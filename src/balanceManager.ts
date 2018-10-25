@@ -47,7 +47,7 @@ export class BalanceManager
     }
 
     /// Platform -> Purchaser
-    async paymentRefund(purchasedBy: string, orderID: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+    async refund(purchasedBy: string, orderID: string, currency: Currency, amount: number, refundInformation: { [key: string]: any }, transaction: FirebaseFirestore.Transaction) {
 
         const purchaser: Account = new this._Account(purchasedBy, {})
         const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
@@ -57,7 +57,7 @@ export class BalanceManager
         balanceTransaction.order = orderID
         balanceTransaction.from = this.platform
         balanceTransaction.to = purchasedBy
-
+        balanceTransaction.refundInformation = refundInformation
         transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
         transaction.set(purchaser.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
         return transaction
@@ -66,7 +66,7 @@ export class BalanceManager
     /// User -> User        from: userID, to: userID
     /// Platform -> User    from: "platform", to: userID   
     /// User -> Platform    from: userID, to: platform
-    async transfer(from: string, to: string, orderID: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+    async transfer(from: string, to: string, orderID: string, currency: Currency, amount: number, transferInformation: { [key: string]: any }, transaction: FirebaseFirestore.Transaction) {
 
         if (from === this.platform) {
             const receiver: Account = new this._Account(to, {})
@@ -79,6 +79,7 @@ export class BalanceManager
             balanceTransaction.order = orderID
             balanceTransaction.from = from
             balanceTransaction.to = to
+            balanceTransaction.transferInformation = transferInformation
             transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference,
                 balanceTransaction.value(),
                 { merge: true })

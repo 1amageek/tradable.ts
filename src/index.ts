@@ -69,6 +69,7 @@ export interface BalanceTransactionProtocol extends Pring.Base {
     transfer?: string
     payout?: string
     paymentInformation: { [key: string]: any }
+    refundInformation: { [key: string]: any }
     transferInformation: { [key: string]: any }
     payoutInformation: { [key: string]: any }
 }
@@ -139,39 +140,67 @@ export enum OrderItemType {
     discount = 'discount'
 }
 
-export enum OrderStatus {
-    /// Immediately after the order made
-    created = 'created',
+export enum OrderTransferStatus {
 
-    /// Inventory processing was done, but it was rejected
+    none = 'none',
+
     rejected = 'rejected',
 
-    /// Inventory processing was successful
-    received = 'received',
+    completed = 'completed',
 
-    /// Customer payment succeeded, but we do not transfer funds to the account.
-    paid = 'paid',
-
-    /// Successful inventory processing but payment failed.
-    waitingForPayment = 'waitingForPayment',
-
-    /// Payment has been refunded.
-    refunded = 'refunded',
-
-    /// If payment was made, I failed in refunding.
-    waitingForRefund = 'waitingForRefund',
-
-    /// Everything including refunds was canceled.
     canceled = 'canceled',
 
-    /// It means that a payout has been made to the Account.
-    transferred = 'transferred',
+    transferFailure = 'failure',
 
-    /// It means that the transfer failed.
-    waitingForTransferrd = 'waitingForTransferrd',
+    cancelFailure = 'cancel_failure'
+}
 
-    /// Completed
-    completed = 'completed'
+export enum OrderPaymentStatus {
+
+    none = 'none',
+
+    rejected = 'rejected',
+
+    completed = 'completed',
+
+    canceled = 'canceled',
+
+    paymentFailure = 'failure',
+
+    cancelFailure = 'cancel_failure'
+
+    // /// Immediately after the order made
+    // created = 'created',
+
+    // /// Inventory processing was done, but it was rejected
+    // rejected = 'rejected',
+
+    // /// Inventory processing was successful
+    // received = 'received',
+
+    // /// Customer payment succeeded, but we do not transfer funds to the account.
+    // paid = 'paid',
+
+    // /// Successful inventory processing but payment failed.
+    // waitingForPayment = 'waitingForPayment',
+
+    // /// Payment has been refunded.
+    // refunded = 'refunded',
+
+    // /// If payment was made, I failed in refunding.
+    // waitingForRefund = 'waitingForRefund',
+
+    // /// Everything including refunds was canceled.
+    // canceled = 'canceled',
+
+    // /// It means that a payout has been made to the Account.
+    // transferred = 'transferred',
+
+    // /// It means that the transfer failed.
+    // waitingForTransferrd = 'waitingForTransferrd',
+
+    // /// Completed
+    // completed = 'completed'
 }
 
 export interface OrderItemProtocol extends Pring.Base {
@@ -197,7 +226,8 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     currency: Currency
     amount: number
     items: Pring.NestedCollection<OrderItem>
-    status: OrderStatus
+    paymentStatus: OrderPaymentStatus
+    transferStatus: OrderTransferStatus
     paymentInformation: { [key: string]: any }
     transferInformation: { [key: string]: any }
     refundInformation: { [key: string]: any }
@@ -232,6 +262,7 @@ export enum RefundReason {
 
 export type CancelOptions = {
     vendorType: string
+    cancelFeeRate: number   // 0 ~ 1 
     reason?: RefundReason
 }
 
@@ -242,6 +273,7 @@ export type RefundOptions = {
 
 export type TransferOptions = {
     vendorType: string
+    platformFeeRate: number // 0 ~ 1
 }
 
 export interface TransactionDelegate {
@@ -252,14 +284,11 @@ export interface TransactionDelegate {
     /// This function will make payment. The payment result is saved in the VendorType set in ChargeOptions.
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions, reason?: string): Promise<any>
 
-    /// This functioin will make a refund. The refund result is saved in the VendorType set in RefundOptions.
-    // refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: RefundOptions): Promise<any>
-
     /// This functioin will make a change. The change result is saved in the VendorType set in CancelOptions.
-    cancel<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: CancelOptions): Promise<any>
+    cancel<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, amount: number, options: CancelOptions): Promise<any>
 
     ///
-    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: TransferOptions): Promise<any>
+    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, amount: number, options: TransferOptions): Promise<any>
     // payout<U extends TransactionProtocol, T extends AccountProtocol<U>>(account: T, amount: number, currency: Currency): Promise<any>
 
 }
