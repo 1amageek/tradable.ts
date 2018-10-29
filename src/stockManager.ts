@@ -10,21 +10,6 @@ import {
     OrderItemProtocol,
     ProductProtocol,
     OrderProtocol,
-    BalanceTransactionProtocol,
-    AccountProtocol,
-    StockType,
-    StockValue,
-    OrderStatus,
-    TransactionDelegate,
-    PaymentOptions,
-    RefundOptions,
-    CancelOptions,
-    Currency,
-    BalanceTransactionType,
-    Balance,
-    TransferOptions,
-    TradableErrorCode,
-    TradableError,
     ItemProtocol
 } from "./index"
 

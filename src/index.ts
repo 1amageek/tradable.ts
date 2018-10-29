@@ -58,6 +58,10 @@ export enum BalanceTransactionType {
     payoutCancel = 'payout_cancel'
 }
 
+export type TransactionResult = {
+    [key: string]: any
+}
+
 /// Transaction is the history that changed Balance. Tranasaction is made from the ID of the event.
 export interface BalanceTransactionProtocol extends Pring.Base {
     type: BalanceTransactionType
@@ -68,10 +72,7 @@ export interface BalanceTransactionProtocol extends Pring.Base {
     order?: string
     transfer?: string
     payout?: string
-    paymentInformation: { [key: string]: any }
-    refundInformation: { [key: string]: any }
-    transferInformation: { [key: string]: any }
-    payoutInformation: { [key: string]: any }
+    transactionResults: TransactionResult[]
 }
 
 export type Balance = {
@@ -168,39 +169,6 @@ export enum OrderPaymentStatus {
     paymentFailure = 'failure',
 
     cancelFailure = 'cancel_failure'
-
-    // /// Immediately after the order made
-    // created = 'created',
-
-    // /// Inventory processing was done, but it was rejected
-    // rejected = 'rejected',
-
-    // /// Inventory processing was successful
-    // received = 'received',
-
-    // /// Customer payment succeeded, but we do not transfer funds to the account.
-    // paid = 'paid',
-
-    // /// Successful inventory processing but payment failed.
-    // waitingForPayment = 'waitingForPayment',
-
-    // /// Payment has been refunded.
-    // refunded = 'refunded',
-
-    // /// If payment was made, I failed in refunding.
-    // waitingForRefund = 'waitingForRefund',
-
-    // /// Everything including refunds was canceled.
-    // canceled = 'canceled',
-
-    // /// It means that a payout has been made to the Account.
-    // transferred = 'transferred',
-
-    // /// It means that the transfer failed.
-    // waitingForTransferrd = 'waitingForTransferrd',
-
-    // /// Completed
-    // completed = 'completed'
 }
 
 export interface OrderItemProtocol extends Pring.Base {
@@ -228,9 +196,7 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     items: Pring.NestedCollection<OrderItem>
     paymentStatus: OrderPaymentStatus
     transferStatus: OrderTransferStatus
-    paymentInformation: { [key: string]: any }
-    transferInformation: { [key: string]: any }
-    refundInformation: { [key: string]: any }
+    transactionResults: TransactionResult[]
 }
 
 export interface ItemProtocol extends Pring.Base {
@@ -303,19 +269,16 @@ export enum TradableErrorCode {
     internal = 'internal'
 }
 
-export class TradableError<T extends OrderItemProtocol, U extends OrderProtocol<T>> implements Error {
+export class TradableError implements Error {
     name: string
     message: string
     stack?: string
     info: { [key: string]: any }
 
-    constructor(code: TradableErrorCode, order: U, message: string, stack?: string) {
+    constructor(code: TradableErrorCode, message: string, stack?: string) {
         this.name = 'tradable.error'
         this.info = {
             code: code,
-            order: {
-                [order.id]: order.value()
-            }
         }
         this.message = message
         this.stack = stack || new Error().stack
