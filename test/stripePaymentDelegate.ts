@@ -8,10 +8,8 @@ export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
 export class StripePaymentDelegate implements tradable.TransactionDelegate {
 
-    async payment<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options: tradable.PaymentOptions): Promise<any> {
+    async payment<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions): Promise<any> {
 
-        const amount = order.amount
-        const currency = order.currency
         const idempotency_key = order.id
         const data: Stripe.charges.IChargeCreationOptions = {
             amount: order.amount,
@@ -38,11 +36,9 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
         }
     }
 
-    async refund<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options: tradable.PaymentOptions, reason?: string): Promise<any> {
+    async refund<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions, reason?: string): Promise<any> {
 
-        const charegeID = order.paymentInformation[options.vendorType]['id']
-        const amount = order.amount
-        const currency = order.currency
+        const charegeID = ""
         const idempotency_key = `refund:${order.id}`
 
         let data: Stripe.refunds.IRefundCreationOptions = {}
@@ -61,7 +57,7 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
         }
     }
 
-    async cancel<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, amount: number, options: tradable.CancelOptions): Promise<any> {
+    async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.TransferOptions): Promise<any> {
 
         const charegeID = order.paymentInformation[options.vendorType]['id']
         const idempotency_key = `refund:${order.id}`
@@ -84,27 +80,28 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
         }
     }
 
-    // async payout<U extends tradable.TransactionProtocol, T extends tradable.AccountProtocol<U>>(account: T, amount: number, currency: tradable.Currency): Promise<any> {
-    //     const stripeAccountID = account.fundInformation['stripe']
-    //     const destinationAmount = amount * (1 - 0.2)
-    //     try {
-    //         const result = await stripe.payouts.create({
-    //             destination: stripeAccountID,
-    //             amount: destinationAmount,
-    //             currency: currency
-    //         })
-    //         return result
-    //     } catch (error) {
-    //         throw error
-    //     }        
-    // }
-
-    async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(order: T, options?: tradable.TransferOptions): Promise<any> {
+    async transferCancel<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options?: tradable.TransferOptions): Promise<any> {
         try {
             return {}
         } catch (error) {
             throw error
         }
     }
+
+    async payout<U extends tradable.BalanceTransactionProtocol, T extends tradable.AccountProtocol<U>>(currency: tradable.Currency, amount: number, account: T, options?: tradable.PayoutOptions): Promise<any> {
+        try {
+            return {}
+        } catch (error) {
+            throw error
+        }
+    } 
+
+    async payoutCancel<U extends tradable.BalanceTransactionProtocol, T extends tradable.AccountProtocol<U>>(currency: tradable.Currency, amount: number, account: T, options?: tradable.PayoutOptions): Promise<any> {
+        try {
+            return {}
+        } catch (error) {
+            throw error
+        }
+    } 
 
 }

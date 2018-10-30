@@ -264,14 +264,13 @@ export class BalanceManager
         return transaction
     }
 
-    async payout(accountID: string, orderID: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+    async payout(accountID: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
         const sender: Account = new this._Account(accountID, {})
         await sender.fetch(transaction)
         const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
         balanceTransaction.type = BalanceTransactionType.payout
         balanceTransaction.currency = currency
         balanceTransaction.amount = amount
-        balanceTransaction.order = orderID
         balanceTransaction.from = accountID
         balanceTransaction.to = this.bankAccount
         transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
@@ -286,14 +285,13 @@ export class BalanceManager
         return transaction
     }
 
-    async payoutCancel(accountID: string, orderID: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+    async payoutCancel(accountID: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
         const receiver: Account = new this._Account(accountID, {})
         await receiver.fetch(transaction)
         const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
         balanceTransaction.type = BalanceTransactionType.payoutCancel
         balanceTransaction.currency = currency
         balanceTransaction.amount = amount
-        balanceTransaction.order = orderID
         balanceTransaction.from = this.bankAccount
         balanceTransaction.to = accountID
         transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })

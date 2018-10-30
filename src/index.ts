@@ -218,6 +218,8 @@ export type PaymentOptions = {
     customer?: string
     vendorType: string
     commissionRate: number
+    refundFeeRate: number   // 0 ~ 1 
+    reason?: RefundReason
 }
 
 export enum RefundReason {
@@ -226,36 +228,31 @@ export enum RefundReason {
     requestedByCustomer = 'requested_by_customer'
 }
 
-export type CancelOptions = {
-    vendorType: string
-    cancelFeeRate: number   // 0 ~ 1 
-    reason?: RefundReason
-}
-
-export type RefundOptions = {
-    vendorType: string
-    reason?: RefundReason
-}
-
 export type TransferOptions = {
     vendorType: string
     platformFeeRate: number // 0 ~ 1
 }
 
+export type PayoutOptions = {
+    vendorType: string
+}
+
 export interface TransactionDelegate {
 
     /// This function will make payment. The payment result is saved in the VendorType set in ChargeOptions.
-    payment<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions): Promise<any>
+    payment<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions): Promise<any>
 
     /// This function will make payment. The payment result is saved in the VendorType set in ChargeOptions.
-    refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, options: PaymentOptions, reason?: string): Promise<any>
-
-    /// This functioin will make a change. The change result is saved in the VendorType set in CancelOptions.
-    cancel<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, amount: number, options: CancelOptions): Promise<any>
+    refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions, reason?: string): Promise<any>
 
     ///
-    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(order: T, amount: number, options: TransferOptions): Promise<any>
-    // payout<U extends TransactionProtocol, T extends AccountProtocol<U>>(account: T, amount: number, currency: Currency): Promise<any>
+    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number,order: T,  options: TransferOptions): Promise<any>
+
+    transferCancel<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: TransferOptions, reason?: string): Promise<any>
+
+    payout(currency: Currency, amount: number, accountID: string, options: PayoutOptions): Promise<any>
+
+    payoutCancel(currency: Currency, amount: number, accountID: string, options: PayoutOptions): Promise<any>
 
 }
 
