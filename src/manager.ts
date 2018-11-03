@@ -2,7 +2,7 @@ import * as FirebaseFirestore from '@google-cloud/firestore'
 import { StockManager } from './stockManager'
 import { BalanceManager } from './balanceManager'
 import { OrderValidator } from './orderValidator'
-import * as Pring from 'pring'
+import * as Pring from 'pring-admin'
 import {
     firestore,
     timestamp,
@@ -456,31 +456,50 @@ export class Manager
                     return new Promise(async (resolve, reject) => {
 
                         // payout
-                        this.balanceManager.payout(accountID, currency, amount, transaction)
-
-                        transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
-                            updateAt: timestamp,
-                            transactionResults: [{
-                                [transferOptions.vendorType]: result
-                            }],
-                            transferStatus: OrderTransferStatus.completed
-                        }, { merge: true })
-                        resolve(`[Manager] Success orderCancel ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+                        this.balanceManager.payout(accountID, currency, amount, result, transaction)
+                        resolve(`[Manager] Success payout ACCOUNT/${accountID}, ${currency}: ${amount}`)
                     })
                 })
             } catch (error) {
-                order.transferStatus = OrderTransferStatus.transferFailure
                 try {
-                    await order.update()
+                    await delegate.payoutCancel(currency, amount, accountID, payoutOptions)
                 } catch (error) {
                     console.log(error)
                     throw error
                 }
                 throw error
             }
+        } catch (error) {
+            throw error
         }
-        } catch(error) {
-        throw error
     }
 
+    async payoutCancel(accountID: string, currency: Currency, amount: number, payoutOptions: PayoutOptions) {
+        try {
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid payoutCancel ACCOUNT/${accountID}, Manager required delegate.`)
+            }
+
+            if (amount === 0) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid payoutCancel ACCOUNT/${accountID}, This order is zero amount.`)
+            }
+
+            const result = await delegate.payoutCancel(currency, amount, accountID, payoutOptions)
+            try {
+                await firestore.runTransaction(async (transaction) => {
+                    return new Promise(async (resolve, reject) => {
+
+                        // payout
+                        this.balanceManager.payoutCancel(accountID, currency, amount, result, transaction)
+                        resolve(`[Manager] Success payoutCancel ACCOUNT/${accountID}, ${currency}: ${amount}`)
+                    })
+                })
+            } catch (error) {
+                throw error
+            }
+        } catch (error) {
+            throw error
+        }
+    }
 }

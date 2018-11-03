@@ -264,7 +264,7 @@ export class BalanceManager
         return transaction
     }
 
-    async payout(accountID: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+    async payout(accountID: string, currency: Currency, amount: number, transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
         const sender: Account = new this._Account(accountID, {})
         await sender.fetch(transaction)
         const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
@@ -273,6 +273,7 @@ export class BalanceManager
         balanceTransaction.amount = amount
         balanceTransaction.from = accountID
         balanceTransaction.to = this.bankAccount
+        balanceTransaction.transactionResults.push(transactionResult)
         transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
         const senderBalance = (sender.balance.available[currency] || 0) - amount
         transaction.set(sender.reference as FirebaseFirestore.DocumentReference, {
@@ -285,7 +286,7 @@ export class BalanceManager
         return transaction
     }
 
-    async payoutCancel(accountID: string, currency: Currency, amount: number, transaction: FirebaseFirestore.Transaction) {
+    async payoutCancel(accountID: string, currency: Currency, amount: number, transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
         const receiver: Account = new this._Account(accountID, {})
         await receiver.fetch(transaction)
         const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
@@ -294,6 +295,7 @@ export class BalanceManager
         balanceTransaction.amount = amount
         balanceTransaction.from = this.bankAccount
         balanceTransaction.to = accountID
+        balanceTransaction.transactionResults.push(transactionResult)
         transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
         const receiverBalance = (receiver.balance.available[currency] || 0) + amount
         transaction.set(receiver.reference as FirebaseFirestore.DocumentReference, {

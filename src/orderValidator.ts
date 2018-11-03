@@ -1,5 +1,5 @@
 import * as FirebaseFirestore from '@google-cloud/firestore'
-import * as Pring from 'pring'
+import * as Pring from 'pring-admin'
 import {
     firestore,
     timestamp,
@@ -38,15 +38,15 @@ export class OrderValidator
     }
 
     validate(order: Order, items: OrderItem[]): void | Error {
-        if (isUndefined(order.purchasedBy)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, purchasedBy is required`)
-        if (isUndefined(order.selledBy)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, selledBy is required`)
-        if (isUndefined(order.expirationDate)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, expirationDate is required`)
-        if (isUndefined(order.currency)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, currency is required`)
-        if (isUndefined(order.amount)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, amount is required`)
-        if (!this.validateMinimumAmount(order)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, Amount is below the lower limit.`)
+        if (isUndefined(order.purchasedBy)) return new TradableError(TradableErrorCode.invalidArgument, `[Tradable] Error: validation error, purchasedBy is required`)
+        if (isUndefined(order.selledBy)) return new TradableError(TradableErrorCode.invalidArgument, `[Tradable] Error: validation error, selledBy is required`)
+        if (isUndefined(order.expirationDate)) return new TradableError(TradableErrorCode.invalidArgument, `[Tradable] Error: validation error, expirationDate is required`)
+        if (isUndefined(order.currency)) return new TradableError(TradableErrorCode.invalidArgument, `[Tradable] Error: validation error, currency is required`)
+        if (isUndefined(order.amount)) return new TradableError(TradableErrorCode.invalidArgument, `[Tradable] Error: validation error, amount is required`)
+        if (!this.validateMinimumAmount(order)) return new TradableError(TradableErrorCode.invalidArgument, `[Tradable] Error: validation error, Amount is below the lower limit.`)
         try {
-            if (!this.validateCurrency(order, items)) return new TradableError(TradableErrorCode.invalidCurrency, order, `[Tradable] Error: validation error, Currency of OrderItem does not match Currency of Order.`)
-            if (!this.validateAmount(order, items)) return new TradableError(TradableErrorCode.invalidAmount, order, `[Tradable] Error: validation error, The sum of OrderItem does not match Amount of Order.`)
+            if (!this.validateCurrency(order, items)) return new TradableError(TradableErrorCode.invalidCurrency, `[Tradable] Error: validation error, Currency of OrderItem does not match Currency of Order.`)
+            if (!this.validateAmount(order, items)) return new TradableError(TradableErrorCode.invalidAmount, `[Tradable] Error: validation error, The sum of OrderItem does not match Amount of Order.`)
             const orderItemError = this.validateOrderItem(order, items)
             if (orderItemError) return orderItemError
         } catch (error) {
@@ -92,11 +92,11 @@ export class OrderValidator
             const skuID: string | undefined = item.sku
 
             if (!productID) {
-                return new TradableError(TradableErrorCode.internal, order, `[Failure] ORDER/${order.id} Order requires productID..`)
+                return new TradableError(TradableErrorCode.internal, `[Failure] ORDER/${order.id} Order requires productID..`)
             }
     
             if (!skuID) {
-                return new TradableError(TradableErrorCode.internal, order, `[Failure] ORDER/${order.id} Order requires skuID.`)
+                return new TradableError(TradableErrorCode.internal, `[Failure] ORDER/${order.id} Order requires skuID.`)
             }
         }
     }

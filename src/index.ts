@@ -1,4 +1,4 @@
-import * as Pring from 'pring'
+import * as Pring from 'pring-admin'
 import * as admin from 'firebase-admin'
 import * as FirebaseFirestore from '@google-cloud/firestore'
 import { Manager } from './manager'
