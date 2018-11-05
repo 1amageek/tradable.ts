@@ -1,7 +1,7 @@
-import * as Pring from 'pring'
+import * as Pring from 'pring-admin'
 import * as tradable from '../../src/index'
 import { OrderItem } from './orderItem'
-import { } from "reflect-metadata";
+import { } from "reflect-metadata"
 
 const property = Pring.property
 
@@ -11,7 +11,7 @@ const isUndefined = (value: any): boolean => {
 
 export class Order extends Pring.Base implements tradable.OrderProtocol<OrderItem> {
     @property parentID?: string
-    @property buyer!: string
+    @property purchasedBy!: string
     @property selledBy!: string
     @property shippingTo!: { [key: string]: string }
     @property transferredTo!: { [key: string]: true }
@@ -22,8 +22,7 @@ export class Order extends Pring.Base implements tradable.OrderProtocol<OrderIte
     @property fee: number = 0
     @property net: number = 0
     @property items: Pring.NestedCollection<OrderItem> = new Pring.NestedCollection(this)
-    @property status: tradable.OrderStatus = tradable.OrderStatus.created
-    @property paymentInformation: { [key: string]: any } = {}
-    @property transferInformation: { [key: string]: any } = {}
-    @property refundInformation: { [key: string]: any } = {}
+    @property paymentStatus: tradable.OrderPaymentStatus = tradable.OrderPaymentStatus.none
+    @property transferStatus: tradable.OrderTransferStatus = tradable.OrderTransferStatus.none
+    @property transactionResults: tradable.TransactionResult[] = []
 }

@@ -25,14 +25,13 @@ export interface UserProtocol
     > extends Pring.Base {
     isAvailabled: boolean
     country: string
-    products: FirebaseFirestore.Query
-    skus: FirebaseFirestore.Query
     orders: Pring.NestedCollection<Order>
     items: Pring.NestedCollection<Item>
     tradeTransactions: Pring.NestedCollection<TradeTransaction>
 }
 
 export enum TradeTransactionType {
+    unknown = 'unknown',
     order = 'order',
     orderCancel = 'order_cancel',
     storage = 'storage',
@@ -50,6 +49,7 @@ export interface TradeTransactionProtocol extends Pring.Base {
 }
 
 export enum BalanceTransactionType {
+    unknown = 'unknown',
     payment = 'payment',
     paymentRefund = 'payment_refund',
     transfer = 'transfer',
@@ -278,6 +278,6 @@ export class TradableError implements Error {
             code: code,
         }
         this.message = message
-        this.stack = stack || new Error().stack
+        // this.stack = stack || new Error().stack
     }
 }

@@ -7,7 +7,9 @@ import {
     OrderItemProtocol,
     ProductProtocol,
     OrderProtocol,
-    ItemProtocol
+    ItemProtocol,
+    TradableError,
+    TradableErrorCode
 } from "./index"
 
 export class StockManager
@@ -48,7 +50,7 @@ export class StockManager
         const purchaser: User = new this._User(purchasedBy, {})
         const sku: SKU | undefined = await product.skus.doc(skuID, this._SKU, transaction)
 
-        if (!sku) { return transaction }
+        if (!sku) { return }
 
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
         tradeTransaction.type = TradeTransactionType.order
@@ -59,13 +61,18 @@ export class StockManager
         tradeTransaction.product = productID
         tradeTransaction.sku = skuID
 
-        const item: Item = new this._Item(orderID)
+        const item: Item = new this._Item()
         item.selledBy = selledBy
         item.order = orderID
         item.product = productID
         item.sku = skuID
 
         const skuQuantity: number = (sku.inventory.quantity || 0) - quantity
+
+        if (skuQuantity < 0) {
+            throw new TradableError(TradableErrorCode.outOfStock, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU is out of stock.`)
+        }
+
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id) as FirebaseFirestore.DocumentReference, tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id) as FirebaseFirestore.DocumentReference, tradeTransaction.value(), { merge: true })
         transaction.set(sku.reference as FirebaseFirestore.DocumentReference, {
@@ -74,10 +81,10 @@ export class StockManager
             }
         }, { merge: true })
         transaction.set(purchaser.items.reference.doc(item.id) as FirebaseFirestore.DocumentReference, item.value(), { merge: true })
-        return transaction
+        return tradeTransaction
     }
 
-    async orderCancel(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, quantity: number, transaction: FirebaseFirestore.Transaction) {
+    async orderCancel(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, itemID: string, quantity: number, transaction: FirebaseFirestore.Transaction) {
 
         const product: Product = new this._Product(productID, {})
         const seller: User = new this._User(selledBy, {})
@@ -107,6 +114,6 @@ export class StockManager
         transaction.set(purchaser.items.reference.doc(item.id) as FirebaseFirestore.DocumentReference, {
             isCanceled: true
         }, { merge: true })
-        return transaction
+        return tradeTransaction
     }
 }

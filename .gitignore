@@ -10,6 +10,7 @@ yarn-error.log*
 !package.json
 !tslint.json
 test/config.*
+firestore-debug.log
 
 # Runtime data
 pids

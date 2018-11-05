@@ -161,40 +161,61 @@ export class Manager
                     throw error
                 }
             } else {
-                const chargeResult = await delegate.payment(order.currency, order.amount, order, paymentOptions)
                 try {
                     await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
 
-                            // payment
-                            this.balanceManager.payment(order.purchasedBy,
-                                order.id,
-                                order.currency,
-                                order.amount,
-                                { [paymentOptions.vendorType]: chargeResult }
-                                , transaction)
-
                             // stock
-                            for (const orderItem of orderItems) {
-                                const productID = orderItem.product
-                                const skuID = orderItem.sku
-                                const quantity = orderItem.quantity
-                                if (productID && skuID) {
-                                    this.stockManager.order(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                            try {
+                                const tasks = []
+                                for (const orderItem of orderItems) {
+                                    const productID = orderItem.product
+                                    const skuID = orderItem.sku
+                                    const quantity = orderItem.quantity
+                                    if (productID && skuID) {
+                                        const task = this.stockManager.order(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                        tasks.push(task)
+                                    }
                                 }
+                                await Promise.all(tasks)
+                            } catch (error) {
+                                reject(error)
                             }
 
-                            transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
-                                updateAt: timestamp,
-                                transactionResults: [{
-                                    [paymentOptions.vendorType]: chargeResult
-                                }],
-                                paymentStatus: OrderPaymentStatus.completed
-                            }, { merge: true })
-                            resolve(`[Manager] Success order ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+                            try {
+                                const chargeResult = await delegate.payment(order.currency, order.amount, order, paymentOptions)
+                                // payment
+                                this.balanceManager.payment(order.purchasedBy,
+                                    order.id,
+                                    order.currency,
+                                    order.amount,
+                                    { [paymentOptions.vendorType]: chargeResult }
+                                    , transaction)
+
+                                transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
+                                    updateAt: timestamp,
+                                    transactionResults: [{
+                                        [paymentOptions.vendorType]: chargeResult
+                                    }],
+                                    paymentStatus: OrderPaymentStatus.completed
+                                }, { merge: true })
+                                resolve(`[Manager] Success order ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+                            } catch (error) {
+                                reject(error)
+                            }
                         })
                     })
                 } catch (error) {
+                    if (error instanceof TradableError) {
+                        order.paymentStatus = OrderPaymentStatus.paymentFailure
+                        try {
+                            await order.update()
+                        } catch (error) {
+                            console.log(error)
+                            throw error
+                        }
+                        throw error
+                    }
                     try {
                         await delegate.refund(order.currency, order.amount, order, paymentOptions, `[Manager] Invalid order ORDER/${order.id}, transaction failure.`)
                     } catch (error) {
@@ -214,7 +235,7 @@ export class Manager
         }
     }
 
-    async orderCancel(order: Order, orderItems: OrderItem[]) {
+    async orderCancel(order: Order, items: Item[]) {
         try {
             const delegate: TransactionDelegate | undefined = this.delegate
             if (!delegate) {
@@ -336,7 +357,7 @@ export class Manager
 
                             // transfer
                             this.balanceManager.transfer(
-                                this.balanceManager.platform,
+                                BalanceManager.platform,
                                 order.selledBy,
                                 order.id,
                                 order.currency,
@@ -405,7 +426,7 @@ export class Manager
 
                             // transfer
                             this.balanceManager.transferRefund(
-                                this.balanceManager.platform,
+                                BalanceManager.platform,
                                 order.selledBy,
                                 order.id,
                                 order.currency,

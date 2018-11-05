@@ -26,9 +26,9 @@ export class BalanceManager
         this._Account = account
     }
 
-    platform: string = "platform"
+    static platform: string = "platform"
 
-    bankAccount: string = "bank_account"
+    static bankAccount: string = "bank_account"
 
     /// Purchaser -> Platform
     async payment(purchasedBy: string, orderID: string, currency: Currency, amount: number, transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
@@ -40,11 +40,11 @@ export class BalanceManager
         balanceTransaction.amount = amount
         balanceTransaction.order = orderID
         balanceTransaction.from = purchasedBy
-        balanceTransaction.to = this.platform
+        balanceTransaction.to = BalanceManager.platform
         balanceTransaction.transactionResults.push(transactionResult)
         transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
         transaction.set(purchaser.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
-        return transaction
+        return balanceTransaction
     }
 
     /// Platform -> Purchaser
@@ -56,12 +56,12 @@ export class BalanceManager
         balanceTransaction.currency = currency
         balanceTransaction.amount = amount
         balanceTransaction.order = orderID
-        balanceTransaction.from = this.platform
+        balanceTransaction.from = BalanceManager.platform
         balanceTransaction.to = purchasedBy
         balanceTransaction.transactionResults.push(transactionResult)
         transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
         transaction.set(purchaser.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
-        return transaction
+        return balanceTransaction
     }
 
     /// User -> User        from: userID, to: userID
@@ -69,7 +69,7 @@ export class BalanceManager
     /// User -> Platform    from: userID, to: platform
     async transfer(from: string, to: string, orderID: string, currency: Currency, amount: number, transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
 
-        if (from === this.platform) {
+        if (from === BalanceManager.platform) {
             const receiver: Account = new this._Account(to, {})
             await receiver.fetch(transaction)
 
@@ -96,7 +96,8 @@ export class BalanceManager
                     }
                 }
             })
-        } else if (to === this.platform) {
+            return balanceTransaction
+        } else if (to === BalanceManager.platform) {
             const sender: Account = new this._Account(from, {})
             await sender.fetch(transaction)
 
@@ -120,6 +121,7 @@ export class BalanceManager
                     }
                 }
             })
+            return balanceTransaction
         } else {
             const sender: Account = new this._Account(from, {})
             const receiver: Account = new this._Account(to, {})
@@ -160,8 +162,8 @@ export class BalanceManager
                     }
                 }
             })
+            return balanceTransaction
         }
-        return transaction
     }
 
     /// User -> User        from: userID, to: userID
@@ -169,7 +171,7 @@ export class BalanceManager
     /// User -> Platform    from: userID, to: platform
     async transferRefund(from: string, to: string, orderID: string, currency: Currency, amount: number, transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
 
-        if (from === this.platform) {
+        if (from === BalanceManager.platform) {
             const receiver: Account = new this._Account(to, {})
             await receiver.fetch(transaction)
 
@@ -196,7 +198,8 @@ export class BalanceManager
                     }
                 }
             })
-        } else if (to === this.platform) {
+            return balanceTransaction
+        } else if (to === BalanceManager.platform) {
             const sender: Account = new this._Account(from, {})
             await sender.fetch(transaction)
 
@@ -220,6 +223,7 @@ export class BalanceManager
                     }
                 }
             })
+            return balanceTransaction
         } else {
             const sender: Account = new this._Account(from, {})
             const receiver: Account = new this._Account(to, {})
@@ -260,8 +264,8 @@ export class BalanceManager
                     }
                 }
             })
+            return balanceTransaction
         }
-        return transaction
     }
 
     async payout(accountID: string, currency: Currency, amount: number, transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
@@ -272,7 +276,7 @@ export class BalanceManager
         balanceTransaction.currency = currency
         balanceTransaction.amount = amount
         balanceTransaction.from = accountID
-        balanceTransaction.to = this.bankAccount
+        balanceTransaction.to = BalanceManager.bankAccount
         balanceTransaction.transactionResults.push(transactionResult)
         transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
         const senderBalance = (sender.balance.available[currency] || 0) - amount
@@ -283,7 +287,7 @@ export class BalanceManager
                 }
             }
         })
-        return transaction
+        return balanceTransaction
     }
 
     async payoutCancel(accountID: string, currency: Currency, amount: number, transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
@@ -293,7 +297,7 @@ export class BalanceManager
         balanceTransaction.type = BalanceTransactionType.payoutCancel
         balanceTransaction.currency = currency
         balanceTransaction.amount = amount
-        balanceTransaction.from = this.bankAccount
+        balanceTransaction.from = BalanceManager.bankAccount
         balanceTransaction.to = accountID
         balanceTransaction.transactionResults.push(transactionResult)
         transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
@@ -305,6 +309,6 @@ export class BalanceManager
                 }
             }
         })
-        return transaction
+        return balanceTransaction
     }
 }

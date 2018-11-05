@@ -1,6 +1,5 @@
 import * as Pring from 'pring-admin'
 import * as tradable from '../../src/index'
-import { Transaction } from './transaction'
 import { BalanceTransaction } from './BalanceTransaction'
 import "reflect-metadata"
 
