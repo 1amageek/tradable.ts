@@ -150,7 +150,7 @@ export class Manager
                                 }
                             }
 
-                            transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
+                            transaction.set(order.reference, {
                                 updateAt: timestamp,
                                 paymentStatus: OrderPaymentStatus.completed
                             }, { merge: true })
@@ -162,6 +162,7 @@ export class Manager
                 }
             } else {
                 try {
+                    let chargeResult: {[key: string]: any} | undefined = undefined
                     await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
 
@@ -183,7 +184,9 @@ export class Manager
                             }
 
                             try {
-                                const chargeResult = await delegate.payment(order.currency, order.amount, order, paymentOptions)
+                                if (!chargeResult) {
+                                    chargeResult = await delegate.payment(order.currency, order.amount, order, paymentOptions)
+                                }
                                 // payment
                                 this.balanceManager.payment(order.purchasedBy,
                                     order.id,
@@ -192,7 +195,7 @@ export class Manager
                                     { [paymentOptions.vendorType]: chargeResult }
                                     , transaction)
 
-                                transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
+                                transaction.set(order.reference, {
                                     updateAt: timestamp,
                                     transactionResults: [{
                                         [paymentOptions.vendorType]: chargeResult
@@ -235,7 +238,7 @@ export class Manager
         }
     }
 
-    async orderCancel(order: Order, items: Item[]) {
+    async orderCancel(order: Order, orderItems: OrderItem[]) {
         try {
             const delegate: TransactionDelegate | undefined = this.delegate
             if (!delegate) {
@@ -265,7 +268,7 @@ export class Manager
                                 }
                             }
 
-                            transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
+                            transaction.set(order.reference, {
                                 updateAt: timestamp,
                                 paymentStatus: OrderPaymentStatus.canceled
                             }, { merge: true })
@@ -276,38 +279,46 @@ export class Manager
                     throw error
                 }
             } else {
-                const amount = order.amount * (1 - paymentOptions.refundFeeRate)
-                const result = await delegate.refund(order.currency, amount, order, paymentOptions)
                 try {
+                    let refundResult: {[key: string]: any} | undefined = undefined
                     await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
 
-                            // payment
-                            this.balanceManager.refund(order.purchasedBy,
-                                order.id,
-                                order.currency,
-                                order.amount,
-                                { [paymentOptions.vendorType]: result }
-                                , transaction)
-
-                            // stock
-                            for (const orderItem of orderItems) {
-                                const productID = orderItem.product
-                                const skuID = orderItem.sku
-                                const quantity = orderItem.quantity
-                                if (productID && skuID) {
-                                    this.stockManager.orderCancel(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                            try {
+                                const amount = order.amount * (1 - paymentOptions.refundFeeRate)
+                                if (!refundResult) {
+                                    refundResult = await delegate.refund(order.currency, amount, order, paymentOptions)
                                 }
-                            }
+                                // payment
+                                this.balanceManager.refund(order.purchasedBy,
+                                    order.id,
+                                    order.currency,
+                                    order.amount,
+                                    { [paymentOptions.vendorType]: refundResult }
+                                    , transaction)
 
-                            transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
-                                updateAt: timestamp,
-                                transactionResults: [{
-                                    [paymentOptions.vendorType]: result
-                                }],
-                                paymentStatus: OrderPaymentStatus.canceled
-                            }, { merge: true })
-                            resolve(`[Manager] Success orderCancel ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+                                // stock
+                                for (const orderItem of orderItems) {
+                                    const productID = orderItem.product
+                                    const skuID = orderItem.sku
+                                    const quantity = orderItem.quantity
+                                    if (productID && skuID) {
+                                        this.stockManager.orderCancel(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                    }
+                                }
+
+                                transaction.set(order.reference, {
+                                    updateAt: timestamp,
+                                    transactionResults: [{
+                                        [paymentOptions.vendorType]: refundResult
+                                    }],
+                                    paymentStatus: OrderPaymentStatus.canceled
+                                }, { merge: true })
+                                resolve(`[Manager] Success orderCancel ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+
+                            } catch (error) {
+                                reject(error)
+                            }
                         })
                     })
                 } catch (error) {
@@ -365,7 +376,7 @@ export class Manager
                                 { [transferOptions.vendorType]: result },
                                 transaction)
 
-                            transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
+                            transaction.set(order.reference, {
                                 updateAt: timestamp,
                                 transactionResults: [{
                                     [transferOptions.vendorType]: result
@@ -434,7 +445,7 @@ export class Manager
                                 { [transferOptions.vendorType]: result },
                                 transaction)
 
-                            transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
+                            transaction.set(order.reference, {
                                 updateAt: timestamp,
                                 transactionResults: [{
                                     [transferOptions.vendorType]: result

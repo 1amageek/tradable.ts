@@ -50,7 +50,9 @@ export class StockManager
         const purchaser: User = new this._User(purchasedBy, {})
         const sku: SKU | undefined = await product.skus.doc(skuID, this._SKU, transaction)
 
-        if (!sku) { return }
+        if (!sku) {
+            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
+        }
 
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
         tradeTransaction.type = TradeTransactionType.order
@@ -61,38 +63,80 @@ export class StockManager
         tradeTransaction.product = productID
         tradeTransaction.sku = skuID
 
-        const item: Item = new this._Item()
-        item.selledBy = selledBy
-        item.order = orderID
-        item.product = productID
-        item.sku = skuID
-
         const skuQuantity: number = (sku.inventory.quantity || 0) - quantity
 
         if (skuQuantity < 0) {
             throw new TradableError(TradableErrorCode.outOfStock, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU is out of stock.`)
         }
 
-        transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id) as FirebaseFirestore.DocumentReference, tradeTransaction.value(), { merge: true })
-        transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id) as FirebaseFirestore.DocumentReference, tradeTransaction.value(), { merge: true })
-        transaction.set(sku.reference as FirebaseFirestore.DocumentReference, {
+        transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
+        transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
+        transaction.set(sku.reference, {
             inventory: {
                 quantity: skuQuantity
             }
         }, { merge: true })
-        transaction.set(purchaser.items.reference.doc(item.id) as FirebaseFirestore.DocumentReference, item.value(), { merge: true })
+
+        for (let i = 0; i < quantity; i++) {
+            const item: Item = new this._Item()
+            item.selledBy = selledBy
+            item.order = orderID
+            item.product = productID
+            item.sku = skuID
+            transaction.set(purchaser.items.reference.doc(item.id), item.value(), { merge: true })
+        }
+
         return tradeTransaction
     }
 
-    async orderCancel(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, itemID: string, quantity: number, transaction: FirebaseFirestore.Transaction) {
+    async itemCancel(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, itemID: string, transaction: FirebaseFirestore.Transaction) {
 
         const product: Product = new this._Product(productID, {})
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const item: Item = new this._Item(orderID, {})
+        const item: Item = new this._Item(itemID, {})
         const sku: SKU | undefined = await product.skus.doc(skuID, this._SKU, transaction)
 
-        if (!sku) { return transaction }
+        if (!sku) {
+            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
+        }
+
+        const tradeTransaction: TradeTransaction = new this._TradeTransaction()
+        tradeTransaction.type = TradeTransactionType.order
+        tradeTransaction.quantity = -1
+        tradeTransaction.selledBy = selledBy
+        tradeTransaction.purchasedBy = purchasedBy
+        tradeTransaction.order = orderID
+        tradeTransaction.product = productID
+        tradeTransaction.sku = skuID
+
+        const skuQuantity: number = (sku.inventory.quantity || 0) + 1
+        transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
+        transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
+        transaction.set(sku.reference, {
+            inventory: {
+                quantity: skuQuantity
+            }
+        }, { merge: true })
+        transaction.set(purchaser.items.reference.doc(item.id), {
+            isCanceled: true
+        }, { merge: true })
+        return tradeTransaction
+    }
+
+    async orderCancel(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, quantity: number, transaction: FirebaseFirestore.Transaction) {
+
+        const product: Product = new this._Product(productID, {})
+        const seller: User = new this._User(selledBy, {})
+        const purchaser: User = new this._User(purchasedBy, {})
+        const result = await Promise.all([product.skus.doc(skuID, this._SKU, transaction), purchaser.items.get(this._Item)])
+
+        const sku: SKU | undefined = result[0]
+        const items: Item[] = result[1]
+
+        if (!sku) {
+            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
+        }
 
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
         tradeTransaction.type = TradeTransactionType.order
@@ -104,16 +148,18 @@ export class StockManager
         tradeTransaction.sku = skuID
 
         const skuQuantity: number = (sku.inventory.quantity || 0) + quantity
-        transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id) as FirebaseFirestore.DocumentReference, tradeTransaction.value(), { merge: true })
-        transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id) as FirebaseFirestore.DocumentReference, tradeTransaction.value(), { merge: true })
-        transaction.set(sku.reference as FirebaseFirestore.DocumentReference, {
+        transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
+        transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
+        transaction.set(sku.reference, {
             inventory: {
                 quantity: skuQuantity
             }
         }, { merge: true })
-        transaction.set(purchaser.items.reference.doc(item.id) as FirebaseFirestore.DocumentReference, {
-            isCanceled: true
-        }, { merge: true })
+        for (const item of items) {
+            transaction.set(purchaser.items.reference.doc(item.id), {
+                isCanceled: true
+            }, { merge: true })
+        }
         return tradeTransaction
     }
 }

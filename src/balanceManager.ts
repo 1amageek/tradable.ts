@@ -42,8 +42,8 @@ export class BalanceManager
         balanceTransaction.from = purchasedBy
         balanceTransaction.to = BalanceManager.platform
         balanceTransaction.transactionResults.push(transactionResult)
-        transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
-        transaction.set(purchaser.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
+        transaction.set(balanceTransaction.reference, balanceTransaction.value(), { merge: true })
+        transaction.set(purchaser.balanceTransactions.reference.doc(balanceTransaction.id), balanceTransaction.value(), { merge: true })
         return balanceTransaction
     }
 
@@ -59,8 +59,8 @@ export class BalanceManager
         balanceTransaction.from = BalanceManager.platform
         balanceTransaction.to = purchasedBy
         balanceTransaction.transactionResults.push(transactionResult)
-        transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
-        transaction.set(purchaser.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
+        transaction.set(balanceTransaction.reference, balanceTransaction.value(), { merge: true })
+        transaction.set(purchaser.balanceTransactions.reference.doc(balanceTransaction.id), balanceTransaction.value(), { merge: true })
         return balanceTransaction
     }
 
@@ -81,15 +81,15 @@ export class BalanceManager
             balanceTransaction.from = from
             balanceTransaction.to = to
             balanceTransaction.transactionResults.push(transactionResult)
-            transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference,
+            transaction.set(balanceTransaction.reference,
                 balanceTransaction.value(),
                 { merge: true })
-            transaction.set(receiver.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+            transaction.set(receiver.balanceTransactions.reference.doc(balanceTransaction.id),
                 balanceTransaction.value(),
                 { merge: true })
 
             const receiverBalance = (receiver.balance.available[currency] || 0) + amount
-            transaction.set(receiver.reference as FirebaseFirestore.DocumentReference, {
+            transaction.set(receiver.reference, {
                 balance: {
                     available: {
                         [currency]: receiverBalance
@@ -109,12 +109,12 @@ export class BalanceManager
             balanceTransaction.from = from
             balanceTransaction.to = to
             balanceTransaction.transactionResults.push(transactionResult)
-            transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+            transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id),
                 balanceTransaction.value(),
                 { merge: true })
 
             const senderBalance = (sender.balance.available[currency] || 0) - amount
-            transaction.set(sender.reference as FirebaseFirestore.DocumentReference, {
+            transaction.set(sender.reference, {
                 balance: {
                     available: {
                         [currency]: senderBalance
@@ -135,27 +135,27 @@ export class BalanceManager
             balanceTransaction.from = from
             balanceTransaction.to = to
             balanceTransaction.transactionResults.push(transactionResult)
-            transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference,
+            transaction.set(balanceTransaction.reference,
                 balanceTransaction.value(),
                 { merge: true })
-            transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+            transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id),
                 balanceTransaction.value(),
                 { merge: true })
-            transaction.set(receiver.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+            transaction.set(receiver.balanceTransactions.reference.doc(balanceTransaction.id),
                 balanceTransaction.value(),
                 { merge: true })
 
             const senderBalance = (sender.balance.available[currency] || 0) - amount
             const receiverBalance = (receiver.balance.available[currency] || 0) + amount
 
-            transaction.set(sender.reference as FirebaseFirestore.DocumentReference, {
+            transaction.set(sender.reference, {
                 balance: {
                     available: {
                         [currency]: senderBalance
                     }
                 }
             })
-            transaction.set(receiver.reference as FirebaseFirestore.DocumentReference, {
+            transaction.set(receiver.reference, {
                 balance: {
                     available: {
                         [currency]: receiverBalance
@@ -183,15 +183,15 @@ export class BalanceManager
             balanceTransaction.from = from
             balanceTransaction.to = to
             balanceTransaction.transactionResults.push(transactionResult)
-            transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference,
+            transaction.set(balanceTransaction.reference,
                 balanceTransaction.value(),
                 { merge: true })
-            transaction.set(receiver.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+            transaction.set(receiver.balanceTransactions.reference.doc(balanceTransaction.id),
                 balanceTransaction.value(),
                 { merge: true })
 
             const receiverBalance = (receiver.balance.available[currency] || 0) + amount
-            transaction.set(receiver.reference as FirebaseFirestore.DocumentReference, {
+            transaction.set(receiver.reference, {
                 balance: {
                     available: {
                         [currency]: receiverBalance
@@ -211,12 +211,12 @@ export class BalanceManager
             balanceTransaction.from = from
             balanceTransaction.to = to
             balanceTransaction.transactionResults.push(transactionResult)
-            transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+            transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id),
                 balanceTransaction.value(),
                 { merge: true })
 
             const senderBalance = (sender.balance.available[currency] || 0) - amount
-            transaction.set(sender.reference as FirebaseFirestore.DocumentReference, {
+            transaction.set(sender.reference, {
                 balance: {
                     available: {
                         [currency]: senderBalance
@@ -237,27 +237,27 @@ export class BalanceManager
             balanceTransaction.from = from
             balanceTransaction.to = to
             balanceTransaction.transactionResults.push(transactionResult)
-            transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference,
+            transaction.set(balanceTransaction.reference,
                 balanceTransaction.value(),
                 { merge: true })
-            transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+            transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id),
                 balanceTransaction.value(),
                 { merge: true })
-            transaction.set(receiver.balanceTransactions.reference.doc(balanceTransaction.id) as FirebaseFirestore.DocumentReference,
+            transaction.set(receiver.balanceTransactions.reference.doc(balanceTransaction.id),
                 balanceTransaction.value(),
                 { merge: true })
 
             const senderBalance = (sender.balance.available[currency] || 0) - amount
             const receiverBalance = (receiver.balance.available[currency] || 0) + amount
 
-            transaction.set(sender.reference as FirebaseFirestore.DocumentReference, {
+            transaction.set(sender.reference, {
                 balance: {
                     available: {
                         [currency]: senderBalance
                     }
                 }
             })
-            transaction.set(receiver.reference as FirebaseFirestore.DocumentReference, {
+            transaction.set(receiver.reference, {
                 balance: {
                     available: {
                         [currency]: receiverBalance
@@ -278,9 +278,9 @@ export class BalanceManager
         balanceTransaction.from = accountID
         balanceTransaction.to = BalanceManager.bankAccount
         balanceTransaction.transactionResults.push(transactionResult)
-        transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
+        transaction.set(balanceTransaction.reference, balanceTransaction.value(), { merge: true })
         const senderBalance = (sender.balance.available[currency] || 0) - amount
-        transaction.set(sender.reference as FirebaseFirestore.DocumentReference, {
+        transaction.set(sender.reference, {
             balance: {
                 available: {
                     [currency]: senderBalance
@@ -300,9 +300,9 @@ export class BalanceManager
         balanceTransaction.from = BalanceManager.bankAccount
         balanceTransaction.to = accountID
         balanceTransaction.transactionResults.push(transactionResult)
-        transaction.set(balanceTransaction.reference as FirebaseFirestore.DocumentReference, balanceTransaction.value(), { merge: true })
+        transaction.set(balanceTransaction.reference, balanceTransaction.value(), { merge: true })
         const receiverBalance = (receiver.balance.available[currency] || 0) + amount
-        transaction.set(receiver.reference as FirebaseFirestore.DocumentReference, {
+        transaction.set(receiver.reference, {
             balance: {
                 available: {
                     [currency]: receiverBalance

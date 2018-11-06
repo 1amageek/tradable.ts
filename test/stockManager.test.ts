@@ -189,7 +189,7 @@ describe("StockManager", () => {
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            await stockManager.orderCancel(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
+                            await stockManager.orderCancel(shop.id, user.id, order.id, product.id, "sku.id", 1, transaction)
                         } catch (error) {
                             reject(error)
                         }
