@@ -34,21 +34,11 @@ const isUndefined = (value: any): boolean => {
     return (value === null || value === undefined || value === NaN)
 }
 
-export interface OrderProcess {
-    <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>
+export type PaymentResult = {
+    balanceTransaction: BalanceTransactionProtocol
+    chargeResult: any
 }
 
-// export interface TransactionProcess {
-//     <T extends OrderItemProtocol, U extends OrderProtocol<T>>(amount:transaction: FirebaseFirestore.Transaction): Promise<void>
-// }
-
-enum InventoryControlType {
-    increase = 'increase',
-    decrease = 'decrease'
-}
-
-// 在庫の増減
-// StripeAPIに接続
 export class Manager
     <
     SKU extends SKUProtocol,
@@ -72,6 +62,12 @@ export class Manager
     private _User: { new(id?: string, value?: { [key: string]: any }): User }
     private _Account: { new(id?: string, value?: { [key: string]: any }): Account }
 
+    private stockManager: StockManager<Order, OrderItem, User, Product, SKU, Item, TradeTransaction>
+
+    private balanceManager: BalanceManager<BalanceTransaction, Account>
+
+    public delegate?: TransactionDelegate
+
     constructor(
         sku: { new(id?: string, value?: { [key: string]: any }): SKU },
         product: { new(id?: string, value?: { [key: string]: any }): Product },
@@ -92,19 +88,12 @@ export class Manager
         this._BalanceTransaction = balanceTransaction
         this._User = user
         this._Account = account
+
+        this.stockManager = new StockManager(this._User, this._Product, this._SKU, this._Item, this._TradeTransaction)
+        this.balanceManager = new BalanceManager(this._BalanceTransaction, this._Account)
     }
 
-    stockManager: StockManager<Order, OrderItem, User, Product, SKU, Item, TradeTransaction> = new StockManager(this._User, this._Product, this._SKU, this._Item, this._TradeTransaction)
-
-    balanceManager: BalanceManager<BalanceTransaction, Account> = new BalanceManager(this._BalanceTransaction, this._Account)
-
-    public delegate?: TransactionDelegate
-
-    public paymentOptions?: PaymentOptions
-
-    public transferOptions?: TransferOptions
-
-    async order(order: Order, orderItems: OrderItem[]) {
+    async order(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
         try {
 
             if (!(order.paymentStatus === OrderPaymentStatus.none)) {
@@ -114,11 +103,6 @@ export class Manager
             const delegate: TransactionDelegate | undefined = this.delegate
             if (!delegate) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required delegate.`)
-            }
-
-            const paymentOptions: PaymentOptions | undefined = this.paymentOptions
-            if (!paymentOptions) {
-                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required payment options.`)
             }
 
             const validator = new OrderValidator(this._Order, this._OrderItem)
@@ -135,32 +119,40 @@ export class Manager
 
             if (order.amount === 0) {
                 try {
-                    await firestore.runTransaction(async (transaction) => {
+                    const result = await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
                             // stock
-                            for (const orderItem of orderItems) {
-                                const productID = orderItem.product
-                                const skuID = orderItem.sku
-                                const quantity = orderItem.quantity
-                                if (productID && skuID) {
-                                    this.stockManager.order(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                            try {
+                                const tasks = []
+                                for (const orderItem of orderItems) {
+                                    const productID = orderItem.product
+                                    const skuID = orderItem.sku
+                                    const quantity = orderItem.quantity
+                                    if (productID && skuID) {
+                                        const task = this.stockManager.order(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                        tasks.push(task)
+                                    }
                                 }
+                                await Promise.all(tasks)
+                            } catch (error) {
+                                reject(error)
                             }
 
                             transaction.set(order.reference, {
                                 updateAt: timestamp,
                                 paymentStatus: OrderPaymentStatus.completed
                             }, { merge: true })
-                            resolve(`[Manager] Success order ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+                            resolve()
                         })
                     })
+                    return result
                 } catch (error) {
                     throw error
                 }
             } else {
                 try {
-                    let chargeResult: {[key: string]: any} | undefined = undefined
-                    return await firestore.runTransaction(async (transaction) => {
+                    let chargeResult: { [key: string]: any } | undefined = undefined
+                    const result = await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
 
                             // stock
@@ -185,7 +177,7 @@ export class Manager
                                     chargeResult = await delegate.payment(order.currency, order.amount, order, paymentOptions)
                                 }
                                 // payment
-                                const balanceTransaction = this.balanceManager.payment(order.purchasedBy,
+                                const balanceTransaction = await this.balanceManager.payment(order.purchasedBy,
                                     order.id,
                                     order.currency,
                                     order.amount,
@@ -199,12 +191,16 @@ export class Manager
                                     }],
                                     paymentStatus: OrderPaymentStatus.completed
                                 }, { merge: true })
-                                resolve(balanceTransaction)
+                                resolve({
+                                    balanceTransaction: balanceTransaction,
+                                    chargeResult: chargeResult
+                                })
                             } catch (error) {
                                 reject(error)
                             }
                         })
                     })
+                    return result
                 } catch (error) {
                     if (error instanceof TradableError) {
                         order.paymentStatus = OrderPaymentStatus.paymentFailure
@@ -218,6 +214,7 @@ export class Manager
                     }
                     try {
                         await delegate.refund(order.currency, order.amount, order, paymentOptions, `[Manager] Invalid order ORDER/${order.id}, transaction failure.`)
+                        throw error
                     } catch (error) {
                         order.paymentStatus = OrderPaymentStatus.paymentFailure
                         try {
@@ -235,7 +232,7 @@ export class Manager
         }
     }
 
-    async orderCancel(order: Order, orderItems: OrderItem[]) {
+    async orderCancel(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
         try {
             const delegate: TransactionDelegate | undefined = this.delegate
             if (!delegate) {
@@ -244,11 +241,6 @@ export class Manager
 
             if (!(order.paymentStatus === OrderPaymentStatus.completed)) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, This order status is invalid.`)
-            }
-
-            const paymentOptions: PaymentOptions | undefined = this.paymentOptions
-            if (!paymentOptions) {
-                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, Manager required payment options.`)
             }
 
             if (order.amount === 0) {
@@ -277,7 +269,7 @@ export class Manager
                 }
             } else {
                 try {
-                    let refundResult: {[key: string]: any} | undefined = undefined
+                    let refundResult: { [key: string]: any } | undefined = undefined
                     await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
 
@@ -349,11 +341,6 @@ export class Manager
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order transferStatus is invalid.`)
             }
 
-            const transferOptions: TransferOptions | undefined = this.transferOptions
-            if (!transferOptions) {
-                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, Manager required transfer options.`)
-            }
-
             if (order.amount === 0) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order is zero amount.`)
             } else {
@@ -416,11 +403,6 @@ export class Manager
 
             if (!(order.transferStatus === OrderTransferStatus.completed)) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order transferStatus is invalid.`)
-            }
-
-            const transferOptions: TransferOptions | undefined = this.transferOptions
-            if (!transferOptions) {
-                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, Manager required transfer options.`)
             }
 
             if (order.amount === 0) {

@@ -1,9 +1,9 @@
 import * as Pring from 'pring-admin'
 import * as admin from 'firebase-admin'
 import * as FirebaseFirestore from '@google-cloud/firestore'
-import { Manager } from './manager'
+import { Manager, PaymentResult } from './manager'
 import { Currency } from './currency'
-export { Currency, Manager }
+export { Currency, Manager, PaymentResult }
 
 export let firestore: FirebaseFirestore.Firestore
 
@@ -217,7 +217,6 @@ export type PaymentOptions = {
     source?: string
     customer?: string
     vendorType: string
-    commissionRate: number
     refundFeeRate: number   // 0 ~ 1 
     reason?: RefundReason
 }

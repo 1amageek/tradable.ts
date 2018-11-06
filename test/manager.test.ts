@@ -12,9 +12,11 @@ import { OrderItem } from './models/orderItem'
 import { Item } from './models/item'
 import { TradeTransaction } from './models/tradeTransaction'
 import { Account } from './models/account'
-import * as firebase from '@firebase/testing'
-import { BalanceTransaction } from './models/BalanceTransaction';
+import { BalanceManager } from '../src/balanceManager'
+import { StockManager } from '../src/stockManager'
+import { BalanceTransaction } from './models/BalanceTransaction'
 import { StripePaymentDelegate } from './stripePaymentDelegate'
+import * as firebase from '@firebase/testing'
 
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
@@ -37,7 +39,7 @@ describe("Manager", () => {
     const date: Date = new Date()
     const orderItem: OrderItem = new OrderItem()
 
-    const manager: Tradable.Manager <SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
+    const manager: Tradable.Manager<SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
 
     beforeAll(async () => {
         product.skus.insert(sku)
@@ -60,6 +62,7 @@ describe("Manager", () => {
         await shop.save()
         await user.save()
 
+        orderItem.product = product.id
         orderItem.order = order.id
         orderItem.selledBy = shop.id
         orderItem.purchasedBy = user.id
@@ -83,12 +86,13 @@ describe("Manager", () => {
 
     describe("Order", async () => {
         test("Success", async () => {
-            const result = await Pring.firestore.runTransaction(async (transaction) => {
-                return new Promise(async (resolve, reject) => {
-                    const resutl = await manager.order(order, [orderItem])
-                    resolve(resutl)
-                })
-            }) as BalanceTransaction
+
+            const paymentOptions: Tradable.PaymentOptions = {
+                vendorType: "stripe",
+                refundFeeRate: 0
+            }
+
+            const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.PaymentResult
 
             const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
             const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
@@ -124,8 +128,8 @@ describe("Manager", () => {
             expect(_item.sku).toEqual(sku.id)
 
             const account = new Account(user.id, {})
-            const systemBalanceTransaction = await BalanceTransaction.get(result.id) as BalanceTransaction
-            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
+            const systemBalanceTransaction = await BalanceTransaction.get(result.balanceTransaction.id) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(result.balanceTransaction.id, BalanceTransaction) as BalanceTransaction
 
             // System Balance Transaction
             expect(systemBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.payment)
@@ -135,7 +139,7 @@ describe("Manager", () => {
             expect(systemBalanceTransaction.to).toEqual(BalanceManager.platform)
             expect(systemBalanceTransaction.transfer).toBeUndefined()
             expect(systemBalanceTransaction.payout).toBeUndefined()
-            expect(systemBalanceTransaction.transactionResults[0]).toEqual({"result": "result"})
+            expect(systemBalanceTransaction.transactionResults[0]['stripe']).toEqual(result.chargeResult)
 
             // Account Trade Transaction
             expect(accountBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.payment)
@@ -145,28 +149,23 @@ describe("Manager", () => {
             expect(accountBalanceTransaction.to).toEqual(BalanceManager.platform)
             expect(accountBalanceTransaction.transfer).toBeUndefined()
             expect(accountBalanceTransaction.payout).toBeUndefined()
-            expect(accountBalanceTransaction.transactionResults[0]).toEqual({"result": "result"})
+            expect(accountBalanceTransaction.transactionResults[0]['stripe']).toEqual(result.chargeResult)
 
         }, 15000)
 
-        test("Failure", async () => {
+        test("Out of stock", async () => {
+
+            const paymentOptions: Tradable.PaymentOptions = {
+                vendorType: "stripe",
+                refundFeeRate: 0
+            }
             try {
-                await Pring.firestore.runTransaction(async (transaction) => {
-                    return new Promise(async (resolve, reject) => {
-                        try {
-                            await stockManager.order(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
-                        } catch (error) {
-                            reject(error)
-                        }
-                        resolve(`[Manager] Success order ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
-                    })
-                })
+                const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.PaymentResult
             } catch (error) {
                 expect(error).not.toBeUndefined()
                 const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
                 const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
                 const _sku = await product.skus.doc(sku.id, SKU) as SKU
-                const _item = (await user.items.get(Item))[0]
 
                 // Shop Trade Transaction
                 expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
@@ -190,214 +189,9 @@ describe("Manager", () => {
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
                 expect(_sku.inventory.quantity).toEqual(0)
 
-                // Item
-                expect(_item.order).toEqual(order.id)
-                expect(_item.selledBy).toEqual(shop.id)
-                expect(_item.product).toEqual(product.id)
-                expect(_item.sku).toEqual(sku.id)
             }
         }, 15000)
-    })
 
-    describe("OrderCancel", async () => {
-        test("Success", async () => {
-            await Pring.firestore.runTransaction(async (transaction) => {
-                return new Promise(async (resolve, reject) => {
-                    await stockManager.orderCancel(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
-                    resolve(`[Manager] Success order ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
-                })
-            })
-
-            const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
-            const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-            const _sku = await product.skus.doc(sku.id, SKU) as SKU
-            const _item = (await user.items.get(Item))[0]
-
-            // Shop Trade Transaction
-            expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-            expect(shopTradeTransaction.quantity).toEqual(1)
-            expect(shopTradeTransaction.selledBy).toEqual(shop.id)
-            expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
-            expect(shopTradeTransaction.order).toEqual(order.id)
-            expect(shopTradeTransaction.product).toEqual(product.id)
-            expect(shopTradeTransaction.sku).toEqual(sku.id)
-
-            // User Trade Transaction
-            expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-            expect(userTradeTransaction.quantity).toEqual(1)
-            expect(userTradeTransaction.selledBy).toEqual(shop.id)
-            expect(userTradeTransaction.purchasedBy).toEqual(user.id)
-            expect(userTradeTransaction.order).toEqual(order.id)
-            expect(userTradeTransaction.product).toEqual(product.id)
-            expect(userTradeTransaction.sku).toEqual(sku.id)
-
-            // SKU
-            expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-            expect(_sku.inventory.quantity).toEqual(1)
-
-            // Item
-            expect(_item.order).toEqual(order.id)
-            expect(_item.selledBy).toEqual(shop.id)
-            expect(_item.product).toEqual(product.id)
-            expect(_item.sku).toEqual(sku.id)
-            expect(_item.isCanceled).toEqual(true)
-
-        }, 15000)
-
-        test("Failure", async () => {
-            try {
-                await Pring.firestore.runTransaction(async (transaction) => {
-                    return new Promise(async (resolve, reject) => {
-                        try {
-                            await stockManager.orderCancel(shop.id, user.id, order.id, product.id, "sku.id", 1, transaction)
-                        } catch (error) {
-                            reject(error)
-                        }
-                        resolve(`[Manager] Success order ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
-                    })
-                })
-            } catch (error) {
-                expect(error).not.toBeUndefined()
-                const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
-                const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-                const _sku = await product.skus.doc(sku.id, SKU) as SKU
-                const _item = (await user.items.get(Item))[0]
-
-                // Shop Trade Transaction
-                expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-                expect(shopTradeTransaction.quantity).toEqual(1)
-                expect(shopTradeTransaction.selledBy).toEqual(shop.id)
-                expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
-                expect(shopTradeTransaction.order).toEqual(order.id)
-                expect(shopTradeTransaction.product).toEqual(product.id)
-                expect(shopTradeTransaction.sku).toEqual(sku.id)
-
-                // User Trade Transaction
-                expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-                expect(userTradeTransaction.quantity).toEqual(1)
-                expect(userTradeTransaction.selledBy).toEqual(shop.id)
-                expect(userTradeTransaction.purchasedBy).toEqual(user.id)
-                expect(userTradeTransaction.order).toEqual(order.id)
-                expect(userTradeTransaction.product).toEqual(product.id)
-                expect(userTradeTransaction.sku).toEqual(sku.id)
-
-                // SKU
-                expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(1)
-
-                // Item
-                expect(_item.order).toEqual(order.id)
-                expect(_item.selledBy).toEqual(shop.id)
-                expect(_item.product).toEqual(product.id)
-                expect(_item.sku).toEqual(sku.id)
-                expect(_item.isCanceled).toEqual(true)
-            }
-        }, 15000)
-    })
-
-    describe("itemCancel", async () => {
-        test("Success", async () => {
-            await Pring.firestore.runTransaction(async (transaction) => {
-                return new Promise(async (resolve, reject) => {
-                    await stockManager.order(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
-                    resolve(`[Manager] Success order ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
-                })
-            })
-
-            const item = (await user.items.get(Item))[0]
-
-            await Pring.firestore.runTransaction(async (transaction) => {
-                return new Promise(async (resolve, reject) => {
-                    await stockManager.itemCancel(shop.id, user.id, order.id, product.id, sku.id, item.id, transaction)
-                    resolve(`[Manager] Success order ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
-                })
-            })
-
-            const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
-            const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-            const _sku = await product.skus.doc(sku.id, SKU) as SKU
-            const _item = (await user.items.get(Item))[0]
-
-            // Shop Trade Transaction
-            expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-            expect(shopTradeTransaction.quantity).toEqual(1)
-            expect(shopTradeTransaction.selledBy).toEqual(shop.id)
-            expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
-            expect(shopTradeTransaction.order).toEqual(order.id)
-            expect(shopTradeTransaction.product).toEqual(product.id)
-            expect(shopTradeTransaction.sku).toEqual(sku.id)
-
-            // User Trade Transaction
-            expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-            expect(userTradeTransaction.quantity).toEqual(1)
-            expect(userTradeTransaction.selledBy).toEqual(shop.id)
-            expect(userTradeTransaction.purchasedBy).toEqual(user.id)
-            expect(userTradeTransaction.order).toEqual(order.id)
-            expect(userTradeTransaction.product).toEqual(product.id)
-            expect(userTradeTransaction.sku).toEqual(sku.id)
-
-            // SKU
-            expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-            expect(_sku.inventory.quantity).toEqual(1)
-
-            // Item
-            expect(_item.order).toEqual(order.id)
-            expect(_item.selledBy).toEqual(shop.id)
-            expect(_item.product).toEqual(product.id)
-            expect(_item.sku).toEqual(sku.id)
-            expect(_item.isCanceled).toEqual(true)
-
-        }, 15000)
-
-        test("Failure", async () => {
-            try {
-                await Pring.firestore.runTransaction(async (transaction) => {
-                    return new Promise(async (resolve, reject) => {
-                        try {
-                            await stockManager.orderCancel(shop.id, user.id, order.id, product.id, "sku.id", 1, transaction)
-                        } catch (error) {
-                            reject(error)
-                        }
-                        resolve(`[Manager] Success order ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
-                    })
-                })
-            } catch (error) {
-                expect(error).not.toBeUndefined()
-                const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
-                const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-                const _sku = await product.skus.doc(sku.id, SKU) as SKU
-                const _item = (await user.items.get(Item))[0]
-
-                // Shop Trade Transaction
-                expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-                expect(shopTradeTransaction.quantity).toEqual(1)
-                expect(shopTradeTransaction.selledBy).toEqual(shop.id)
-                expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
-                expect(shopTradeTransaction.order).toEqual(order.id)
-                expect(shopTradeTransaction.product).toEqual(product.id)
-                expect(shopTradeTransaction.sku).toEqual(sku.id)
-
-                // User Trade Transaction
-                expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-                expect(userTradeTransaction.quantity).toEqual(1)
-                expect(userTradeTransaction.selledBy).toEqual(shop.id)
-                expect(userTradeTransaction.purchasedBy).toEqual(user.id)
-                expect(userTradeTransaction.order).toEqual(order.id)
-                expect(userTradeTransaction.product).toEqual(product.id)
-                expect(userTradeTransaction.sku).toEqual(sku.id)
-
-                // SKU
-                expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(1)
-
-                // Item
-                expect(_item.order).toEqual(order.id)
-                expect(_item.selledBy).toEqual(shop.id)
-                expect(_item.product).toEqual(product.id)
-                expect(_item.sku).toEqual(sku.id)
-                expect(_item.isCanceled).toEqual(true)
-            }
-        }, 15000)
     })
 
     afterAll(async () => {

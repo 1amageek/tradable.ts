@@ -7,11 +7,37 @@ import { Order } from './models/order'
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
 export class StripePaymentDelegate implements tradable.TransactionDelegate {
-    
+
     async payment<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions) {
-        throw new Error("Method not implemented.");
-    }    
-    
+        const idempotency_key = order.id
+        const data: Stripe.charges.IChargeCreationOptions = {
+            amount: order.amount,
+            currency: order.currency,
+            description: `Charge for user/${order.purchasedBy}`
+        }
+
+        if (options) {
+            if (options.customer) {
+                data.customer = options.customer
+            }
+            if (options.source) {
+                data.source = options.source
+            }
+        }
+        data.customer = Config.STRIPE_CUS_TOKEN
+        data.source = Config.STRIPE_CORD_TOKEN
+
+        try {
+            const charge = await stripe.charges.create(data, {
+                idempotency_key: idempotency_key
+            })
+            return charge
+        } catch (error) {
+            console.log(error)
+            throw error
+        }
+    }
+
     async refund<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions, reason?: string | undefined) {
         throw new Error("Method not implemented.");
     }
@@ -19,7 +45,7 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
     async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.TransferOptions) {
         throw new Error("Method not implemented.");
     }
-    
+
     async transferCancel<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.TransferOptions, reason?: string | undefined) {
         throw new Error("Method not implemented.");
     }
@@ -27,7 +53,7 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
     async payout(currency: tradable.Currency, amount: number, accountID: string, options: tradable.PayoutOptions) {
         throw new Error("Method not implemented.");
     }
-    
+
     async payoutCancel(currency: tradable.Currency, amount: number, accountID: string, options: tradable.PayoutOptions) {
         throw new Error("Method not implemented.");
     }
