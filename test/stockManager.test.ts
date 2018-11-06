@@ -135,6 +135,38 @@ describe("StockManager", () => {
                 })
             } catch (error) {
                 expect(error).not.toBeUndefined()
+                const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
+                const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
+                const _sku = await product.skus.doc(sku.id, SKU) as SKU
+                const _item = (await user.items.get(Item))[0]
+    
+                // Shop Trade Transaction
+                expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
+                expect(shopTradeTransaction.quantity).toEqual(1)
+                expect(shopTradeTransaction.selledBy).toEqual(shop.id)
+                expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
+                expect(shopTradeTransaction.order).toEqual(order.id)
+                expect(shopTradeTransaction.product).toEqual(product.id)
+                expect(shopTradeTransaction.sku).toEqual(sku.id)
+    
+                // User Trade Transaction
+                expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
+                expect(userTradeTransaction.quantity).toEqual(1)
+                expect(userTradeTransaction.selledBy).toEqual(shop.id)
+                expect(userTradeTransaction.purchasedBy).toEqual(user.id)
+                expect(userTradeTransaction.order).toEqual(order.id)
+                expect(userTradeTransaction.product).toEqual(product.id)
+                expect(userTradeTransaction.sku).toEqual(sku.id)
+    
+                // SKU
+                expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
+                expect(_sku.inventory.quantity).toEqual(0)
+    
+                // Item
+                expect(_item.order).toEqual(order.id)
+                expect(_item.selledBy).toEqual(shop.id)
+                expect(_item.product).toEqual(product.id)
+                expect(_item.sku).toEqual(sku.id)
             }
         }, 15000)
     })
@@ -198,6 +230,39 @@ describe("StockManager", () => {
                 })
             } catch (error) {
                 expect(error).not.toBeUndefined()
+                const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
+                const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
+                const _sku = await product.skus.doc(sku.id, SKU) as SKU
+                const _item = (await user.items.get(Item))[0]
+    
+                // Shop Trade Transaction
+                expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
+                expect(shopTradeTransaction.quantity).toEqual(1)
+                expect(shopTradeTransaction.selledBy).toEqual(shop.id)
+                expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
+                expect(shopTradeTransaction.order).toEqual(order.id)
+                expect(shopTradeTransaction.product).toEqual(product.id)
+                expect(shopTradeTransaction.sku).toEqual(sku.id)
+    
+                // User Trade Transaction
+                expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
+                expect(userTradeTransaction.quantity).toEqual(1)
+                expect(userTradeTransaction.selledBy).toEqual(shop.id)
+                expect(userTradeTransaction.purchasedBy).toEqual(user.id)
+                expect(userTradeTransaction.order).toEqual(order.id)
+                expect(userTradeTransaction.product).toEqual(product.id)
+                expect(userTradeTransaction.sku).toEqual(sku.id)
+    
+                // SKU
+                expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
+                expect(_sku.inventory.quantity).toEqual(1)
+    
+                // Item
+                expect(_item.order).toEqual(order.id)
+                expect(_item.selledBy).toEqual(shop.id)
+                expect(_item.product).toEqual(product.id)
+                expect(_item.sku).toEqual(sku.id)
+                expect(_item.isCanceled).toEqual(true)
             }
         }, 15000)
     })

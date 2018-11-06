@@ -183,6 +183,7 @@ export class BalanceManager
             balanceTransaction.from = from
             balanceTransaction.to = to
             balanceTransaction.transactionResults.push(transactionResult)
+
             transaction.set(balanceTransaction.reference,
                 balanceTransaction.value(),
                 { merge: true })
@@ -211,6 +212,10 @@ export class BalanceManager
             balanceTransaction.from = from
             balanceTransaction.to = to
             balanceTransaction.transactionResults.push(transactionResult)
+
+            transaction.set(balanceTransaction.reference,
+                balanceTransaction.value(),
+                { merge: true })
             transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id),
                 balanceTransaction.value(),
                 { merge: true })
@@ -237,6 +242,7 @@ export class BalanceManager
             balanceTransaction.from = from
             balanceTransaction.to = to
             balanceTransaction.transactionResults.push(transactionResult)
+            
             transaction.set(balanceTransaction.reference,
                 balanceTransaction.value(),
                 { merge: true })

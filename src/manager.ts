@@ -106,10 +106,7 @@ export class Manager
 
     async order(order: Order, orderItems: OrderItem[]) {
         try {
-            // const order: Order = new this._Order(orderID, {})
-            // const results = await Promise.all([order.fetch(), order.items.get(this._OrderItem)])
-            // const items: OrderItem[] = results[1] as OrderItem[]
-
+            
             if (!(order.paymentStatus === OrderPaymentStatus.none)) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order status is invalid.`)
             }
