@@ -12,8 +12,9 @@ import { OrderItem } from './models/orderItem'
 import { Item } from './models/item'
 import { TradeTransaction } from './models/tradeTransaction'
 import { Account } from './models/account'
-import { StockManager } from '../src/stockManager'
 import * as firebase from '@firebase/testing'
+import { BalanceTransaction } from './models/BalanceTransaction';
+import { StripePaymentDelegate } from './stripePaymentDelegate'
 
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
@@ -25,7 +26,7 @@ const app = admin.initializeApp({
 
 Tradable.initialize(app, admin.firestore.FieldValue.serverTimestamp())
 
-describe("StockManager", () => {
+describe("Manager", () => {
 
     const shop: User = new User()
     const user: User = new User()
@@ -36,7 +37,7 @@ describe("StockManager", () => {
     const date: Date = new Date()
     const orderItem: OrderItem = new OrderItem()
 
-    const stockManager: StockManager<Order, OrderItem, User, Product, SKU, Item, TradeTransaction> = new StockManager(User, Product, SKU, Item, TradeTransaction)
+    const manager: Tradable.Manager <SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
 
     beforeAll(async () => {
         product.skus.insert(sku)
@@ -75,13 +76,16 @@ describe("StockManager", () => {
         order.expirationDate = new Date(date.setDate(date.getDate() + 14))
         order.items.insert(orderItem)
         await order.save()
+
+        manager.delegate = new StripePaymentDelegate()
+
     })
 
     describe("Order", async () => {
         test("Success", async () => {
             await Pring.firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
-                    await stockManager.order(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
+                    await manager.order(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
                     resolve(`[Manager] Success order ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
                 })
             })

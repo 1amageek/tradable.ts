@@ -412,6 +412,86 @@ describe("BalanceManager", () => {
         }, 15000)
     })
 
+    describe("payout", async () => {
+        test("Success", async () => {
+            const result = await Pring.firestore.runTransaction(async (transaction) => {
+                return new Promise(async (resolve, reject) => {
+                    const result = await balanceManager.payout(order.selledBy, order.currency, order.amount, {"result": "result"}, transaction)
+                    resolve(result)
+                })
+            }) as BalanceTransaction
+
+            const account = new Account(order.selledBy, {})
+            await account.fetch()
+            const systemBalanceTransaction = await BalanceTransaction.get(result.id) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
+
+            expect(account.balance.available[order.currency]).toEqual(-order.amount)
+
+            // System Balance Transaction
+            expect(systemBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.payout)
+            expect(systemBalanceTransaction.currency).toEqual(order.currency)
+            expect(systemBalanceTransaction.amount).toEqual(order.amount)
+            expect(systemBalanceTransaction.from).toEqual(order.selledBy)
+            expect(systemBalanceTransaction.to).toEqual(BalanceManager.bankAccount)
+            expect(systemBalanceTransaction.transfer).toBeUndefined()
+            expect(systemBalanceTransaction.payout).toBeUndefined()
+            expect(systemBalanceTransaction.transactionResults[0]).toEqual({"result": "result"})
+
+
+            // Account Trade Transaction
+            expect(accountBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.payout)
+            expect(accountBalanceTransaction.currency).toEqual(order.currency)
+            expect(accountBalanceTransaction.amount).toEqual(order.amount)
+            expect(accountBalanceTransaction.from).toEqual(order.selledBy)
+            expect(accountBalanceTransaction.to).toEqual(BalanceManager.bankAccount)
+            expect(accountBalanceTransaction.transfer).toBeUndefined()
+            expect(accountBalanceTransaction.payout).toBeUndefined()
+            expect(accountBalanceTransaction.transactionResults[0]).toEqual({"result": "result"})
+
+        }, 15000)
+    })
+
+    describe("payoutCancel", async () => {
+        test("Success", async () => {
+            const result = await Pring.firestore.runTransaction(async (transaction) => {
+                return new Promise(async (resolve, reject) => {
+                    const result = await balanceManager.payoutCancel(order.selledBy, order.currency, order.amount, {"result": "result"}, transaction)
+                    resolve(result)
+                })
+            }) as BalanceTransaction
+
+            const account = new Account(order.selledBy, {})
+            await account.fetch()
+            const systemBalanceTransaction = await BalanceTransaction.get(result.id) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
+
+            expect(account.balance.available[order.currency]).toEqual(0)
+
+            // System Balance Transaction
+            expect(systemBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.payoutCancel)
+            expect(systemBalanceTransaction.currency).toEqual(order.currency)
+            expect(systemBalanceTransaction.amount).toEqual(order.amount)
+            expect(systemBalanceTransaction.from).toEqual(BalanceManager.bankAccount)
+            expect(systemBalanceTransaction.to).toEqual(order.selledBy)
+            expect(systemBalanceTransaction.transfer).toBeUndefined()
+            expect(systemBalanceTransaction.payout).toBeUndefined()
+            expect(systemBalanceTransaction.transactionResults[0]).toEqual({"result": "result"})
+
+
+            // Account Trade Transaction
+            expect(accountBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.payoutCancel)
+            expect(accountBalanceTransaction.currency).toEqual(order.currency)
+            expect(accountBalanceTransaction.amount).toEqual(order.amount)
+            expect(accountBalanceTransaction.from).toEqual(BalanceManager.bankAccount)
+            expect(accountBalanceTransaction.to).toEqual(order.selledBy)
+            expect(accountBalanceTransaction.transfer).toBeUndefined()
+            expect(accountBalanceTransaction.payout).toBeUndefined()
+            expect(accountBalanceTransaction.transactionResults[0]).toEqual({"result": "result"})
+
+        }, 15000)
+    })
+
     afterAll(async () => {
         await account.delete()
         await shop.delete()

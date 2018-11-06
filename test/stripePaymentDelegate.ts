@@ -88,20 +88,29 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
         }
     }
 
-    async payout<U extends tradable.BalanceTransactionProtocol, T extends tradable.AccountProtocol<U>>(currency: tradable.Currency, amount: number, account: T, options?: tradable.PayoutOptions): Promise<any> {
-        try {
-            return {}
-        } catch (error) {
-            throw error
-        }
-    } 
+    async payout(currency: tradable.Currency, amount: number, accountID: string, options: tradable.PayoutOptions) {
 
-    async payoutCancel<U extends tradable.BalanceTransactionProtocol, T extends tradable.AccountProtocol<U>>(currency: tradable.Currency, amount: number, account: T, options?: tradable.PayoutOptions): Promise<any> {
-        try {
-            return {}
-        } catch (error) {
-            throw error
-        }
-    } 
+    }
+
+    async payoutCancel(currency: tradable.Currency, amount: number, accountID: string, options: tradable.PayoutOptions) {
+
+    }
+
+
+    // async payout<U extends tradable.BalanceTransactionProtocol, T extends tradable.AccountProtocol<U>>(currency: tradable.Currency, amount: number, account: T, options?: tradable.PayoutOptions): Promise<any> {
+    //     try {
+    //         return {}
+    //     } catch (error) {
+    //         throw error
+    //     }
+    // } 
+
+    // async payoutCancel<U extends tradable.BalanceTransactionProtocol, T extends tradable.AccountProtocol<U>>(currency: tradable.Currency, amount: number, account: T, options?: tradable.PayoutOptions): Promise<any> {
+    //     try {
+    //         return {}
+    //     } catch (error) {
+    //         throw error
+    //     }
+    // } 
 
 }

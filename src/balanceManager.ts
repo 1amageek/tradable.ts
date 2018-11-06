@@ -81,7 +81,7 @@ export class BalanceManager
             balanceTransaction.from = from
             balanceTransaction.to = to
             balanceTransaction.transactionResults.push(transactionResult)
-            
+
             transaction.set(balanceTransaction.reference,
                 balanceTransaction.value(),
                 { merge: true })
@@ -291,6 +291,9 @@ export class BalanceManager
         balanceTransaction.to = BalanceManager.bankAccount
         balanceTransaction.transactionResults.push(transactionResult)
         transaction.set(balanceTransaction.reference, balanceTransaction.value(), { merge: true })
+        transaction.set(sender.balanceTransactions.reference.doc(balanceTransaction.id),
+            balanceTransaction.value(),
+            { merge: true })
         const senderBalance = (sender.balance.available[currency] || 0) - amount
         transaction.set(sender.reference, {
             balance: {
@@ -313,6 +316,9 @@ export class BalanceManager
         balanceTransaction.to = accountID
         balanceTransaction.transactionResults.push(transactionResult)
         transaction.set(balanceTransaction.reference, balanceTransaction.value(), { merge: true })
+        transaction.set(receiver.balanceTransactions.reference.doc(balanceTransaction.id),
+            balanceTransaction.value(),
+            { merge: true })
         const receiverBalance = (receiver.balance.available[currency] || 0) + amount
         transaction.set(receiver.reference, {
             balance: {
