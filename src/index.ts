@@ -246,7 +246,7 @@ export interface TransactionDelegate {
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions, reason?: string): Promise<any>
 
     ///
-    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number,order: T,  options: TransferOptions): Promise<any>
+    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T,  options: TransferOptions): Promise<any>
 
     transferCancel<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: TransferOptions, reason?: string): Promise<any>
 

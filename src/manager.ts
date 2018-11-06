@@ -106,7 +106,7 @@ export class Manager
 
     async order(order: Order, orderItems: OrderItem[]) {
         try {
-            
+
             if (!(order.paymentStatus === OrderPaymentStatus.none)) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order status is invalid.`)
             }
@@ -160,7 +160,7 @@ export class Manager
             } else {
                 try {
                     let chargeResult: {[key: string]: any} | undefined = undefined
-                    await firestore.runTransaction(async (transaction) => {
+                    return await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
 
                             // stock
@@ -185,7 +185,7 @@ export class Manager
                                     chargeResult = await delegate.payment(order.currency, order.amount, order, paymentOptions)
                                 }
                                 // payment
-                                this.balanceManager.payment(order.purchasedBy,
+                                const balanceTransaction = this.balanceManager.payment(order.purchasedBy,
                                     order.id,
                                     order.currency,
                                     order.amount,
@@ -199,7 +199,7 @@ export class Manager
                                     }],
                                     paymentStatus: OrderPaymentStatus.completed
                                 }, { merge: true })
-                                resolve(`[Manager] Success order ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+                                resolve(balanceTransaction)
                             } catch (error) {
                                 reject(error)
                             }
