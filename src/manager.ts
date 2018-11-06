@@ -97,7 +97,7 @@ export class Manager
         try {
 
             if (!(order.paymentStatus === OrderPaymentStatus.none)) {
-                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order status is invalid.`)
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order paymentStatus is invalid.`)
             }
 
             const delegate: TransactionDelegate | undefined = this.delegate

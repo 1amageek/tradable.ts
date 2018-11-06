@@ -1,0 +1,34 @@
+import * as tradable from '../src/index'
+import * as Stripe from 'stripe'
+import * as Config from './config'
+import { Account } from './models/account'
+import { Order } from './models/order'
+
+export const stripe = new Stripe(Config.STRIPE_API_KEY)
+
+export class StripeInvalidPaymentDelegate implements tradable.TransactionDelegate {
+
+    async payment<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions) {
+        throw new Error("Method not implemented.");
+    }
+
+    async refund<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions, reason?: string | undefined) {
+        throw new Error("Method not implemented.");
+    }
+
+    async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.TransferOptions) {
+        throw new Error("Method not implemented.");
+    }
+
+    async transferCancel<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.TransferOptions, reason?: string | undefined) {
+        throw new Error("Method not implemented.");
+    }
+
+    async payout(currency: tradable.Currency, amount: number, accountID: string, options: tradable.PayoutOptions) {
+        throw new Error("Method not implemented.");
+    }
+
+    async payoutCancel(currency: tradable.Currency, amount: number, accountID: string, options: tradable.PayoutOptions) {
+        throw new Error("Method not implemented.");
+    }
+}
