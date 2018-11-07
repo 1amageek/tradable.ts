@@ -58,7 +58,7 @@ describe("Manager", () => {
         await Promise.all([product.save(), shop.save(), user.save()])
     })
 
-    describe("Order", async () => {
+    describe("orderCancel", async () => {
         test("Success", async () => {
 
             const manager: Tradable.Manager<SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
@@ -92,7 +92,7 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
 
-            const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.PaymentResult
+            const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult
 
             const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
             const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
@@ -128,8 +128,8 @@ describe("Manager", () => {
             expect(_item.sku).toEqual(sku.id)
 
             const account = new Account(user.id, {})
-            const systemBalanceTransaction = await BalanceTransaction.get(result.balanceTransaction.id) as BalanceTransaction
-            const accountBalanceTransaction = await account.balanceTransactions.doc(result.balanceTransaction.id, BalanceTransaction) as BalanceTransaction
+            const systemBalanceTransaction = await BalanceTransaction.get(result.balanceTransaction!.id) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(result.balanceTransaction!.id, BalanceTransaction) as BalanceTransaction
 
             // System Balance Transaction
             expect(systemBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.payment)
@@ -185,7 +185,7 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
             try {
-                const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.PaymentResult
+                const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult
             } catch (error) {
                 expect(error).not.toBeUndefined()
                 const _sku = await product.skus.doc(sku.id, SKU) as SKU
@@ -230,7 +230,7 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
             try {
-                const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.PaymentResult
+                const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult
             } catch (error) {
                 expect(error).not.toBeUndefined()
                 const _sku = await product.skus.doc(sku.id, SKU) as SKU
@@ -273,7 +273,7 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
             try {
-                const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.PaymentResult
+                const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult
             } catch (error) {
                 expect(error).not.toBeUndefined()
                 const _sku = await product.skus.doc(sku.id, SKU) as SKU
@@ -318,7 +318,7 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
             try {
-                const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.PaymentResult
+                const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult
             } catch (error) {
                 expect(error).not.toBeUndefined()
                 const _sku = await product.skus.doc(sku.id, SKU) as SKU
@@ -329,7 +329,108 @@ describe("Manager", () => {
 
             }
         }, 15000)
+    })
 
+    describe("orderCancel", async () => {
+        test("Success", async () => {
+
+            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
+            manager.delegate = new StripePaymentDelegate()
+
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+    
+            orderItem.product = product.id
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.purchasedBy = user.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.amount
+            orderItem.quantity = 1
+    
+            order.amount = sku.amount
+            order.currency = sku.currency
+            order.selledBy = shop.id
+            order.purchasedBy = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            await order.save()
+    
+
+            const paymentOptions: Tradable.PaymentOptions = {
+                vendorType: "stripe",
+                refundFeeRate: 0
+            }
+
+            const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult
+            const _order = await Order.get(order.id) as Order
+            const cancelResult = await manager.orderCancel(_order, [orderItem], paymentOptions) as Tradable.OrderCancelResult
+
+            console.log(cancelResult)
+
+            const shopTradeTransaction = await shop.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction) as TradeTransaction
+            const userTradeTransaction = await user.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction) as TradeTransaction
+            const _sku = await product.skus.doc(sku.id, SKU) as SKU
+            const _item = (await user.items.get(Item))[0]
+
+            // Shop Trade Transaction
+            expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderCancel)
+            expect(shopTradeTransaction.quantity).toEqual(1)
+            expect(shopTradeTransaction.selledBy).toEqual(shop.id)
+            expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
+            expect(shopTradeTransaction.order).toEqual(order.id)
+            expect(shopTradeTransaction.product).toEqual(product.id)
+            expect(shopTradeTransaction.sku).toEqual(sku.id)
+
+            // User Trade Transaction
+            expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderCancel)
+            expect(userTradeTransaction.quantity).toEqual(1)
+            expect(userTradeTransaction.selledBy).toEqual(shop.id)
+            expect(userTradeTransaction.purchasedBy).toEqual(user.id)
+            expect(userTradeTransaction.order).toEqual(order.id)
+            expect(userTradeTransaction.product).toEqual(product.id)
+            expect(userTradeTransaction.sku).toEqual(sku.id)
+
+            // SKU
+            expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
+            expect(_sku.inventory.quantity).toEqual(2)
+
+            // Item
+            expect(_item.order).toEqual(order.id)
+            expect(_item.selledBy).toEqual(shop.id)
+            expect(_item.product).toEqual(product.id)
+            expect(_item.sku).toEqual(sku.id)
+
+            const account = new Account(user.id, {})
+            const systemBalanceTransaction = await BalanceTransaction.get(cancelResult.balanceTransaction!.id) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(cancelResult.balanceTransaction!.id, BalanceTransaction) as BalanceTransaction
+
+            // System Balance Transaction
+            expect(systemBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.paymentRefund)
+            expect(systemBalanceTransaction.currency).toEqual(order.currency)
+            expect(systemBalanceTransaction.amount).toEqual(order.amount)
+            expect(systemBalanceTransaction.from).toEqual(order.purchasedBy)
+            expect(systemBalanceTransaction.to).toEqual(BalanceManager.platform)
+            expect(systemBalanceTransaction.transfer).toBeUndefined()
+            expect(systemBalanceTransaction.payout).toBeUndefined()
+            // expect(systemBalanceTransaction.transactionResults[0]['stripe']).toEqual(result.chargeResult)
+            expect(systemBalanceTransaction.transactionResults[0]['stripe']).toEqual(cancelResult.refundResult)
+
+            // Account Trade Transaction
+            expect(accountBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.paymentRefund)
+            expect(accountBalanceTransaction.currency).toEqual(order.currency)
+            expect(accountBalanceTransaction.amount).toEqual(order.amount)
+            expect(accountBalanceTransaction.from).toEqual(order.purchasedBy)
+            expect(accountBalanceTransaction.to).toEqual(BalanceManager.platform)
+            expect(accountBalanceTransaction.transfer).toBeUndefined()
+            expect(accountBalanceTransaction.payout).toBeUndefined()
+            // expect(accountBalanceTransaction.transactionResults[0]['stripe']).toEqual(result.chargeResult)
+            expect(accountBalanceTransaction.transactionResults[0]['stripe']).toEqual(cancelResult.refundResult)
+
+        }, 15000)
     })
 
     afterAll(async () => {

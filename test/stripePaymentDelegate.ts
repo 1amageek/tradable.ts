@@ -39,7 +39,23 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
     }
 
     async refund<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions, reason?: string | undefined) {
-        throw new Error("Method not implemented.");
+        const charegeID = ""
+        const idempotency_key = `refund:${order.id}`
+
+        let data: Stripe.refunds.IRefundCreationOptions = {}
+
+        if (reason) {
+            data.reason = reason
+        }
+
+        try {
+            const result = await stripe.charges.refund(charegeID, data, {
+                idempotency_key: idempotency_key
+            })
+            return result
+        } catch (error) {
+            throw error
+        }
     }
 
     async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.TransferOptions) {

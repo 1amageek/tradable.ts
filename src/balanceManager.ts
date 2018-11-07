@@ -1,7 +1,5 @@
 import * as FirebaseFirestore from '@google-cloud/firestore'
 import {
-    firestore,
-    timestamp,
     BalanceTransactionProtocol,
     AccountProtocol,
     Currency,

@@ -1,9 +1,9 @@
 import * as Pring from 'pring-admin'
 import * as admin from 'firebase-admin'
 import * as FirebaseFirestore from '@google-cloud/firestore'
-import { Manager, PaymentResult } from './manager'
+import { Manager, OrderResult, OrderCancelResult } from './manager'
 import { Currency } from './currency'
-export { Currency, Manager, PaymentResult }
+export { Currency, Manager, OrderResult, OrderCancelResult }
 
 export let firestore: FirebaseFirestore.Firestore
 
@@ -26,6 +26,7 @@ export interface UserProtocol
     isAvailabled: boolean
     country: string
     orders: Pring.NestedCollection<Order>
+    receivedOrders: Pring.NestedCollection<Order>
     items: Pring.NestedCollection<Item>
     tradeTransactions: Pring.NestedCollection<TradeTransaction>
 }
