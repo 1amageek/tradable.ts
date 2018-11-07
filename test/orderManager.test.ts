@@ -104,9 +104,9 @@ describe("OrderManager", () => {
             expect(shopOrder.purchasedBy).toEqual(order.purchasedBy)
             expect(shopOrder.selledBy).toEqual(order.selledBy)
             expect(shopOrder.shippingTo).toEqual(order.shippingTo)
-            // expect(shopOrder.transferredTo).toEqual(order.transferredTo)
-            // expect(shopOrder.paidAt).toEqual(order.paidAt)
-            // expect(shopOrder.expirationDate).toEqual(order.expirationDate)
+            expect(shopOrder.transferredTo).toEqual(order.transferredTo)
+            expect(shopOrder.paidAt).toEqual(order.paidAt)
+            expect(shopOrder.expirationDate).toEqual(order.expirationDate)
             expect(shopOrder.currency).toEqual(order.currency)
             expect(shopOrder.amount).toEqual(order.amount)
             expect(shopOrder.paymentStatus).toEqual(order.paymentStatus)
@@ -116,11 +116,7 @@ describe("OrderManager", () => {
         }, 15000)
     })
 
-    // afterAll(async () => {
-    //     await account.delete()
-    //     await shop.delete()
-    //     await user.delete()
-    //     await product.delete()
-    //     await sku.delete()
-    // })
+    afterAll(async () => {
+        await Promise.all([account.delete(), shop.delete(), user.delete(), product.delete(), sku.delete()])
+    })
 })
