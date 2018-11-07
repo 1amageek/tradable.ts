@@ -493,10 +493,6 @@ describe("BalanceManager", () => {
     })
 
     afterAll(async () => {
-        await account.delete()
-        await shop.delete()
-        await user.delete()
-        await product.delete()
-        await sku.delete()
+        await Promise.all([account.delete(), shop.delete(), user.delete(), product.delete(), sku.delete()])
     })
 })

@@ -55,10 +55,6 @@ describe("StockManager", () => {
             quantity: 1
         }
 
-        await product.save()
-        await shop.save()
-        await user.save()
-
         orderItem.order = order.id
         orderItem.selledBy = shop.id
         orderItem.purchasedBy = user.id
@@ -74,7 +70,9 @@ describe("StockManager", () => {
         order.shippingTo = { address: "address" }
         order.expirationDate = new Date(date.setDate(date.getDate() + 14))
         order.items.insert(orderItem)
-        await order.save()
+
+        user.orders.insert(order)
+        await Promise.all([user.save(), product.save(), shop.save()])
     })
 
     describe("Order", async () => {
@@ -326,7 +324,7 @@ describe("StockManager", () => {
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            await stockManager.orderCancel(shop.id, user.id, order.id, product.id, "sku.id", 1, transaction)
+                            await stockManager.itemCancel(shop.id, user.id, order.id, product.id, sku.id, "item.id", transaction)
                         } catch (error) {
                             reject(error)
                         }
@@ -373,10 +371,6 @@ describe("StockManager", () => {
     })
 
     afterAll(async () => {
-        await account.delete()
-        await shop.delete()
-        await user.delete()
-        await product.delete()
-        await sku.delete()
+        await Promise.all([account.delete(), shop.delete(), user.delete(), product.delete(), sku.delete()])
     })
 })

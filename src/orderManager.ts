@@ -1,4 +1,5 @@
 import * as Pring from 'pring-admin'
+import * as FirebaseFirestore from '@google-cloud/firestore'
 import {
     firestore,
     timestamp,
@@ -48,6 +49,10 @@ export class OrderManager
         const orderValue = order.value() as any
         orderValue.updatedAt = timestamp
         transaction.set(order.reference, orderValue, { merge: true })
+
+        if (Object.keys(transactionResult).length) {
+            orderValue["transactionResults"] = FirebaseFirestore.FieldValue.arrayUnion(transactionResult)
+        }
         
         const seller = new this._User(order.selledBy, {})
         transaction.set(seller.receivedOrders.reference.doc(order.id), orderValue, { merge: true })
