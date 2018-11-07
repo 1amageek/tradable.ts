@@ -1,6 +1,7 @@
 import * as FirebaseFirestore from '@google-cloud/firestore'
 import { StockManager } from './stockManager'
 import { BalanceManager } from './balanceManager'
+import { OrderManager } from './orderManager'
 import { OrderValidator } from './orderValidator'
 import * as Pring from 'pring-admin'
 import {
@@ -30,10 +31,8 @@ import {
     PayoutOptions
 } from "./index"
 import { TradeTransaction } from '../test/models/tradeTransaction';
-
-const isUndefined = (value: any): boolean => {
-    return (value === null || value === undefined || value === NaN)
-}
+import { User } from '../test/models/user';
+import { Order } from '../test/models/order';
 
 export type OrderResult = {
     balanceTransaction?: BalanceTransactionProtocol
@@ -75,6 +74,8 @@ export class Manager
 
     private balanceManager: BalanceManager<BalanceTransaction, Account>
 
+    private orderManager: OrderManager<Order, OrderItem, User, Item, TradeTransaction>
+
     public delegate?: TransactionDelegate
 
     constructor(
@@ -100,6 +101,7 @@ export class Manager
 
         this.stockManager = new StockManager(this._User, this._Product, this._SKU, this._Item, this._TradeTransaction)
         this.balanceManager = new BalanceManager(this._BalanceTransaction, this._Account)
+        this.orderManager = new OrderManager(this._User)
     }
 
     async order(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
@@ -143,10 +145,8 @@ export class Manager
                                     }
                                 }
                                 const tradeTransactions = await Promise.all(tasks)
-                                transaction.set(order.reference, {
-                                    updateAt: timestamp,
-                                    paymentStatus: OrderPaymentStatus.completed
-                                }, { merge: true })
+                                order.paymentStatus = OrderPaymentStatus.completed
+                                this.orderManager.update(order, orderItems, {}, transaction)
                                 resolve({
                                     tradeTransactions: tradeTransactions
                                 })
@@ -188,14 +188,11 @@ export class Manager
                                         order.amount,
                                         { [paymentOptions.vendorType]: chargeResult }
                                         , transaction)
-    
-                                    transaction.set(order.reference, {
-                                        updateAt: timestamp,
-                                        transactionResults: [{
-                                            [paymentOptions.vendorType]: chargeResult
-                                        }],
-                                        paymentStatus: OrderPaymentStatus.completed
-                                    }, { merge: true })
+
+                                    order.paymentStatus = OrderPaymentStatus.completed
+                                    this.orderManager.update(order, orderItems,
+                                        { [paymentOptions.vendorType]: chargeResult }
+                                        , transaction)
                                     resolve({
                                         tradeTransactions: tradeTransactions,
                                         balanceTransaction: balanceTransaction,
@@ -272,10 +269,10 @@ export class Manager
                                 }
                             }
 
-                            transaction.set(order.reference, {
-                                updateAt: timestamp,
-                                paymentStatus: OrderPaymentStatus.canceled
-                            }, { merge: true })
+                            order.paymentStatus = OrderPaymentStatus.canceled
+                            this.orderManager.update(order, orderItems,
+                                { }
+                                , transaction)
                             resolve(`[Manager] Success orderCancel ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
                         })
                     })
@@ -314,13 +311,10 @@ export class Manager
                                 }
                                 const tradeTransactions = await Promise.all(tasks)
 
-                                transaction.set(order.reference, {
-                                    updateAt: timestamp,
-                                    transactionResults: [{
-                                        [paymentOptions.vendorType]: refundResult
-                                    }],
-                                    paymentStatus: OrderPaymentStatus.canceled
-                                }, { merge: true })
+                                order.paymentStatus = OrderPaymentStatus.canceled
+                                this.orderManager.update(order, orderItems,
+                                    { [paymentOptions.vendorType]: refundResult }
+                                    , transaction)
                                 resolve({
                                     tradeTransactions: tradeTransactions,
                                     balanceTransaction: balanceTransaction,
@@ -375,7 +369,7 @@ export class Manager
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order is zero amount.`)
             } else {
                 const amount = order.amount * (1 - transferOptions.platformFeeRate)
-                const result = await delegate.transfer(order.currency, amount, order, transferOptions)
+                const transferResult = await delegate.transfer(order.currency, amount, order, transferOptions)
                 try {
                     await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
@@ -387,16 +381,13 @@ export class Manager
                                 order.id,
                                 order.currency,
                                 amount,
-                                { [transferOptions.vendorType]: result },
+                                { [transferOptions.vendorType]: transferResult },
                                 transaction)
 
-                            transaction.set(order.reference, {
-                                updateAt: timestamp,
-                                transactionResults: [{
-                                    [transferOptions.vendorType]: result
-                                }],
-                                transferStatus: OrderTransferStatus.completed
-                            }, { merge: true })
+                            order.transferStatus = OrderTransferStatus.completed
+                            this.orderManager.update(order, [],
+                                { [transferOptions.vendorType]: transferResult }
+                                , transaction)
                             resolve(`[Manager] Success orderCancel ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
                         })
                     })
@@ -408,7 +399,6 @@ export class Manager
                         try {
                             await order.update()
                         } catch (error) {
-                            console.log(error)
                             throw error
                         }
                         throw error
@@ -439,7 +429,7 @@ export class Manager
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order is zero amount.`)
             } else {
                 const amount = order.amount * (1 - transferOptions.platformFeeRate)
-                const result = await delegate.transferCancel(order.currency, amount, order, transferOptions)
+                const transferCancelResult = await delegate.transferCancel(order.currency, amount, order, transferOptions)
                 try {
                     await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
@@ -451,16 +441,13 @@ export class Manager
                                 order.id,
                                 order.currency,
                                 amount,
-                                { [transferOptions.vendorType]: result },
+                                { [transferOptions.vendorType]: transferCancelResult },
                                 transaction)
 
-                            transaction.set(order.reference, {
-                                updateAt: timestamp,
-                                transactionResults: [{
-                                    [transferOptions.vendorType]: result
-                                }],
-                                transferStatus: OrderTransferStatus.completed
-                            }, { merge: true })
+                            order.transferStatus = OrderTransferStatus.canceled
+                            this.orderManager.update(order, [],
+                                { [transferOptions.vendorType]: transferCancelResult }
+                                , transaction)
                             resolve(`[Manager] Success orderCancel ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
                         })
                     })
@@ -469,7 +456,6 @@ export class Manager
                     try {
                         await order.update()
                     } catch (error) {
-                        console.log(error)
                         throw error
                     }
                     throw error
