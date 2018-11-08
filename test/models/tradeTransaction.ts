@@ -12,4 +12,5 @@ export class TradeTransaction extends Pring.Base implements tradable.TradeTransa
     @property order: string = ''
     @property product: string = ''
     @property sku: string = ''
+    @property items: string[] = []
 }

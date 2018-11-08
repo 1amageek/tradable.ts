@@ -69,6 +69,16 @@ export class StockManager
             throw new TradableError(TradableErrorCode.outOfStock, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU is out of stock.`)
         }
 
+        for (let i = 0; i < quantity; i++) {
+            const item: Item = new this._Item()
+            item.selledBy = selledBy
+            item.order = orderID
+            item.product = productID
+            item.sku = skuID
+            tradeTransaction.items.push(item.id)
+            transaction.set(purchaser.items.reference.doc(item.id), item.value(), { merge: true })
+        }
+
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(sku.reference, {
@@ -76,15 +86,6 @@ export class StockManager
                 quantity: skuQuantity
             }
         }, { merge: true })
-
-        for (let i = 0; i < quantity; i++) {
-            const item: Item = new this._Item()
-            item.selledBy = selledBy
-            item.order = orderID
-            item.product = productID
-            item.sku = skuID
-            transaction.set(purchaser.items.reference.doc(item.id), item.value(), { merge: true })
-        }
 
         return tradeTransaction
     }
@@ -103,12 +104,13 @@ export class StockManager
 
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
         tradeTransaction.type = TradeTransactionType.orderItemCancel
-        tradeTransaction.quantity = -1
+        tradeTransaction.quantity = 1
         tradeTransaction.selledBy = selledBy
         tradeTransaction.purchasedBy = purchasedBy
         tradeTransaction.order = orderID
         tradeTransaction.product = productID
         tradeTransaction.sku = skuID
+        tradeTransaction.items.push(item.id)
 
         const skuQuantity: number = (sku.inventory.quantity || 0) + 1
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
@@ -148,6 +150,12 @@ export class StockManager
         tradeTransaction.sku = skuID
 
         const skuQuantity: number = (sku.inventory.quantity || 0) + quantity
+        for (const item of items) {
+            tradeTransaction.items.push(item.id)
+            transaction.set(purchaser.items.reference.doc(item.id), {
+                isCanceled: true
+            }, { merge: true })
+        }
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(sku.reference, {
@@ -155,11 +163,6 @@ export class StockManager
                 quantity: skuQuantity
             }
         }, { merge: true })
-        for (const item of items) {
-            transaction.set(purchaser.items.reference.doc(item.id), {
-                isCanceled: true
-            }, { merge: true })
-        }
         return tradeTransaction
     }
 }

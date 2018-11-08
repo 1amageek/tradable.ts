@@ -366,6 +366,9 @@ describe("Manager", () => {
             }
 
             const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult
+
+            console.log(result)
+
             const _order = await Order.get(order.id) as Order
             const cancelResult = await manager.orderCancel(_order, [orderItem], paymentOptions) as Tradable.OrderCancelResult
 

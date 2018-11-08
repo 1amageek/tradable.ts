@@ -48,6 +48,7 @@ export interface TradeTransactionProtocol extends Pring.Base {
     order: string
     product: string
     sku: string
+    items: string[]
 }
 
 export enum BalanceTransactionType {
