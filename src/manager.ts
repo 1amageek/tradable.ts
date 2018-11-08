@@ -182,7 +182,7 @@ export class Manager
                                         chargeResult = await delegate.payment(order.currency, order.amount, order, paymentOptions)
                                     }
                                     // payment
-                                    const balanceTransaction = await this.balanceManager.payment(order.purchasedBy,
+                                    const balanceTransaction = this.balanceManager.payment(order.purchasedBy,
                                         order.id,
                                         order.currency,
                                         order.amount,
@@ -323,7 +323,6 @@ export class Manager
                                     refundResult: refundResult
                                 })
                             } catch (error) {
-                                console.log(error)
                                 if (refundResult) {
                                     reject({
                                         refundResult: refundResult

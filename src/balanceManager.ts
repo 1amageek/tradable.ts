@@ -29,7 +29,7 @@ export class BalanceManager
     static bankAccount: string = "bank_account"
 
     /// Purchaser -> Platform
-    async payment(purchasedBy: string, orderID: string, currency: Currency, amount: number, transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
+    payment(purchasedBy: string, orderID: string, currency: Currency, amount: number, transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
 
         const purchaser: Account = new this._Account(purchasedBy, {})
         const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
@@ -46,7 +46,7 @@ export class BalanceManager
     }
 
     /// Platform -> Purchaser
-    async refund(purchasedBy: string, orderID: string, currency: Currency, amount: number, transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
+    refund(purchasedBy: string, orderID: string, currency: Currency, amount: number, transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
 
         const purchaser: Account = new this._Account(purchasedBy, {})
         const balanceTransaction: BalanceTransaction = new this._BalanceTransaction()
