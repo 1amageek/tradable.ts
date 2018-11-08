@@ -5,6 +5,7 @@ import "reflect-metadata";
 const property = Pring.property
 
 export class OrderItem extends Pring.Base implements tradable.OrderItemProtocol {
+    
     @property order: string = ''
     @property purchasedBy: string = ''
     @property selledBy: string = ''
@@ -14,4 +15,5 @@ export class OrderItem extends Pring.Base implements tradable.OrderItemProtocol 
     @property quantity: number = 0
     @property currency: tradable.Currency = tradable.Currency.USD
     @property amount: number = 0
+    @property status: tradable.OrderItemStatus = tradable.OrderItemStatus.none
 }

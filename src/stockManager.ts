@@ -90,7 +90,7 @@ export class StockManager
         return tradeTransaction
     }
 
-    async itemCancel(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, itemID: string, transaction: FirebaseFirestore.Transaction) {
+    async orderChange(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, itemID: string, transaction: FirebaseFirestore.Transaction) {
 
         const product: Product = new this._Product(productID, {})
         const seller: User = new this._User(selledBy, {})
@@ -103,7 +103,7 @@ export class StockManager
         }
 
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
-        tradeTransaction.type = TradeTransactionType.orderItemCancel
+        tradeTransaction.type = TradeTransactionType.orderChange
         tradeTransaction.quantity = 1
         tradeTransaction.selledBy = selledBy
         tradeTransaction.purchasedBy = purchasedBy

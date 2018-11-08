@@ -1,9 +1,9 @@
 import * as Pring from 'pring-admin'
 import * as admin from 'firebase-admin'
 import * as FirebaseFirestore from '@google-cloud/firestore'
-import { Manager, OrderResult, OrderCancelResult } from './manager'
+import { Manager, OrderResult, OrderChangeResult, OrderCancelResult } from './manager'
 import { Currency } from './currency'
-export { Currency, Manager, OrderResult, OrderCancelResult }
+export { Currency, Manager, OrderResult, OrderChangeResult, OrderCancelResult }
 
 export let firestore: FirebaseFirestore.Firestore
 
@@ -34,7 +34,7 @@ export interface UserProtocol
 export enum TradeTransactionType {
     unknown = 'unknown',
     order = 'order',
-    orderItemCancel = 'order_item_cancel',
+    orderChange = 'order_change',
     orderCancel = 'order_cancel',
     storage = 'storage',
     retrieval = 'retrieval'
@@ -144,6 +144,13 @@ export enum OrderItemType {
     discount = 'discount'
 }
 
+export enum OrderItemStatus {
+    none = 'none',
+    ordered = 'ordered',
+    changed = 'changed',
+    canceled = 'canceld'
+}
+
 export enum OrderTransferStatus {
 
     none = 'none',
@@ -184,6 +191,7 @@ export interface OrderItemProtocol extends Pring.Base {
     quantity: number
     currency: Currency
     amount: number
+    status: OrderItemStatus
 }
 
 export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Pring.Base {
@@ -246,6 +254,9 @@ export interface TransactionDelegate {
 
     /// This function will make payment. The payment result is saved in the VendorType set in ChargeOptions.
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions, reason?: string): Promise<any>
+
+    /// This function will make payment. The payment result is saved in the VendorType set in ChargeOptions.
+    partRefund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, orderItem: U, options: PaymentOptions, reason?: string): Promise<any>
 
     ///
     transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T,  options: TransferOptions): Promise<any>

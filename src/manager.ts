@@ -25,6 +25,7 @@ import {
     TransferOptions,
     TradableErrorCode,
     TradableError,
+    OrderItemStatus,
     ItemProtocol,
     UserProtocol,
     OrderTransferStatus,
@@ -39,6 +40,12 @@ export type OrderResult = {
     tradeTransactions: TradeTransaction[]
     chargeResult?: any
     refundResult?: any
+}
+
+export type OrderChangeResult = {
+    balanceTransaction?: BalanceTransactionProtocol
+    tradeTransactions: TradeTransaction[]
+    refundResult: any
 }
 
 export type OrderCancelResult = {
@@ -244,6 +251,112 @@ export class Manager
         }
     }
 
+    async orderChange(order: Order, orderItem: OrderItem, itemID: string, paymentOptions: PaymentOptions) {
+        try {
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, Manager required delegate.`)
+            }
+
+            if (!(order.paymentStatus === OrderPaymentStatus.completed)) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, This order status is invalid.`)
+            }
+
+            if (orderItem.amount === 0) {
+                try {
+                    return await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+                            // stock
+                            const tradeTransactions = []
+                            const productID = orderItem.product
+                            const skuID = orderItem.sku
+                            if (productID && skuID) {
+                                orderItem.status = OrderItemStatus.changed
+                                const tradeTransaction = await this.stockManager.orderChange(order.selledBy, order.purchasedBy, order.id, productID, skuID, itemID, transaction)
+                                tradeTransactions.push(tradeTransaction)
+                            }
+
+                            this.orderManager.update(order, [orderItem],
+                                {}
+                                , transaction)
+                            resolve({
+                                tradeTransactions: tradeTransactions
+                            })
+                        })
+                    })
+                } catch (error) {
+                    throw error
+                }
+            } else {
+                try {
+                    let refundResult: { [key: string]: any } | undefined = undefined
+                    return await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+
+                            try {
+                                const amount = orderItem.amount * (1 - paymentOptions.refundFeeRate)
+                                if (!refundResult) {
+                                    refundResult = await delegate.partRefund(order.currency, amount, order, orderItem, paymentOptions)
+                                }
+
+                                // stock
+                                const tradeTransactions = []
+                                const productID = orderItem.product
+                                const skuID = orderItem.sku
+                                if (productID && skuID) {
+                                    orderItem.status = OrderItemStatus.changed
+                                    const tradeTransaction = await this.stockManager.orderChange(order.selledBy, order.purchasedBy, order.id, productID, skuID, itemID, transaction)
+                                    tradeTransactions.push(tradeTransaction)
+                                }
+
+                                // payment
+                                const balanceTransaction = this.balanceManager.refund(order.purchasedBy,
+                                    order.id,
+                                    order.currency,
+                                    amount,
+                                    { [paymentOptions.vendorType]: refundResult }
+                                    , transaction)
+
+                                this.orderManager.update(order, [orderItem],
+                                    { [paymentOptions.vendorType]: refundResult }
+                                    , transaction)
+
+                                resolve({
+                                    tradeTransactions: tradeTransactions,
+                                    balanceTransaction: balanceTransaction,
+                                    refundResult: refundResult
+                                })
+                            } catch (error) {
+                                if (refundResult) {
+                                    reject({
+                                        refundResult: refundResult
+                                    })
+                                } else {
+                                    reject(error)
+                                }
+                            }
+                        })
+                    })
+                } catch (error) {
+                    console.log(error)
+                    if (error instanceof TradableError) {
+                        order.paymentStatus = OrderPaymentStatus.cancelFailure
+                        try {
+                            await order.update()
+                        } catch (error) {
+                            throw error
+                        }
+                        throw error
+                    }
+                    let orderCancelResult: OrderChangeResult = error as OrderChangeResult
+                    return orderCancelResult
+                }
+            }
+        } catch (error) {
+            throw error
+        }
+    }
+
     async orderCancel(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
         try {
             const delegate: TransactionDelegate | undefined = this.delegate
@@ -260,20 +373,26 @@ export class Manager
                     return await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
                             // stock
+                            const tasks = []
                             for (const orderItem of orderItems) {
                                 const productID = orderItem.product
                                 const skuID = orderItem.sku
                                 const quantity = orderItem.quantity
                                 if (productID && skuID) {
-                                    this.stockManager.orderCancel(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                    orderItem.status = OrderItemStatus.canceled
+                                    const task = this.stockManager.orderCancel(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                    tasks.push(task)
                                 }
                             }
+                            const tradeTransactions = await Promise.all(tasks)
 
                             order.paymentStatus = OrderPaymentStatus.canceled
                             this.orderManager.update(order, orderItems,
                                 {}
                                 , transaction)
-                            resolve(`[Manager] Success orderCancel ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+                            resolve({
+                                tradeTransactions: tradeTransactions
+                            })
                         })
                     })
                 } catch (error) {
@@ -298,6 +417,7 @@ export class Manager
                                     const skuID = orderItem.sku
                                     const quantity = orderItem.quantity
                                     if (productID && skuID) {
+                                        orderItem.status = OrderItemStatus.canceled
                                         const task = this.stockManager.orderCancel(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
                                         tasks.push(task)
                                     }
@@ -308,7 +428,7 @@ export class Manager
                                 const balanceTransaction = this.balanceManager.refund(order.purchasedBy,
                                     order.id,
                                     order.currency,
-                                    order.amount,
+                                    amount,
                                     { [paymentOptions.vendorType]: refundResult }
                                     , transaction)
 

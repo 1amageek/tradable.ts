@@ -278,7 +278,7 @@ describe("StockManager", () => {
         }, 15000)
     })
 
-    describe("itemCancel", async () => {
+    describe("orderChange", async () => {
         test("Success", async () => {
             await Pring.firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
@@ -291,7 +291,7 @@ describe("StockManager", () => {
 
             const result = await Pring.firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
-                    const result = await stockManager.itemCancel(shop.id, user.id, order.id, product.id, sku.id, item.id, transaction)
+                    const result = await stockManager.orderChange(shop.id, user.id, order.id, product.id, sku.id, item.id, transaction)
                     resolve(result)
                 })
             }) as TradeTransaction
@@ -302,7 +302,7 @@ describe("StockManager", () => {
             const _item = (await user.items.get(Item))[0]
 
             // Shop Trade Transaction
-            expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderItemCancel)
+            expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderChange)
             expect(shopTradeTransaction.quantity).toEqual(1)
             expect(shopTradeTransaction.selledBy).toEqual(shop.id)
             expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
@@ -312,7 +312,7 @@ describe("StockManager", () => {
             expect(shopTradeTransaction.items).toEqual([_item.id])
 
             // User Trade Transaction
-            expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderItemCancel)
+            expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderChange)
             expect(userTradeTransaction.quantity).toEqual(1)
             expect(userTradeTransaction.selledBy).toEqual(shop.id)
             expect(userTradeTransaction.purchasedBy).toEqual(user.id)
@@ -339,7 +339,7 @@ describe("StockManager", () => {
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            await stockManager.itemCancel(shop.id, user.id, order.id, product.id, sku.id, "item.id", transaction)
+                            await stockManager.orderChange(shop.id, user.id, order.id, product.id, sku.id, "item.id", transaction)
                         } catch (error) {
                             reject(error)
                         }
