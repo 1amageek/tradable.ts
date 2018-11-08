@@ -66,7 +66,7 @@ describe("Manager", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-    
+
             orderItem.product = product.id
             orderItem.order = order.id
             orderItem.selledBy = shop.id
@@ -75,7 +75,7 @@ describe("Manager", () => {
             orderItem.currency = sku.currency
             orderItem.amount = sku.amount
             orderItem.quantity = 1
-    
+
             order.amount = sku.amount
             order.currency = sku.currency
             order.selledBy = shop.id
@@ -84,7 +84,7 @@ describe("Manager", () => {
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
             await order.save()
-    
+
 
             const paymentOptions: Tradable.PaymentOptions = {
                 vendorType: "stripe",
@@ -160,7 +160,7 @@ describe("Manager", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-    
+
             orderItem.product = product.id
             orderItem.order = order.id
             orderItem.selledBy = shop.id
@@ -169,7 +169,7 @@ describe("Manager", () => {
             orderItem.currency = sku.currency
             orderItem.amount = sku.amount
             orderItem.quantity = 3
-    
+
             order.amount = sku.amount
             order.currency = sku.currency
             order.selledBy = shop.id
@@ -204,7 +204,7 @@ describe("Manager", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-    
+
             orderItem.product = product.id
             orderItem.order = order.id
             orderItem.selledBy = shop.id
@@ -213,7 +213,7 @@ describe("Manager", () => {
             orderItem.currency = sku.currency
             orderItem.amount = sku.amount
             orderItem.quantity = 1
-    
+
             order.amount = sku.amount
             order.currency = sku.currency
             order.selledBy = shop.id
@@ -248,7 +248,7 @@ describe("Manager", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-    
+
             orderItem.product = product.id
             orderItem.order = order.id
             orderItem.selledBy = shop.id
@@ -257,7 +257,7 @@ describe("Manager", () => {
             orderItem.currency = sku.currency
             orderItem.amount = sku.amount
             orderItem.quantity = 1
-    
+
             order.amount = sku.amount
             order.currency = sku.currency
             order.selledBy = shop.id
@@ -292,7 +292,7 @@ describe("Manager", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-    
+
             orderItem.product = product.id
             orderItem.order = order.id
             orderItem.selledBy = shop.id
@@ -301,7 +301,7 @@ describe("Manager", () => {
             orderItem.currency = sku.currency
             orderItem.amount = sku.amount
             orderItem.quantity = 1
-    
+
             order.amount = sku.amount
             order.currency = sku.currency
             order.selledBy = shop.id
@@ -339,7 +339,7 @@ describe("Manager", () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-    
+
             orderItem.product = product.id
             orderItem.order = order.id
             orderItem.selledBy = shop.id
@@ -348,7 +348,7 @@ describe("Manager", () => {
             orderItem.currency = sku.currency
             orderItem.amount = sku.amount
             orderItem.quantity = 1
-    
+
             order.amount = sku.amount
             order.currency = sku.currency
             order.selledBy = shop.id
@@ -357,7 +357,7 @@ describe("Manager", () => {
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
             await order.save()
-    
+
 
             const paymentOptions: Tradable.PaymentOptions = {
                 vendorType: "stripe",
@@ -428,13 +428,133 @@ describe("Manager", () => {
             expect(accountBalanceTransaction.transactionResults[0]['stripe']).toEqual(cancelResult.refundResult)
 
         }, 15000)
+
+        test("Invalid Delegate", async () => {
+
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+
+            orderItem.product = product.id
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.purchasedBy = user.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.amount
+            orderItem.quantity = 1
+
+            order.amount = sku.amount
+            order.currency = sku.currency
+            order.selledBy = shop.id
+            order.purchasedBy = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            await order.save()
+
+
+            const paymentOptions: Tradable.PaymentOptions = {
+                vendorType: "stripe",
+                refundFeeRate: 0
+            }
+
+            try {
+                const manager: Tradable.Manager<SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
+                const cancelResult = await manager.orderCancel(order, [orderItem], paymentOptions) as Tradable.OrderCancelResult
+                expect(cancelResult).toBeUndefined()
+            } catch (error) {
+                expect(error).not.toBeUndefined()
+                expect(error instanceof Tradable.TradableError).toEqual(true)
+            }
+        }, 15000)
+
+        test("Invalid Status", async () => {
+
+            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
+            manager.delegate = new StripePaymentDelegate()
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+
+            orderItem.product = product.id
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.purchasedBy = user.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.amount
+            orderItem.quantity = 1
+
+            order.amount = sku.amount
+            order.currency = sku.currency
+            order.selledBy = shop.id
+            order.purchasedBy = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            order.paymentStatus = Tradable.OrderPaymentStatus.none
+            await order.save()
+
+
+            const paymentOptions: Tradable.PaymentOptions = {
+                vendorType: "stripe",
+                refundFeeRate: 0
+            }
+
+            try {
+                const cancelResult = await manager.orderCancel(order, [orderItem], paymentOptions) as Tradable.OrderCancelResult
+                expect(cancelResult).toBeUndefined()
+            } catch (error) {
+                expect(error).not.toBeUndefined()
+                expect(error instanceof Tradable.TradableError).toEqual(true)
+            }
+        }, 15000)
+
+        test("Invalid Stripe refund", async () => {
+
+            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
+            manager.delegate = new StripeInvalidPaymentDelegate()
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+
+            orderItem.product = product.id
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.purchasedBy = user.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.amount
+            orderItem.quantity = 1
+
+            order.amount = sku.amount
+            order.currency = sku.currency
+            order.selledBy = shop.id
+            order.purchasedBy = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            order.paymentStatus = Tradable.OrderPaymentStatus.completed
+            await order.save()
+
+
+            const paymentOptions: Tradable.PaymentOptions = {
+                vendorType: "stripe",
+                refundFeeRate: 0
+            }
+
+            try {
+                const cancelResult = await manager.orderCancel(order, [orderItem], paymentOptions) as Tradable.OrderCancelResult
+                expect(cancelResult).toBeUndefined()
+            } catch (error) {
+                expect(error).not.toBeUndefined()
+                expect(error instanceof Tradable.TradableError).toEqual(false)
+            }
+        }, 15000)
     })
 
     afterAll(async () => {
-        await account.delete()
-        await shop.delete()
-        await user.delete()
-        await product.delete()
-        await sku.delete()
+        await Promise.all([account.delete(), shop.delete(), user.delete(), product.delete(), sku.delete()])
     })
 })

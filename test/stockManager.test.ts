@@ -388,6 +388,6 @@ describe("StockManager", () => {
     })
 
     afterAll(async () => {
-        // await Promise.all([account.delete(), shop.delete(), user.delete(), product.delete(), sku.delete()])
+        await Promise.all([shop.delete(), user.delete(), product.delete(), sku.delete()])
     })
 })
