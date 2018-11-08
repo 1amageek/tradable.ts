@@ -271,7 +271,7 @@ export class Manager
 
                             order.paymentStatus = OrderPaymentStatus.canceled
                             this.orderManager.update(order, orderItems,
-                                { }
+                                {}
                                 , transaction)
                             resolve(`[Manager] Success orderCancel ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
                         })
@@ -290,13 +290,6 @@ export class Manager
                                 if (!refundResult) {
                                     refundResult = await delegate.refund(order.currency, amount, order, paymentOptions)
                                 }
-                                // payment
-                                const balanceTransaction = this.balanceManager.refund(order.purchasedBy,
-                                    order.id,
-                                    order.currency,
-                                    order.amount,
-                                    { [paymentOptions.vendorType]: refundResult }
-                                    , transaction)
 
                                 // stock
                                 const tasks = []
@@ -311,16 +304,26 @@ export class Manager
                                 }
                                 const tradeTransactions = await Promise.all(tasks)
 
+                                // payment
+                                const balanceTransaction = this.balanceManager.refund(order.purchasedBy,
+                                    order.id,
+                                    order.currency,
+                                    order.amount,
+                                    { [paymentOptions.vendorType]: refundResult }
+                                    , transaction)
+
                                 order.paymentStatus = OrderPaymentStatus.canceled
                                 this.orderManager.update(order, orderItems,
                                     { [paymentOptions.vendorType]: refundResult }
                                     , transaction)
+
                                 resolve({
                                     tradeTransactions: tradeTransactions,
                                     balanceTransaction: balanceTransaction,
                                     refundResult: refundResult
                                 })
                             } catch (error) {
+                                console.log(error)
                                 if (refundResult) {
                                     reject({
                                         refundResult: refundResult

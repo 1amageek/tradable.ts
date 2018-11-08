@@ -34,6 +34,7 @@ export interface UserProtocol
 export enum TradeTransactionType {
     unknown = 'unknown',
     order = 'order',
+    orderItemCancel = 'order_item_cancel',
     orderCancel = 'order_cancel',
     storage = 'storage',
     retrieval = 'retrieval'

@@ -102,7 +102,7 @@ export class StockManager
         }
 
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
-        tradeTransaction.type = TradeTransactionType.order
+        tradeTransaction.type = TradeTransactionType.orderItemCancel
         tradeTransaction.quantity = -1
         tradeTransaction.selledBy = selledBy
         tradeTransaction.purchasedBy = purchasedBy
@@ -139,7 +139,7 @@ export class StockManager
         }
 
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
-        tradeTransaction.type = TradeTransactionType.order
+        tradeTransaction.type = TradeTransactionType.orderCancel
         tradeTransaction.quantity = quantity
         tradeTransaction.selledBy = selledBy
         tradeTransaction.purchasedBy = purchasedBy

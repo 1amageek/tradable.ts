@@ -45,15 +45,15 @@ export class OrderManager
     }
 
     update(order: Order, orderItems: OrderItem[], transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
-        
+    
         const orderValue = order.value() as any
         orderValue.updatedAt = timestamp
-        transaction.set(order.reference, orderValue, { merge: true })
 
-        if (Object.keys(transactionResult).length) {
+        if (Object.keys(transactionResult).length > 0) {
             orderValue["transactionResults"] = FirebaseFirestore.FieldValue.arrayUnion(transactionResult)
         }
         
+        transaction.set(order.reference, orderValue, { merge: true })
         const seller = new this._User(order.selledBy, {})
         transaction.set(seller.receivedOrders.reference.doc(order.id), orderValue, { merge: true })
         for (const orderItem of orderItems) {

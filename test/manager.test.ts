@@ -369,8 +369,6 @@ describe("Manager", () => {
             const _order = await Order.get(order.id) as Order
             const cancelResult = await manager.orderCancel(_order, [orderItem], paymentOptions) as Tradable.OrderCancelResult
 
-            console.log(cancelResult)
-
             const shopTradeTransaction = await shop.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction) as TradeTransaction
             const userTradeTransaction = await user.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction) as TradeTransaction
             const _sku = await product.skus.doc(sku.id, SKU) as SKU
