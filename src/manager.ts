@@ -338,14 +338,7 @@ export class Manager
                         })
                     })
                 } catch (error) {
-                    console.log(error)
                     if (error instanceof TradableError) {
-                        order.paymentStatus = OrderPaymentStatus.cancelFailure
-                        try {
-                            await order.update()
-                        } catch (error) {
-                            throw error
-                        }
                         throw error
                     }
                     let orderCancelResult: OrderChangeResult = error as OrderChangeResult

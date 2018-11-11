@@ -51,7 +51,7 @@ describe("Manager", () => {
         sku.currency = Tradable.Currency.JPY
         sku.inventory = {
             type: Tradable.StockType.finite,
-            quantity: 3
+            quantity: 5
         }
 
         await Promise.all([product.save(), shop.save(), user.save()])
@@ -118,7 +118,7 @@ describe("Manager", () => {
 
             // SKU
             expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-            expect(_sku.inventory.quantity).toEqual(2)
+            expect(_sku.inventory.quantity).toEqual(4)
 
             // Item
             expect(_item.order).toEqual(order.id)
@@ -191,7 +191,7 @@ describe("Manager", () => {
 
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(2)
+                expect(_sku.inventory.quantity).toEqual(4)
 
             }
         }, 15000)
@@ -236,7 +236,7 @@ describe("Manager", () => {
 
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(2)
+                expect(_sku.inventory.quantity).toEqual(4)
 
             }
         }, 15000)
@@ -279,7 +279,7 @@ describe("Manager", () => {
 
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(2)
+                expect(_sku.inventory.quantity).toEqual(4)
 
             }
         }, 15000)
@@ -324,7 +324,7 @@ describe("Manager", () => {
 
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(2)
+                expect(_sku.inventory.quantity).toEqual(4)
 
             }
         }, 15000)
@@ -395,7 +395,7 @@ describe("Manager", () => {
 
             // SKU
             expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-            expect(_sku.inventory.quantity).toEqual(2)
+            expect(_sku.inventory.quantity).toEqual(4)
 
             // Item
             expect(_item.order).toEqual(order.id)
@@ -618,7 +618,7 @@ describe("Manager", () => {
 
             // SKU
             expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-            expect(_sku.inventory.quantity).toEqual(2)
+            expect(_sku.inventory.quantity).toEqual(4)
 
             // Item
             expect(_item.order).toEqual(order.id)
@@ -650,6 +650,141 @@ describe("Manager", () => {
             expect(accountBalanceTransaction.payout).toBeUndefined()
             expect(accountBalanceTransaction.transactionResults[0]['stripe']).toEqual(changeResult.refundResult)
 
+        }, 15000)
+
+        test("Invalid Delegate", async () => {
+
+            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
+            manager.delegate = new StripePaymentDelegate()
+
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+
+            orderItem.product = product.id
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.purchasedBy = user.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.amount
+            orderItem.quantity = 1
+
+            order.amount = sku.amount
+            order.currency = sku.currency
+            order.selledBy = shop.id
+            order.purchasedBy = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            await order.save()
+
+
+            const paymentOptions: Tradable.PaymentOptions = {
+                vendorType: "stripe",
+                refundFeeRate: 0
+            }
+            const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult
+            const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
+            const _order = await Order.get(order.id) as Order
+            try {
+                const manager: Tradable.Manager<SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
+                const changeResult = await manager.orderChange(_order, orderItem, itemID, paymentOptions) as Tradable.OrderChangeResult
+                expect(changeResult).toBeUndefined()
+            } catch (error) {
+                expect(error).not.toBeUndefined()
+                expect(error instanceof Tradable.TradableError).toEqual(true)
+            }
+        }, 15000)
+
+        test("Invalid Status", async () => {
+
+            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
+            manager.delegate = new StripePaymentDelegate()
+
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+
+            orderItem.product = product.id
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.purchasedBy = user.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.amount
+            orderItem.quantity = 1
+
+            order.amount = sku.amount
+            order.currency = sku.currency
+            order.selledBy = shop.id
+            order.purchasedBy = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            await order.save()
+
+
+            const paymentOptions: Tradable.PaymentOptions = {
+                vendorType: "stripe",
+                refundFeeRate: 0
+            }
+            const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult
+            const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
+            const _order = await Order.get(order.id) as Order
+            _order.paymentStatus = Tradable.OrderPaymentStatus.none
+            try {
+                const changeResult = await manager.orderChange(_order, orderItem, itemID, paymentOptions) as Tradable.OrderChangeResult
+                expect(changeResult).toBeUndefined()
+            } catch (error) {
+                expect(error).not.toBeUndefined()
+                expect(error instanceof Tradable.TradableError).toEqual(true)
+            }
+        }, 15000)
+
+        test("Invalid Stripe refund", async () => {
+
+            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
+            manager.delegate = new StripePaymentDelegate()
+
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+
+            orderItem.product = product.id
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.purchasedBy = user.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.amount
+            orderItem.quantity = 1
+
+            order.amount = sku.amount
+            order.currency = sku.currency
+            order.selledBy = shop.id
+            order.purchasedBy = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            await order.save()
+
+
+            const paymentOptions: Tradable.PaymentOptions = {
+                vendorType: "stripe",
+                refundFeeRate: 0
+            }
+            const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult
+            const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
+            const _order = await Order.get(order.id) as Order
+            try {const manager: Tradable.Manager<SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
+                manager.delegate = new StripeInvalidPaymentDelegate()
+                const changeResult = await manager.orderChange(_order, orderItem, itemID, paymentOptions) as Tradable.OrderChangeResult
+                expect(changeResult).toBeUndefined()
+            } catch (error) {
+                expect(error).not.toBeUndefined()
+                expect(error instanceof Tradable.TradableError).toEqual(false)
+            }
         }, 15000)
     })
 
