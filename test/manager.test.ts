@@ -788,6 +788,79 @@ describe("Manager", () => {
         }, 15000)
     })
 
+    /*
+    describe("transfer", async () => {
+        test("Success", async () => {
+
+            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
+            manager.delegate = new StripePaymentDelegate()
+
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+
+            orderItem.product = product.id
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.purchasedBy = user.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.amount
+            orderItem.quantity = 1
+
+            order.amount = sku.amount
+            order.currency = sku.currency
+            order.selledBy = shop.id
+            order.purchasedBy = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+            order.items.insert(orderItem)
+            await order.save()
+
+
+            const paymentOptions: Tradable.PaymentOptions = {
+                vendorType: "stripe",
+                refundFeeRate: 0
+            }
+
+            const transferOptions: Tradable.TransferOptions = {
+                vendorType: "stripe",
+                transferRate: 0.5 
+            }
+
+            const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult
+            // const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
+            const _order = await Order.get(order.id) as Order
+            const transferResult = await manager.transfer(_order, transferOptions) as Tradable.TransferResult
+
+            const account = new Account(user.id, {})
+            const systemBalanceTransaction = await BalanceTransaction.get(transferResult.balanceTransaction!.id) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(transferResult.balanceTransaction!.id, BalanceTransaction) as BalanceTransaction
+
+            // System Balance Transaction
+            expect(systemBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.paymentRefund)
+            expect(systemBalanceTransaction.currency).toEqual(order.currency)
+            expect(systemBalanceTransaction.amount).toEqual(order.amount)
+            expect(systemBalanceTransaction.from).toEqual(BalanceManager.platform)
+            expect(systemBalanceTransaction.to).toEqual(order.purchasedBy)
+            expect(systemBalanceTransaction.transfer).toBeUndefined()
+            expect(systemBalanceTransaction.payout).toBeUndefined()
+            expect(systemBalanceTransaction.transactionResults[0]['stripe']).toEqual(transferResult.transferResult)
+
+            // Account Trade Transaction
+            expect(accountBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.paymentRefund)
+            expect(accountBalanceTransaction.currency).toEqual(order.currency)
+            expect(accountBalanceTransaction.amount).toEqual(order.amount)
+            expect(accountBalanceTransaction.from).toEqual(BalanceManager.platform)
+            expect(accountBalanceTransaction.to).toEqual(order.purchasedBy)
+            expect(accountBalanceTransaction.transfer).toBeUndefined()
+            expect(accountBalanceTransaction.payout).toBeUndefined()
+            expect(accountBalanceTransaction.transactionResults[0]['stripe']).toEqual(transferResult.transferResult)
+
+        }, 15000)
+    })
+    */
+
     afterAll(async () => {
         await Promise.all([account.delete(), shop.delete(), user.delete(), product.delete(), sku.delete()])
     })

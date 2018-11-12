@@ -15,5 +15,5 @@ export class Account extends Pring.Base implements tradable.AccountProtocol<Bala
     @property sales: { [currency: string]: number } = {}
     @property balance: tradable.Balance = { available: {}, accountsReceivable: {}}
     @property balanceTransactions: Pring.NestedCollection<BalanceTransaction> = new Pring.NestedCollection(this)
-    @property fundInformation: { [key: string]: any } = {}
+    @property accountInformation: { [key: string]: any } = {}
 }

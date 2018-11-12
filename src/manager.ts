@@ -54,6 +54,17 @@ export type OrderCancelResult = {
     refundResult: any
 }
 
+export type TransferResult = {
+    balanceTransaction?: BalanceTransactionProtocol
+    transferResult?: any
+    transferCancelResult?: any
+}
+
+export type TransferCancelResult = {
+    balanceTransaction?: BalanceTransactionProtocol
+    transferCancelResult?: any
+}
+
 export class Manager
     <
     SKU extends SKUProtocol,
@@ -225,15 +236,16 @@ export class Manager
                         try {
                             await order.update()
                         } catch (error) {
-                            console.log(error)
                             throw error
                         }
                         throw error
                     }
                     let orderReuslt: OrderResult = error as OrderResult
                     try {
-                        const refundResult = await delegate.refund(order.currency, order.amount, order, paymentOptions, `[Manager] Invalid order ORDER/${order.id}, transaction failure.`)
-                        orderReuslt.refundResult = refundResult
+                        if (orderReuslt.chargeResult) {
+                            const refundResult = await delegate.refund(order.currency, order.amount, order, paymentOptions, `[Manager] Invalid order ORDER/${order.id}, transaction failure.`)
+                            orderReuslt.refundResult = refundResult
+                        }
                         throw orderReuslt
                     } catch (error) {
                         order.paymentStatus = OrderPaymentStatus.paymentFailure
@@ -483,32 +495,65 @@ export class Manager
             if (order.amount === 0) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order is zero amount.`)
             } else {
-                const amount = order.amount * (1 - transferOptions.platformFeeRate)
-                const transferResult = await delegate.transfer(order.currency, amount, order, transferOptions)
+                let transferResult: { [key: string]: any } | undefined = undefined
+                const amount = order.amount * (1 - transferOptions.transferRate)
                 try {
-                    await firestore.runTransaction(async (transaction) => {
+                    return await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
+                            try {
+                                if (!transferResult) {
+                                    const to: Account = new this._Account(order.selledBy, {})
+                                    await to.fetch(transaction)
+                                    transferResult = await delegate.transfer(order.currency, amount, order, to, transferOptions)
+                                    console.log(transferResult)
+                                }
+                                // transfer
+                                const balanceTransaction = await this.balanceManager.transfer(
+                                    BalanceManager.platform,
+                                    order.selledBy,
+                                    order.id,
+                                    order.currency,
+                                    amount,
+                                    { [transferOptions.vendorType]: transferResult },
+                                    transaction)
 
-                            // transfer
-                            this.balanceManager.transfer(
-                                BalanceManager.platform,
-                                order.selledBy,
-                                order.id,
-                                order.currency,
-                                amount,
-                                { [transferOptions.vendorType]: transferResult },
-                                transaction)
-
-                            order.transferStatus = OrderTransferStatus.completed
-                            this.orderManager.update(order, [],
-                                { [transferOptions.vendorType]: transferResult }
-                                , transaction)
-                            resolve(`[Manager] Success orderCancel ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+                                order.transferStatus = OrderTransferStatus.completed
+                                this.orderManager.update(order, [],
+                                    { [transferOptions.vendorType]: transferResult }
+                                    , transaction)
+                                const result: TransferResult = {
+                                    balanceTransaction: balanceTransaction,
+                                    transferResult: transferResult
+                                }
+                                resolve(result)
+                            } catch (error) {
+                                if (transferResult) {
+                                    reject({
+                                        transferResult: transferResult
+                                    })
+                                } else {
+                                    reject(error)
+                                }
+                            }
                         })
                     })
                 } catch (error) {
+                    if (error instanceof TradableError) {
+                        order.transferStatus = OrderTransferStatus.transferFailure
+                        try {
+                            await order.update()
+                        } catch (error) {
+                            throw error
+                        }
+                        throw error
+                    }
+                    let transferResult: TransferResult = error as TransferResult
                     try {
-                        await delegate.transferCancel(order.currency, amount, order, transferOptions, `[Manager] Invalid transfer ORDER/${order.id}, transaction failure.`)
+                        if (transferResult.transferResult) {
+                            const transferCancelResult = await delegate.transferCancel(order.currency, amount, order, transferOptions, `[Manager] Invalid transfer ORDER/${order.id}, transaction failure.`)
+                            transferResult.transferCancelResult = transferCancelResult
+                        }
+                        throw transferResult
                     } catch (error) {
                         order.transferStatus = OrderTransferStatus.transferFailure
                         try {
@@ -543,14 +588,14 @@ export class Manager
             if (order.amount === 0) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order is zero amount.`)
             } else {
-                const amount = order.amount * (1 - transferOptions.platformFeeRate)
+                const amount = order.amount * (1 - transferOptions.transferRate)
                 const transferCancelResult = await delegate.transferCancel(order.currency, amount, order, transferOptions)
                 try {
                     await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
 
                             // transfer
-                            this.balanceManager.transferRefund(
+                            const balanceTransaction = await this.balanceManager.transferRefund(
                                 BalanceManager.platform,
                                 order.selledBy,
                                 order.id,
@@ -563,7 +608,11 @@ export class Manager
                             this.orderManager.update(order, [],
                                 { [transferOptions.vendorType]: transferCancelResult }
                                 , transaction)
-                            resolve(`[Manager] Success orderCancel ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+                            const result: TransferCancelResult = {
+                                balanceTransaction: balanceTransaction,
+                                transferCancelResult: transferCancelResult
+                            }
+                            resolve(result)
                         })
                     })
                 } catch (error) {
@@ -606,7 +655,6 @@ export class Manager
                 try {
                     await delegate.payoutCancel(currency, amount, accountID, payoutOptions)
                 } catch (error) {
-                    console.log(error)
                     throw error
                 }
                 throw error

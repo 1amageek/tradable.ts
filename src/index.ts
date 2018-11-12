@@ -1,9 +1,9 @@
 import * as Pring from 'pring-admin'
 import * as admin from 'firebase-admin'
 import * as FirebaseFirestore from '@google-cloud/firestore'
-import { Manager, OrderResult, OrderChangeResult, OrderCancelResult } from './manager'
+import { Manager, OrderResult, OrderChangeResult, OrderCancelResult, TransferResult, TransferCancelResult } from './manager'
 import { Currency } from './currency'
-export { Currency, Manager, OrderResult, OrderChangeResult, OrderCancelResult }
+export { Currency, Manager, OrderResult, OrderChangeResult, OrderCancelResult, TransferResult, TransferCancelResult }
 
 export let firestore: FirebaseFirestore.Firestore
 
@@ -98,7 +98,7 @@ export interface AccountProtocol<Transaction extends BalanceTransactionProtocol>
     sales: { [currency: string]: number }
     balance: Balance
     balanceTransactions: Pring.NestedCollection<Transaction>
-    fundInformation: { [key: string]: any }
+    accountInformation: { [key: string]: any }
 }
 
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
@@ -218,12 +218,6 @@ export interface ItemProtocol extends Pring.Base {
     isCanceled: boolean
 }
 
-export type TransactionOptions = {
-    source?: string
-    customer?: string
-    vendorType: string
-}
-
 export type PaymentOptions = {
     source?: string
     customer?: string
@@ -240,7 +234,7 @@ export enum RefundReason {
 
 export type TransferOptions = {
     vendorType: string
-    platformFeeRate: number // 0 ~ 1
+    transferRate: number // 0 ~ 1
 }
 
 export type PayoutOptions = {
@@ -259,7 +253,8 @@ export interface TransactionDelegate {
     partRefund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, orderItem: U, options: PaymentOptions, reason?: string): Promise<any>
 
     ///
-    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T,  options: TransferOptions): Promise<any>
+    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>, 
+    V extends BalanceTransactionProtocol, W extends AccountProtocol<V>>(currency: Currency, amount: number, order: T, toAccount: W, options: TransferOptions): Promise<any>
 
     transferCancel<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: TransferOptions, reason?: string): Promise<any>
 

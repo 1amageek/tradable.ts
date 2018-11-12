@@ -8,7 +8,6 @@ export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
 export class StripePaymentDelegate implements tradable.TransactionDelegate {
 
-
     async payment<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions) {
         const idempotency_key = order.id
         const data: Stripe.charges.IChargeCreationOptions = {
@@ -39,7 +38,7 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
         }
     }
 
-    async refund<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T,  options: tradable.PaymentOptions, reason?: string | undefined) {
+    async refund<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions, reason?: string | undefined) {
         const transactionResults = order.transactionResults
         const transactionResult = transactionResults[transactionResults.length - 1]
         const stripeCharge = transactionResult["stripe"] as Stripe.charges.ICharge
@@ -84,8 +83,27 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
         }
     }
 
-    async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.TransferOptions) {
-        throw new Error("Method not implemented.");
+    async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>,
+        V extends tradable.BalanceTransactionProtocol, W extends tradable.AccountProtocol<V>>
+        (currency: tradable.Currency, amount: number, order: T, toAccount: W, options: tradable.TransferOptions) {
+        const idempotency_key = order.id
+        const destination = toAccount.accountInformation['stripe']['id']
+        const data: Stripe.transfers.ITransferCreationOptions = {
+            amount: order.amount,
+            currency: order.currency,
+            transfer_group: order.id,
+            destination: destination
+        }
+
+        try {
+            const transfer = await stripe.transfers.create(data, {
+                idempotency_key: idempotency_key
+            })
+            return transfer
+        } catch (error) {
+            console.log(error)
+            throw error
+        }
     }
 
     async transferCancel<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.TransferOptions, reason?: string | undefined) {
