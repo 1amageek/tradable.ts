@@ -1,12 +1,9 @@
-import * as FirebaseFirestore from '@google-cloud/firestore'
 import { StockManager } from './stockManager'
 import { BalanceManager } from './balanceManager'
 import { OrderManager } from './orderManager'
 import { OrderValidator } from './orderValidator'
-import * as Pring from 'pring-admin'
 import {
     firestore,
-    timestamp,
     SKUProtocol,
     OrderItemProtocol,
     ProductProtocol,
@@ -14,14 +11,10 @@ import {
     TradeTransactionProtocol,
     BalanceTransactionProtocol,
     AccountProtocol,
-    StockType,
-    StockValue,
     OrderPaymentStatus,
     TransactionDelegate,
     PaymentOptions,
     Currency,
-    BalanceTransactionType,
-    Balance,
     TransferOptions,
     TradableErrorCode,
     TradableError,
@@ -163,7 +156,7 @@ export class Manager
                                     }
                                 }
                                 const tradeTransactions = await Promise.all(tasks)
-                                order.paymentStatus = OrderPaymentStatus.completed
+                                order.paymentStatus = OrderPaymentStatus.paid
                                 this.orderManager.update(order, orderItems, {}, transaction)
                                 resolve({
                                     tradeTransactions: tradeTransactions
@@ -207,7 +200,7 @@ export class Manager
                                         { [paymentOptions.vendorType]: chargeResult }
                                         , transaction)
 
-                                    order.paymentStatus = OrderPaymentStatus.completed
+                                    order.paymentStatus = OrderPaymentStatus.paid
                                     this.orderManager.update(order, orderItems,
                                         { [paymentOptions.vendorType]: chargeResult }
                                         , transaction)
@@ -270,7 +263,7 @@ export class Manager
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, Manager required delegate.`)
             }
 
-            if (!(order.paymentStatus === OrderPaymentStatus.completed)) {
+            if (!(order.paymentStatus === OrderPaymentStatus.paid)) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, This order status is invalid.`)
             }
 
@@ -369,7 +362,7 @@ export class Manager
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, Manager required delegate.`)
             }
 
-            if (!(order.paymentStatus === OrderPaymentStatus.completed)) {
+            if (!(order.paymentStatus === OrderPaymentStatus.paid)) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, This order status is invalid.`)
             }
 
@@ -484,7 +477,7 @@ export class Manager
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, Manager required delegate.`)
             }
 
-            if (!(order.paymentStatus === OrderPaymentStatus.completed)) {
+            if (!(order.paymentStatus === OrderPaymentStatus.paid)) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order paymentStatus is invalid.`)
             }
 
@@ -517,7 +510,7 @@ export class Manager
                                     { [transferOptions.vendorType]: transferResult },
                                     transaction)
 
-                                order.transferStatus = OrderTransferStatus.completed
+                                order.transferStatus = OrderTransferStatus.transferred
                                 this.orderManager.update(order, [],
                                     { [transferOptions.vendorType]: transferResult }
                                     , transaction)
@@ -577,11 +570,11 @@ export class Manager
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, Manager required delegate.`)
             }
 
-            if (!(order.paymentStatus === OrderPaymentStatus.completed)) {
+            if (!(order.paymentStatus === OrderPaymentStatus.paid)) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order paymentStatus is invalid.`)
             }
 
-            if (!(order.transferStatus === OrderTransferStatus.completed)) {
+            if (!(order.transferStatus === OrderTransferStatus.transferred)) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order transferStatus is invalid.`)
             }
 

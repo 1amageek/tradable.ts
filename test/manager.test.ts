@@ -221,7 +221,7 @@ describe("Manager", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
-            order.paymentStatus = Tradable.OrderPaymentStatus.completed
+            order.paymentStatus = Tradable.OrderPaymentStatus.paid
             await order.save()
 
             const paymentOptions: Tradable.PaymentOptions = {
@@ -309,7 +309,7 @@ describe("Manager", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
-            order.paymentStatus = Tradable.OrderPaymentStatus.completed
+            order.paymentStatus = Tradable.OrderPaymentStatus.paid
             await order.save()
 
             const paymentOptions: Tradable.PaymentOptions = {
@@ -535,7 +535,7 @@ describe("Manager", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
-            order.paymentStatus = Tradable.OrderPaymentStatus.completed
+            order.paymentStatus = Tradable.OrderPaymentStatus.paid
             await order.save()
 
 

@@ -80,8 +80,7 @@ export interface BalanceTransactionProtocol extends Pring.Base {
 
 export type Balance = {
 
-    /// Represents accounts receivable. The sale was done, but the amount has not been distributed to the account.
-    accountsReceivable: { [currency: string]: number }
+    pending: { [currency: string]: number }
 
     /// It is the amount that the user can withdraw.
     available: { [currency: string]: number }
@@ -93,9 +92,6 @@ export interface AccountProtocol<Transaction extends BalanceTransactionProtocol>
     country: string
     isRejected: boolean
     isSigned: boolean
-    commissionRate: number // 0 ~ 1
-    revenue: { [currency: string]: number }
-    sales: { [currency: string]: number }
     balance: Balance
     balanceTransactions: Pring.NestedCollection<Transaction>
     accountInformation: { [key: string]: any }
@@ -157,7 +153,7 @@ export enum OrderTransferStatus {
 
     rejected = 'rejected',
 
-    completed = 'completed',
+    transferred = 'transferred',
 
     canceled = 'canceled',
 
@@ -172,7 +168,7 @@ export enum OrderPaymentStatus {
 
     rejected = 'rejected',
 
-    completed = 'completed',
+    paid = 'paid',
 
     canceled = 'canceled',
 
@@ -243,16 +239,12 @@ export type PayoutOptions = {
 
 export interface TransactionDelegate {
 
-    /// This function will make payment. The payment result is saved in the VendorType set in ChargeOptions.
     payment<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions): Promise<any>
 
-    /// This function will make payment. The payment result is saved in the VendorType set in ChargeOptions.
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions, reason?: string): Promise<any>
 
-    /// This function will make payment. The payment result is saved in the VendorType set in ChargeOptions.
     partRefund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, orderItem: U, options: PaymentOptions, reason?: string): Promise<any>
 
-    ///
     transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>, 
     V extends BalanceTransactionProtocol, W extends AccountProtocol<V>>(currency: Currency, amount: number, order: T, toAccount: W, options: TransferOptions): Promise<any>
 
