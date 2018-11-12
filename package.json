@@ -1,10 +1,11 @@
 {
   "private": false,
   "name": "@1amageek/tradable",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "scripts": {
     "lint": "./node_modules/.bin/tslint -p tslint.json",
     "build": "./node_modules/.bin/tsc -d",
+    "prepare": "npm run build",
     "serve": "npm run build && firebase serve --only functions",
     "shell": "npm run build && firebase experimental:functions:shell",
     "start": "npm run shell",
