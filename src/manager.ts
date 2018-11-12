@@ -24,26 +24,23 @@ import {
     OrderTransferStatus,
     PayoutOptions
 } from "./index"
-import { TradeTransaction } from '../test/models/tradeTransaction';
-import { User } from '../test/models/user';
-import { Order } from '../test/models/order';
 
-export type OrderResult = {
+export type OrderResult <T extends TradeTransactionProtocol> = {
     balanceTransaction?: BalanceTransactionProtocol
-    tradeTransactions: TradeTransaction[]
+    tradeTransactions: T[]
     chargeResult?: any
     refundResult?: any
 }
 
-export type OrderChangeResult = {
+export type OrderChangeResult <T extends TradeTransactionProtocol> = {
     balanceTransaction?: BalanceTransactionProtocol
-    tradeTransactions: TradeTransaction[]
+    tradeTransactions: T[]
     refundResult: any
 }
 
-export type OrderCancelResult = {
+export type OrderCancelResult <T extends TradeTransactionProtocol> = {
     balanceTransaction?: BalanceTransactionProtocol
-    tradeTransactions: TradeTransaction[]
+    tradeTransactions: T[]
     refundResult: any
 }
 
@@ -233,7 +230,7 @@ export class Manager
                         }
                         throw error
                     }
-                    let orderReuslt: OrderResult = error as OrderResult
+                    let orderReuslt = error
                     try {
                         if (orderReuslt.chargeResult) {
                             const refundResult = await delegate.refund(order.currency, order.amount, order, paymentOptions, `[Manager] Invalid order ORDER/${order.id}, transaction failure.`)
@@ -346,7 +343,7 @@ export class Manager
                     if (error instanceof TradableError) {
                         throw error
                     }
-                    let orderCancelResult: OrderChangeResult = error as OrderChangeResult
+                    let orderCancelResult = error
                     return orderCancelResult
                 }
             }
@@ -461,7 +458,7 @@ export class Manager
                         }
                         throw error
                     }
-                    let orderCancelResult: OrderCancelResult = error as OrderCancelResult
+                    let orderCancelResult = error
                     return orderCancelResult
                 }
             }

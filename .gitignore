@@ -5,13 +5,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .DS_Store
+playground.ts
+playground.js
 *.json
 !tsconfig.json
-!package.json
-!tslint.json
-config.*
-firestore-debug.log
-
 # Runtime data
 pids
 *.pid
@@ -63,7 +60,5 @@ typings/
 
 # dotenv environment variables file
 .env
-
-key.json
 
 lib/

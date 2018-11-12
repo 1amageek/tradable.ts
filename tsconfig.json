@@ -1,6 +1,9 @@
 {
   "compilerOptions": {
-    "lib": ["es2018", "dom"],
+    "lib": [
+      "es2018",
+      "dom"
+    ],
     "module": "commonjs",
     "noImplicitReturns": true,
     "strict": true,
@@ -9,6 +12,7 @@
     "sourceMap": true,
     "target": "es2018"
   },
+  "allowJs": true,
   "compileOnSave": true,
   "include": [
     "src"
