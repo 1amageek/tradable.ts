@@ -1,8 +1,6 @@
 import * as tradable from '../src/index'
 import * as Stripe from 'stripe'
-import * as Config from './config'
-import { Account } from './models/account'
-import { Order } from './models/order'
+import * as Config from '../config'
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 

@@ -57,8 +57,7 @@
   "peerDependencies": {
     "@google-cloud/firestore": "^0.18.0",
     "pring-admin": "^0.1.4",
-    "firebase-admin": "^6.1.0",
-    "reflect-metadata": "^0.1.12"
+    "firebase-admin": "^6.1.0"
   },
   "jest": {
     "transform": {
