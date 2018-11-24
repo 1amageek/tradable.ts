@@ -10,6 +10,7 @@ playground.js
 *.json
 !tsconfig.json
 # Runtime data
+package-lock.json
 pids
 *.pid
 *.seed
