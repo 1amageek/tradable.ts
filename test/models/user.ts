@@ -1,19 +1,18 @@
-import * as Pring from 'pring'
+import * as Pring from 'pring-admin'
 import * as tradable from '../../src'
-import { SKU } from './sku'
-import { Product } from './product'
-import { OrderItem } from './orderItem';
 import { Order } from './order'
+import { OrderItem } from './orderItem'
+import { TradeTransaction } from './tradeTransaction'
+import { Item } from './item'
 import "reflect-metadata";
-import { Query } from '@google-cloud/firestore';
 
 const property = Pring.property
 
-export class User extends Pring.Base implements tradable.UserProtocol<SKU, Product, OrderItem, Order> {
+export class User extends Pring.Base implements tradable.UserProtocol<Order, OrderItem, TradeTransaction, Item> {
+    @property orders: Pring.NestedCollection<Order> = new Pring.NestedCollection(this)
+    @property receivedOrders: Pring.NestedCollection<Order> = new Pring.NestedCollection(this)
+    @property items: Pring.NestedCollection<Item> = new Pring.NestedCollection(this)
+    @property tradeTransactions: Pring.NestedCollection<TradeTransaction> = new Pring.NestedCollection(this)
     @property isAvailabled: boolean = false
     @property country: string = "JP"
-    @property products: Query
-    @property skus: Query
-    @property orders: Query
-    @property orderings: Query
 }

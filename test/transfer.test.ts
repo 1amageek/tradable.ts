@@ -1,275 +1,170 @@
 process.env.NODE_ENV = 'test'
+import * as Pring from 'pring-admin'
 import * as admin from 'firebase-admin'
 import * as Tradable from '../src/index'
-import * as Config from './config'
+import * as Config from '../config'
 import * as Stripe from 'stripe'
 import { User } from './models/user'
 import { Product } from './models/product'
 import { SKU } from './models/sku'
 import { Order } from './models/order'
 import { OrderItem } from './models/orderItem'
-import { Transaction } from './models/transaction'
+import { Item } from './models/item'
+import { TradeTransaction } from './models/tradeTransaction'
 import { Account } from './models/account'
+import { BalanceManager } from '../src/balanceManager'
+import { StockManager } from '../src/stockManager'
+import { BalanceTransaction } from './models/BalanceTransaction'
 import { StripePaymentDelegate } from './stripePaymentDelegate'
+import { StripeInvalidPaymentDelegate } from './stripeInvalidPaymentDelegate'
+import * as firebase from '@firebase/testing'
+
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
-var key = require("../salada-f825d-firebase-adminsdk-19k25-ded6604978.json")
+const key = require("../key.json")
 const app = admin.initializeApp({
     credential: admin.credential.cert(key)
 })
+
 Tradable.initialize(app, admin.firestore.FieldValue.serverTimestamp())
 
-describe("Tradable", () => {
-
+describe("OrderManager", () => {
+    /*
     const shop: User = new User()
     const user: User = new User()
     const product: Product = new Product()
-    const jpySKU: SKU = new SKU()
-    const usdSKU: SKU = new SKU()
-    const failureSKU: SKU = new SKU()
+    const sku: SKU = new SKU()
     const account: Account = new Account(shop.id, {})
-    const targetOrder: Order = new Order()
+    const order: Order = new Order()
+    const date: Date = new Date()
+    const orderItem: OrderItem = new OrderItem()
 
     beforeAll(async () => {
 
-        const account: Account = new Account(shop.id)
-        account.commissionRatio = 0.1
-        account.country = 'jp'
-        account.isRejected = false
-        account.isSigned = false
-        account.balance = { accountsReceivable: {}, available: {} }
-        await account.save()
+        const stripeShop: Stripe.accounts.IAccount = await stripe.accounts.create({
+            type: 'custom',
+            country: 'jp',
+            metadata: { id: shop.id }
+        })
+        const shopAccount: Account = new Account(shop.id)
+        shopAccount.country = 'jp'
+        shopAccount.accountInformation = { 'stripe': stripeShop.id }
+        shopAccount.isRejected = false
+        shopAccount.isSigned = false
+        shopAccount.balance = { accountsReceivable: {}, available: {} }
 
-        product.skus.insert(jpySKU)
-        product.skus.insert(usdSKU)
+        const stripeUser: Stripe.accounts.IAccount = await stripe.accounts.create({
+            type: 'custom',
+            country: 'jp',
+            metadata: { id: shop.id }
+        })
+
+        const userAccount: Account = new Account(user.id)
+        userAccount.country = 'jp'
+        userAccount.accountInformation = { 'stripe': stripeUser.id }
+        userAccount.isRejected = false
+        userAccount.isSigned = false
+        userAccount.balance = { accountsReceivable: {}, available: {} }
+
+        product.skus.insert(sku)
         product.title = "PRODUCT"
         product.createdBy = shop.id
         product.selledBy = shop.id
 
-        jpySKU.title = "InfiniteJPYSKU"
-        jpySKU.selledBy = shop.id
-        jpySKU.createdBy = shop.id
-        jpySKU.product = product.id
-        jpySKU.amount = 500
-        jpySKU.currency = Tradable.Currency.JPY
-        jpySKU.inventory = {
-            type: Tradable.StockType.infinite
+        sku.title = "sku"
+        sku.selledBy = shop.id
+        sku.createdBy = shop.id
+        sku.product = product.id
+        sku.amount = 100
+        sku.currency = Tradable.Currency.JPY
+        sku.inventory = {
+            type: Tradable.StockType.finite,
+            quantity: 5
         }
 
-        usdSKU.title = "InfiniteUSDSKU"
-        usdSKU.selledBy = shop.id
-        usdSKU.createdBy = shop.id
-        usdSKU.product = product.id
-        usdSKU.amount = 50
-        usdSKU.currency = Tradable.Currency.USD
-        usdSKU.inventory = {
-            type: Tradable.StockType.infinite
-        }
-
-        failureSKU.title = "InfiniteFailSKU"
-        failureSKU.selledBy = shop.id
-        failureSKU.createdBy = shop.id
-        failureSKU.product = product.id
-        failureSKU.amount = 1
-        failureSKU.currency = Tradable.Currency.USD
-        failureSKU.inventory = {
-            type: Tradable.StockType.infinite
-        }
-
-        await product.save()
-        await shop.save()
-        await user.save()
+        await Promise.all([product.save(), shop.save(), user.save(), shopAccount.save(), userAccount.save()])
     })
 
-    describe("Transfer Test", async () => {
-        test("Transfer changes after payment is successful", async () => {
-            const order: Order = targetOrder
-            const date: Date = new Date()
-            const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
+    describe("transfer", async () => {
+        test("Success", async () => {
 
+            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, Item, TradeTransaction, BalanceTransaction, User, Account)
             manager.delegate = new StripePaymentDelegate()
 
-            orderItem.order = order.id
-            orderItem.selledBy = shop.id
-            orderItem.buyer = user.id
-            orderItem.sku = jpySKU.id
-            orderItem.currency = jpySKU.currency
-            orderItem.amount = jpySKU.amount
-            orderItem.quantity = 1
+            const shopAccount = new Account(shop.id, {})
+            const userAccount = new Account(user.id, {})
 
-            order.amount = jpySKU.amount
-            order.currency = jpySKU.currency
-            order.selledBy = shop.id
-            order.buyer = user.id
-            order.shippingTo = { address: "address" }
-            order.expirationDate = new Date(date.setDate(date.getDate() + 14))
-            order.items.insert(orderItem)
-            await order.save()
-            order.status = Tradable.OrderStatus.received
-            try {
-                await manager.execute(order, async (order, batch) => {
-                    return await manager.pay(order, {
-                        customer: Config.STRIPE_CUS_TOKEN,
-                        vendorType: 'stripe'
-                    }, batch)
-                })  
-            } catch (error) {
-                console.log(error)
-                expect(error).not.toBeNull()
-            }
-            const received: Order = await Order.get(order.id)
-            const status: Tradable.OrderStatus = received.status
-            expect(status).toEqual(Tradable.OrderStatus.paid)
-            expect(received.paymentInformation['stripe']).not.toBeNull()
-            const account: Account = await Account.get(order.selledBy)
-            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.amount * (1 - 0.1))
-
-        }, 15000)
-
-        test("Added to Balance after payment is successful", async () => {
             const order: Order = new Order()
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
 
-            manager.delegate = new StripePaymentDelegate()
-
+            orderItem.product = product.id
             orderItem.order = order.id
             orderItem.selledBy = shop.id
-            orderItem.buyer = user.id
-            orderItem.sku = jpySKU.id
-            orderItem.currency = jpySKU.currency
-            orderItem.amount = jpySKU.amount
+            orderItem.purchasedBy = user.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.amount
             orderItem.quantity = 1
 
-            order.amount = jpySKU.amount
-            order.currency = jpySKU.currency
+            order.amount = sku.amount
+            order.currency = sku.currency
             order.selledBy = shop.id
-            order.buyer = user.id
+            order.purchasedBy = user.id
             order.shippingTo = { address: "address" }
             order.expirationDate = new Date(date.setDate(date.getDate() + 14))
             order.items.insert(orderItem)
+
             await order.save()
-            order.status = Tradable.OrderStatus.received
-            try {
-                await manager.execute(order, async (order, batch) => {
-                    return await manager.pay(order, {
-                        customer: Config.STRIPE_CUS_TOKEN,
-                        vendorType: 'stripe'
-                    }, batch)
-                })  
-            } catch (error) {
-                console.log(error)
-                expect(error).not.toBeNull()
-            }
-            const received: Order = await Order.get(order.id)
-            const status: Tradable.OrderStatus = received.status
-            expect(status).toEqual(Tradable.OrderStatus.paid)
-            expect(received.paymentInformation['stripe']).not.toBeNull()
-            const account: Account = await Account.get(order.selledBy)
-            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(jpySKU.amount * (1 - 0.1) * 2)
 
-            await order.delete()
-            await orderItem.delete()
-        }, 15000)
 
-        // test("Transfer succeeds after payment usd", async () => {
-        //     const order: Order = new Order()
-        //     const date: Date = new Date()
-        //     const orderItem: OrderItem = new OrderItem()
-        //     const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
-
-        //     manager.delegate = new StripePaymentDelegate()
-
-        //     orderItem.order = order.id
-        //     orderItem.selledBy = shop.id
-        //     orderItem.buyer = user.id
-        //     orderItem.sku = usdSKU.id
-        //     orderItem.currency = usdSKU.currency
-        //     orderItem.amount = usdSKU.amount
-        //     orderItem.quantity = 1
-
-        //     order.amount = usdSKU.amount
-        //     order.currency = usdSKU.currency
-        //     order.selledBy = shop.id
-        //     order.buyer = user.id
-        //     order.shippingTo = { address: "address" }
-        //     order.expirationDate = new Date(date.setDate(date.getDate() + 14))
-        //     order.items.insert(orderItem)
-        //     await order.save()
-        //     order.status = Tradable.OrderStatus.received
-        //     try {
-        //         await manager.execute(order, async (order) => {
-        //             return await manager.transfer(order, {
-        //                 vendorType: 'stripe'
-        //             })
-        //         })                
-        //     } catch (error) {
-        //         console.log(error)
-        //         expect(error).not.toBeNull()
-        //     }
-
-        //     const received: Order = await Order.get(order.id, Order)
-        //     const status: Tradable.OrderStatus = received.status
-        //     expect(status).toEqual(Tradable.OrderStatus.completed)
-        //     expect(received.paymentInformation['stripe']).not.toBeNull()
-        //     expect(received.transferInformation['stripe']).not.toBeNull()
-        //     const account: Account = await Account.get(order.selledBy, Account)
-        //     expect(account.balance['accountsReceivable'][Tradable.Currency.USD]).toEqual(usdSKU.amount * (1 - 0.1))
-
-        //     await order.delete()
-        //     await orderItem.delete()
-        // }, 10000)
-
-        test("Transfer succeeds after payment jpy", async () => {
-            const order: Order = await Order.get(targetOrder.id)
-            const manager = new Tradable.Manager(SKU, Product, OrderItem, Order, Transaction, Account)
-            manager.delegate = new StripePaymentDelegate()
-
-            try {
-                await manager.execute(order, async (order) => {
-                    return await manager.transfer(order, {
-                        vendorType: 'stripe'
-                    })
-                })
-            } catch (error) {
-                console.error(error)
-                expect(error).not.toBeNull()
+            const paymentOptions: Tradable.PaymentOptions = {
+                vendorType: "stripe",
+                refundFeeRate: 0
             }
 
-            const received: Order = await Order.get(order.id)
-            const status: Tradable.OrderStatus = received.status
-            expect(status).toEqual(Tradable.OrderStatus.transferred)
-            expect(received.paymentInformation['stripe']).not.toBeNull()
-            expect(received.transferInformation['stripe']).not.toBeNull()
-            const account: Account = await Account.get(order.selledBy)
-            expect(account.balance['accountsReceivable'][Tradable.Currency.JPY]).toEqual(order.net)
-            expect(account.balance['available'][Tradable.Currency.JPY]).toEqual(order.net)
-            expect(received.transferredTo).not.toBeNull()
-
-            for (const id in received.transferredTo) {
-                const transaction: Transaction = await account.transactions.doc(id, Transaction)
-                expect(transaction.order).toEqual(received.id)
-                expect(transaction.amount).toEqual(received.amount)
-                expect(transaction.fee).toEqual(received.fee)
-                expect(transaction.net).toEqual(received.net)
-                expect(transaction.currency).toEqual(received.currency)
-                expect(transaction.type).toEqual(Tradable.TransactionType.transfer)
-                expect(transaction.information['stripe']).not.toBeNull()            
+            const transferOptions: Tradable.TransferOptions = {
+                vendorType: "stripe",
+                transferRate: 0.5
             }
 
-            await order.delete()
+            const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult
+
+            // const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
+            const _order = await Order.get(order.id) as Order
+
+            const transferResult = await manager.transfer(_order, transferOptions) as Tradable.TransferResult
+
+            const account = new Account(user.id, {})
+            const systemBalanceTransaction = await BalanceTransaction.get(transferResult.balanceTransaction!.id) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(transferResult.balanceTransaction!.id, BalanceTransaction) as BalanceTransaction
+
+            // System Balance Transaction
+            expect(systemBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.paymentRefund)
+            expect(systemBalanceTransaction.currency).toEqual(order.currency)
+            expect(systemBalanceTransaction.amount).toEqual(order.amount)
+            expect(systemBalanceTransaction.from).toEqual(BalanceManager.platform)
+            expect(systemBalanceTransaction.to).toEqual(order.purchasedBy)
+            expect(systemBalanceTransaction.transfer).toBeUndefined()
+            expect(systemBalanceTransaction.payout).toBeUndefined()
+            expect(systemBalanceTransaction.transactionResults[0]['stripe']).toEqual(transferResult.transferResult)
+
+            // Account Trade Transaction
+            expect(accountBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.paymentRefund)
+            expect(accountBalanceTransaction.currency).toEqual(order.currency)
+            expect(accountBalanceTransaction.amount).toEqual(order.amount)
+            expect(accountBalanceTransaction.from).toEqual(BalanceManager.platform)
+            expect(accountBalanceTransaction.to).toEqual(order.purchasedBy)
+            expect(accountBalanceTransaction.transfer).toBeUndefined()
+            expect(accountBalanceTransaction.payout).toBeUndefined()
+            expect(accountBalanceTransaction.transactionResults[0]['stripe']).toEqual(transferResult.transferResult)
+
         }, 15000)
     })
 
     afterAll(async () => {
-        await shop.delete()
-        await user.delete()
-        await product.delete()
-        await jpySKU.delete()
-        await usdSKU.delete()
-        await account.delete()
+        await Promise.all([account.delete(), shop.delete(), user.delete(), product.delete(), sku.delete()])
     })
+    */
 })

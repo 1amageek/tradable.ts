@@ -1,83 +1,144 @@
-import * as Pring from 'pring'
-import * as FirebaseFirestore from '@google-cloud/firestore'
+import { StockManager } from './stockManager'
+import { BalanceManager } from './balanceManager'
+import { OrderManager } from './orderManager'
+import { OrderValidator } from './orderValidator'
 import {
     firestore,
-    timestamp,
     SKUProtocol,
     OrderItemProtocol,
     ProductProtocol,
     OrderProtocol,
-    TransactionProtocol,
+    TradeTransactionProtocol,
+    BalanceTransactionProtocol,
     AccountProtocol,
-    StockType,
-    StockValue,
-    OrderStatus,
-    PaymentDelegate,
+    OrderResult,
+    OrderPaymentStatus,
     PaymentOptions,
-    RefundOptions,
-    CancelOptions,
     Currency,
-    TransactionType,
-    Balance,
     TransferOptions,
     TradableErrorCode,
-    TradableError
+    TradableError,
+    OrderItemStatus,
+    ItemProtocol,
+    UserProtocol,
+    OrderTransferStatus,
+    PayoutOptions,
+    TransactionDelegate,
+    TradeDelegate
 } from "./index"
 
-const isUndefined = (value: any): boolean => {
-    return (value === null || value === undefined || value === NaN)
+export type OrderResult <T extends TradeTransactionProtocol> = {
+    balanceTransaction?: BalanceTransactionProtocol
+    tradeTransactions: T[]
+    chargeResult?: any
+    refundResult?: any
 }
 
-export interface Process {
-    <T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void>
+export type OrderChangeResult <T extends TradeTransactionProtocol> = {
+    balanceTransaction?: BalanceTransactionProtocol
+    tradeTransactions: T[]
+    refundResult: any
 }
 
-enum InventoryControlType {
-    increase = 'increase',
-    decrease = 'decrease'
+export type OrderCancelResult <T extends TradeTransactionProtocol> = {
+    balanceTransaction?: BalanceTransactionProtocol
+    tradeTransactions: T[]
+    refundResult: any
 }
 
-// 在庫の増減
-// StripeAPIに接続
+export type TransferResult = {
+    balanceTransaction?: BalanceTransactionProtocol
+    transferResult?: any
+    transferCancelResult?: any
+}
+
+export type TransferCancelResult = {
+    balanceTransaction?: BalanceTransactionProtocol
+    transferCancelResult?: any
+}
+
 export class Manager
     <
     SKU extends SKUProtocol,
     Product extends ProductProtocol<SKU>,
     OrderItem extends OrderItemProtocol,
     Order extends OrderProtocol<OrderItem>,
-    Transaction extends TransactionProtocol,
-    Account extends AccountProtocol<Transaction>
+    Item extends ItemProtocol,
+    TradeTransaction extends TradeTransactionProtocol,
+    BalanceTransaction extends BalanceTransactionProtocol,
+    User extends UserProtocol<Order, OrderItem, TradeTransaction, Item>,
+    Account extends AccountProtocol<BalanceTransaction>
     > {
 
     private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
     private _Product: { new(id?: string, value?: { [key: string]: any }): Product }
     private _OrderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem }
     private _Order: { new(id?: string, value?: { [key: string]: any }): Order }
-    private _Transaction: { new(id?: string, value?: { [key: string]: any }): Transaction }
+    private _Item: { new(id?: string, value?: { [key: string]: any }): Item }
+    private _TradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction }
+    private _BalanceTransaction: { new(id?: string, value?: { [key: string]: any }): BalanceTransaction }
+    private _User: { new(id?: string, value?: { [key: string]: any }): User }
     private _Account: { new(id?: string, value?: { [key: string]: any }): Account }
+
+    private stockManager: StockManager<Order, OrderItem, User, Product, SKU, Item, TradeTransaction>
+
+    private balanceManager: BalanceManager<BalanceTransaction, Account>
+
+    private orderManager: OrderManager<Order, OrderItem, User, Item, TradeTransaction>
+
+    public delegate?: TransactionDelegate
+
+    public tradeDelegate?: TradeDelegate
 
     constructor(
         sku: { new(id?: string, value?: { [key: string]: any }): SKU },
         product: { new(id?: string, value?: { [key: string]: any }): Product },
         orderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem },
         order: { new(id?: string, value?: { [key: string]: any }): Order },
-        transaction: { new(id?: string, value?: { [key: string]: any }): Transaction },
-        account: { new(id?: string, value?: { [key: string]: any }): Account },
+        item: { new(id?: string, value?: { [key: string]: any }): Item },
+        tradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction },
+        balanceTransaction: { new(id?: string, value?: { [key: string]: any }): BalanceTransaction },
+        user: { new(id?: string, value?: { [key: string]: any }): User },
+        account: { new(id?: string, value?: { [key: string]: any }): Account }
     ) {
         this._SKU = sku
         this._Product = product
         this._OrderItem = orderItem
         this._Order = order
-        this._Transaction = transaction
+        this._Item = item
+        this._TradeTransaction = tradeTransaction
+        this._BalanceTransaction = balanceTransaction
+        this._User = user
         this._Account = account
+
+        this.stockManager = new StockManager(this._User, this._Product, this._SKU, this._Item, this._TradeTransaction)
+        this.balanceManager = new BalanceManager(this._BalanceTransaction, this._Account)
+        this.orderManager = new OrderManager(this._User)
     }
 
-    async execute(order: Order, process: Process, batch?: FirebaseFirestore.WriteBatch) {
+    async order(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
         try {
-            // validation error
-            const validationError = await this.validate(order)
+
+            if (!(order.paymentStatus === OrderPaymentStatus.none)) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order paymentStatus is invalid.`)
+            }
+
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required delegate.`)
+            }
+
+            const tradeDelegate: TradeDelegate | undefined = this.tradeDelegate
+            if (!tradeDelegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required trade delegate.`)
+            }
+
+            this.stockManager.delegate = tradeDelegate
+
+            const validator = new OrderValidator(this._Order, this._OrderItem)
+            const validationError = validator.validate(order, orderItems)
             if (validationError) {
-                order.status = OrderStatus.rejected
+                order.paymentStatus = OrderPaymentStatus.rejected
                 try {
                     await order.update()
                 } catch (error) {
@@ -85,602 +146,566 @@ export class Manager
                 }
                 throw validationError
             }
-            const _batch = batch || firestore.batch()
-            const __batch = await process(order, _batch)
-            if (__batch) {
-                await __batch.commit()
-            }
-        } catch (error) {
-            throw error
-        }
-    }
 
-    private async validate(order: Order) {
-        if (isUndefined(order.buyer)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, buyer is required`)
-        if (isUndefined(order.selledBy)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, selledBy is required`)
-        if (isUndefined(order.expirationDate)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, expirationDate is required`)
-        if (isUndefined(order.currency)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, currency is required`)
-        if (isUndefined(order.amount)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, amount is required`)
-        if (!this.validateMinimumAmount(order)) return new TradableError(TradableErrorCode.invalidArgument, order, `[Tradable] Error: validation error, Amount is below the lower limit.`)
-        try {
-            const items: OrderItem[] = await order.items.get(this._OrderItem)
-            if (!this.validateCurrency(order, items)) return new TradableError(TradableErrorCode.invalidCurrency, order, `[Tradable] Error: validation error, Currency of OrderItem does not match Currency of Order.`)
-            if (!this.validateAmount(order, items)) return new TradableError(TradableErrorCode.invalidAmount, order, `[Tradable] Error: validation error, The sum of OrderItem does not match Amount of Order.`)
-        } catch (error) {
-            return error
-        }
-    }
-
-    private validateMinimumAmount(order: Order): boolean {
-        const currency: Currency = order.currency
-        const amount: number = order.amount
-        if (0 < amount && amount < Currency.minimum(currency)) {
-            return false
-        }
-        return true
-    }
-
-    // Returns true if there is no problem in the verification
-    private validateCurrency(order: Order, orderItems: OrderItem[]): boolean {
-        for (const item of orderItems) {
-            if (item.currency !== order.currency) {
-                return false
-            }
-        }
-        return true
-    }
-
-    // Returns true if there is no problem in the verification
-    private validateAmount(order: Order, orderItems: OrderItem[]) {
-        let totalAmount: number = 0
-
-        for (const item of orderItems) {
-            totalAmount += (item.amount * item.quantity)
-        }
-        if (totalAmount !== order.amount) {
-            return false
-        }
-        return true
-    }
-
-    public delegate?: PaymentDelegate
-
-    private async inventory<T>(type: InventoryControlType, order: Order, item: OrderItem, transaction: FirebaseFirestore.Transaction, resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any | PromiseLike<T>) => void) {
-        const productID: string = item.product
-        const skuID: string = item.sku
-        let quantity: number = 0
-        switch (type) {
-            case InventoryControlType.increase:
-                quantity = item.quantity
-                break
-            case InventoryControlType.decrease:
-                quantity = -item.quantity
-                break
-        }
-        const product: Product = new this._Product(productID, {})
-        const sku: SKU = await product.skus.doc(skuID, this._SKU, transaction)
-        const unitSales: number = sku.unitSales || 0
-        switch (sku.inventory.type) {
-            case StockType.finite: {
-                const skuQuantity: number = sku.inventory.quantity
-                const newUnitSales: number = unitSales + quantity                
-                const remaining: number = skuQuantity - quantity
-                if (remaining < 0) {
-                    const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
-                    reject(error)
-                }
-                transaction.set(sku.reference as FirebaseFirestore.DocumentReference, {
-                    updateAt: timestamp,
-                    unitSales: newUnitSales,
-                    inventory: {
-                        quantity: remaining
-                    }
-                }, { merge: true })
-                break
-            }
-            case StockType.bucket: {
-                switch (sku.inventory.value) {
-                    case StockValue.outOfStock: {
-                        if (quantity > 0) {
-                            const error = new TradableError(TradableErrorCode.outOfStock, order, `[Failure] ORDER/${order.id}, [StockType ${sku.inventory.type}] SKU/${sku.id} is out of stock.`)
-                            reject(error)
-                        }
-                        break
-                    }
-                    default: {
-                        const newUnitSales: number = unitSales + quantity
-                        transaction.set(sku.reference as FirebaseFirestore.DocumentReference, {
-                            updateAt: timestamp,
-                            unitSales: newUnitSales
-                        }, { merge: true })
-                        break
-                    }
-                }
-                break
-            }
-            case StockType.infinite: {
-                const newUnitSales: number = unitSales + quantity
-                transaction.set(sku.reference as FirebaseFirestore.DocumentReference, {
-                    updateAt: timestamp,
-                    unitSales: newUnitSales
-                }, { merge: true })
-                break
-            }
-        }
-    }
-
-    async inventoryControl(order: Order, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
-        // Skip
-        if (order.status === OrderStatus.received ||
-            order.status === OrderStatus.paid ||
-            order.status === OrderStatus.waitingForPayment ||
-            order.status === OrderStatus.transferred ||
-            order.status === OrderStatus.waitingForTransferrd ||
-            order.status === OrderStatus.refunded ||
-            order.status === OrderStatus.waitingForRefund ||
-            order.status === OrderStatus.canceled
-        ) {
-            return
-        }
-
-        try {
-            order.status = OrderStatus.received
-            await firestore.runTransaction(async (transaction) => {
-                return new Promise(async (resolve, reject) => {
-
-                    const items: OrderItem[] = await order.items.get(this._OrderItem, transaction)
-                    for (const item of items) {
-                        await this.inventory(InventoryControlType.increase, order, item, transaction, resolve, reject)
-                    }
-
-                    transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
-                        updateAt: timestamp,
-                        status: OrderStatus.received
-                    }, { merge: true })
-                    resolve(`[Success] ORDER/${order.id}, USER/${order.selledBy}`)
-                })
-            })
-        } catch (error) {
-            order.status = OrderStatus.rejected
-            try {
-                await order.update()
-            } catch (error) {
-                throw error
-            }
-            throw error
-        }
-    }
-
-    async pay(order: Order, options: PaymentOptions, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
-
-        // Skip for paid, waitingForRefund, refunded
-        if (order.status === OrderStatus.paid ||
-            order.status === OrderStatus.waitingForRefund ||
-            order.status === OrderStatus.refunded ||
-            order.status === OrderStatus.transferred ||
-            order.status === OrderStatus.waitingForTransferrd
-        ) {
-            return
-        }
-        if (!(order.status === OrderStatus.received || order.status === OrderStatus.waitingForPayment)) {
-            throw new TradableError(TradableErrorCode.invalidStatus, order, `[Failure] pay ORDER/${order.id}, Order is not a payable status.`)
-        }
-        if (!options.vendorType) {
-            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] pay ORDER/${order.id}, PaymentOptions required vendorType`)
-        }
-        if (!this.delegate) {
-            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] pay ORDER/${order.id}, Manager required delegate`)
-        }
-
-        if (order.amount === 0) {
-            order.status = OrderStatus.paid
-            batch.set(order.reference as FirebaseFirestore.DocumentReference, {
-                updateAt: timestamp,
-                status: OrderStatus.paid
-            }, { merge: true })
-            return batch
-        } else {
-            if (!options.customer && !options.source) {
-                throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] pay ORDER/${order.id}, PaymentOptions required customer or source`)
-            }
-            try {
-                order.status = OrderStatus.paid
-                const result = await this.delegate.pay(order, options)
-                await firestore.runTransaction(async (transaction) => {
-                    return new Promise(async (resolve, reject) => {
-                        try {
-                            const targetOrder: Order = new this._Order(order.id, {})
-                            await targetOrder.fetch(transaction)
-
-                            if (targetOrder.status === OrderStatus.paid ||
-                                targetOrder.status === OrderStatus.waitingForRefund ||
-                                targetOrder.status === OrderStatus.refunded ||
-                                targetOrder.status === OrderStatus.transferred ||
-                                targetOrder.status === OrderStatus.waitingForTransferrd
-                            ) {
-                                resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
-                                return
-                            }
-
-                            const account: Account = new this._Account(targetOrder.selledBy, {})
-                            await account.fetch(transaction)
-                            const amount: number = targetOrder.amount
-                            const commissionRatio: number = account.commissionRatio
-                            const fee: number = amount * commissionRatio
-                            const net: number = amount - fee
-
-                            console.log(`[Tradable] pay currency: ${Currency} amount: ${amount} commissionRatio: ${commissionRatio} fee: ${fee} net: ${net}`)
-
-                            const currency: Currency = targetOrder.currency
-                            const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
-                            const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
-                            const amountOfAccountsReceivable: number = accountsReceivable[currency] || 0
-                            const newAmount: number = amountOfAccountsReceivable + net
-
-                            const revenue: { [currency: string]: number } = account.revenue || {}
-                            const amountOfRevenue: number = revenue[currency] || 0
-                            const newRevenue: number = amountOfRevenue + amount
-
-                            // set account data
-                            transaction.set(account.reference as FirebaseFirestore.DocumentReference, {
-                                updateAt: timestamp,
-                                revenue: { [currency]: newRevenue },
-                                balance: {
-                                    accountsReceivable: { [currency]: newAmount }
-                                }
-                            }, { merge: true })
-
-                            // set order data
-                            transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
-                                updateAt: timestamp,
-                                paymentInformation: {
-                                    [options.vendorType]: result
-                                },
-                                fee: fee,
-                                net: net,
-                                status: OrderStatus.paid
-                            }, { merge: true })
-                            resolve(`[Success] pay ORDER/${order.id}, USER/${order.selledBy}`)
-                        } catch (error) {
-                            let _error = new TradableError(TradableErrorCode.internal, order, error.message, error.stack)
-                            reject(_error)
-                        }
-                    })
-                })
-            } catch (error) {
-                order.status = OrderStatus.waitingForPayment
+            if (order.amount === 0) {
                 try {
-                    await order.update()
-                } catch (error) {
-                    throw error
-                }
-                throw error
-            }
-        }
-    }
-
-    async order(order: Order, options: PaymentOptions, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
-        try {
-            await this.inventoryControl(order, batch)
-            return await this.pay(order, options, batch)
-        } catch (error) {
-            throw error
-        }
-    }
-
-    async cancel(order: Order, options: CancelOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
-        // Skip for refunded
-        if (order.status === OrderStatus.refunded) {
-            return
-        }
-        if (!(order.status === OrderStatus.paid)) {
-            throw new TradableError(TradableErrorCode.invalidStatus, order, `[Failure] cancel ORDER/${order.id}, Order is not a changeable status.`)
-        }
-        if (!options.vendorType) {
-            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] cancel ORDER/${order.id}, PaymentOptions required vendorType`)
-        }
-        if (!this.delegate) {
-            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] cancel ORDER/${order.id}, Manager required delegate`)
-        }
-
-        if (order.amount === 0) {
-            try {
-                await firestore.runTransaction(async (transaction) => {
-                    return new Promise(async (resolve, reject) => {
-                        try {
-                            const items: OrderItem[] = await order.items.get(this._OrderItem, transaction)
-                            for (const item of items) {
-                                await this.inventory(InventoryControlType.decrease, order, item, transaction, resolve, reject)
-                            }
-                            transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
-                                status: OrderStatus.canceled
-                            }, { merge: true })
-                            resolve(`[Success] cancel ORDER/${order.id}, USER/${order.selledBy}`)
-                        } catch (error) {
-                            let _error = new TradableError(TradableErrorCode.internal, order, error.message, error.stack)
-                            reject(_error)
-                        }
-                    })
-                })
-            } catch (error) {               
-                throw error
-            }
-        } else {            
-            try {
-                await firestore.runTransaction(async (transaction) => {
-                    return new Promise(async (resolve, reject) => {
-                        try {
-
-                            const items: OrderItem[] = await order.items.get(this._OrderItem, transaction)
-                            for (const item of items) {
-                                this.inventory(InventoryControlType.decrease, order, item, transaction, resolve, reject)
-                            }
-
-                            const account: Account = new this._Account(order.selledBy, {})
-                            await account.fetch(transaction)
-                            const currency: string = order.currency
-                            const amount: number = order.amount
-                            const net: number = order.net
-                            const revenueWithCurrency: number = account.revenue[order.currency] || 0
-                            const newRevenueWithCurrency: number = revenueWithCurrency - amount
-                            const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
-                            const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
-                            const accountsReceivableWithCurrency: number = accountsReceivable[order.currency] || 0
-                            const newAccountsReceivable: number = accountsReceivableWithCurrency - net
-
-                            const result = await this.delegate.cancel(order, options)
-
-                            // set account data
-                            transaction.set(account.reference as FirebaseFirestore.DocumentReference, {
-                                updateAt: timestamp,
-                                revenue: { [currency]: newRevenueWithCurrency },
-                                balance: {
-                                    accountsReceivable: { [currency]: newAccountsReceivable }
-                                }
-                            }, { merge: true })
-                            
-                            // set order data
-                            transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
-                                status: OrderStatus.canceled,
-                                refundInformation: {
-                                    [options.vendorType]: result
-                                }
-                            }, { merge: true })
-                            resolve(`[Success] cancel ORDER/${order.id}, USER/${order.selledBy}`)
-                        } catch (error) {
-                            let _error = new TradableError(TradableErrorCode.internal, order, error.message, error.stack)
-                            reject(_error)
-                        }
-                    })
-                })
-            } catch (error) {
-                throw error
-            }
-        }
-    }
-
-    async refund(order: Order, options: RefundOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
-
-        // Skip for refunded
-        if (order.status === OrderStatus.refunded) {
-            return
-        }
-        if (!(order.status === OrderStatus.paid || order.status === OrderStatus.transferred || order.status === OrderStatus.waitingForTransferrd)) {
-            throw new TradableError(TradableErrorCode.invalidStatus, order, `[Failure] refund ORDER/${order.id}, Order is not a refundable status.`)
-        }
-        if (!options.vendorType) {
-            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] refund ORDER/${order.id}, PaymentOptions required vendorType`)
-        }
-        if (!this.delegate) {
-            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] refund ORDER/${order.id}, Manager required delegate`)
-        }
-
-        if (order.amount === 0) {
-            order.status = OrderStatus.refunded
-            batch.set(order.reference as FirebaseFirestore.DocumentReference, {
-                updateAt: timestamp,
-                status: OrderStatus.refunded
-            }, { merge: true })
-            return batch
-        } else {
-            try {
-                order.status = OrderStatus.refunded
-                const result = await this.delegate.refund(order, options)
-                await firestore.runTransaction(async (transaction) => {
-                    return new Promise(async (resolve, reject) => {
-                        try {
-                            const account: Account = new this._Account(order.selledBy, {})
-                            await account.fetch(transaction)
-                            if (order.status === OrderStatus.transferred) {
-                                const currency: string = order.currency
-                                const net: number = order.net
-                                const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
-                                const available: { [currency: string]: number } = balance.available
-                                const amountOfAvailable: number = available[order.currency] || 0
-                                const newAmount: number = amountOfAvailable - net
-
-                                // set account data
-                                transaction.set(account.reference as FirebaseFirestore.DocumentReference, {
-                                    balance: {
-                                        available: { [currency]: newAmount }
+                    return await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+                            // stock
+                            try {
+                                const tasks = []
+                                for (const orderItem of orderItems) {
+                                    const productID = orderItem.product
+                                    const skuID = orderItem.sku
+                                    const quantity = orderItem.quantity
+                                    if (productID && skuID) {
+                                        const task = this.stockManager.order(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                        tasks.push(task)
                                     }
-                                }, { merge: true })
-
-                                // set order data
-                                transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
-                                    refundInformation: {
-                                        [options.vendorType]: result
-                                    },
-                                    status: OrderStatus.refunded
-                                }, { merge: true })
-
-                            } else {
-                                const currency: string = order.currency
-                                const net: number = order.net
-                                const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
-                                const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
-                                const amountAccountsReceivable: number = accountsReceivable[order.currency] || 0
-                                const newAmount: number = amountAccountsReceivable - net
-
-                                // set account data
-                                transaction.set(account.reference as FirebaseFirestore.DocumentReference, {
-                                    accountsReceivable: {
-                                        available: { [currency]: newAmount }
-                                    }
-                                }, { merge: true })
-
-                                // set order data
-                                transaction.set(order.reference as FirebaseFirestore.DocumentReference, {
-                                    refundInformation: {
-                                        [options.vendorType]: result
-                                    },
-                                    status: OrderStatus.refunded
-                                }, { merge: true })
+                                }
+                                const tradeTransactions = await Promise.all(tasks)
+                                order.paymentStatus = OrderPaymentStatus.paid
+                                this.orderManager.update(order, orderItems, {}, transaction)
+                                const reuslt: OrderResult<TradeTransaction> = {
+                                    tradeTransactions: tradeTransactions
+                                }
+                                resolve(reuslt)
+                            } catch (error) {
+                                reject(error)
                             }
-                            resolve(`[Success] refund ORDER/${order.id}, USER/${order.selledBy}`)
-                        } catch (error) {
-                            let _error = new TradableError(TradableErrorCode.internal, order, error.message, error.stack)
-                            reject(_error)
-                        }
+                        })
                     })
-                })
-            } catch (error) {
-                order.status = OrderStatus.waitingForRefund
-                try {
-                    await order.update()
                 } catch (error) {
                     throw error
                 }
-                throw error
+            } else {
+                try {
+                    let chargeResult: { [key: string]: any } | undefined = undefined
+                    return await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+
+                            // stock
+                            try {
+                                const tasks = []
+                                for (const orderItem of orderItems) {
+                                    const productID = orderItem.product
+                                    const skuID = orderItem.sku
+                                    const quantity = orderItem.quantity
+                                    if (productID && skuID) {
+                                        const task = this.stockManager.order(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                        tasks.push(task)
+                                    }
+                                }
+                                const tradeTransactions = await Promise.all(tasks)
+                                try {
+                                    if (!chargeResult) {
+                                        chargeResult = await delegate.payment(order.currency, order.amount, order, paymentOptions)
+                                    }
+                                    // payment
+                                    const balanceTransaction = this.balanceManager.payment(order.purchasedBy,
+                                        order.id,
+                                        order.currency,
+                                        order.amount,
+                                        { [paymentOptions.vendorType]: chargeResult }
+                                        , transaction)
+
+                                    order.paymentStatus = OrderPaymentStatus.paid
+                                    this.orderManager.update(order, orderItems,
+                                        { [paymentOptions.vendorType]: chargeResult }
+                                        , transaction)
+                                    resolve({
+                                        tradeTransactions: tradeTransactions,
+                                        balanceTransaction: balanceTransaction,
+                                        chargeResult: chargeResult
+                                    })
+                                } catch (error) {
+                                    if (chargeResult) {
+                                        reject({
+                                            chargeResult: chargeResult
+                                        })
+                                    } else {
+                                        reject(error)
+                                    }
+                                }
+                            } catch (error) {
+                                reject(error)
+                            }
+                        })
+                    })
+                } catch (error) {
+                    if (error instanceof TradableError) {
+                        order.paymentStatus = OrderPaymentStatus.paymentFailure
+                        try {
+                            await order.update()
+                        } catch (error) {
+                            throw error
+                        }
+                        throw error
+                    }
+                    let orderReuslt = error
+                    try {
+                        if (orderReuslt.chargeResult) {
+                            const refundResult = await delegate.refund(order.currency, order.amount, order, paymentOptions, `[Manager] Invalid order ORDER/${order.id}, transaction failure.`)
+                            orderReuslt.refundResult = refundResult
+                        }
+                        throw orderReuslt
+                    } catch (error) {
+                        order.paymentStatus = OrderPaymentStatus.paymentFailure
+                        try {
+                            await order.update()
+                        } catch (error) {
+                            throw error
+                        }
+                        throw error
+                    }
+                }
             }
+        } catch (error) {
+            throw error
         }
     }
 
-    async transfer(order: Order, options: TransferOptions, batch?: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
+    async orderChange(order: Order, orderItem: OrderItem, itemID: string, paymentOptions: PaymentOptions) {
+        try {
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, Manager required delegate.`)
+            }
 
-        // Skip for 
-        if (order.status === OrderStatus.transferred) {
-            return
-        }
-        if (!(order.status === OrderStatus.paid || order.status === OrderStatus.waitingForTransferrd)) {
-            throw new TradableError(TradableErrorCode.invalidStatus, order, `[Failure] transfer ORDER/${order.id}, Order is not a transferable status.`)
-        }
-        if (!options.vendorType) {
-            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] transfer ORDER/${order.id}, PaymentOptions required vendorType`)
-        }
-        if (!this.delegate) {
-            throw new TradableError(TradableErrorCode.invalidArgument, order, `[Failure] transfer ORDER/${order.id}, Manager required delegate`)
-        }
+            if (!(order.paymentStatus === OrderPaymentStatus.paid)) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, This order status is invalid.`)
+            }
 
-        if (order.amount === 0) {
-            order.status = OrderStatus.transferred
-            batch.set(order.reference as FirebaseFirestore.DocumentReference, {
-                updateAt: timestamp,
-                status: OrderStatus.transferred
-            }, { merge: true })
-            return batch
-        } else {
+            const tradeDelegate: TradeDelegate | undefined = this.tradeDelegate
+            if (!tradeDelegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required trade delegate.`)
+            }
+
+            this.stockManager.delegate = tradeDelegate
+
+            if (orderItem.amount === 0) {
+                try {
+                    return await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+                            // stock
+                            const tradeTransactions = []
+                            const productID = orderItem.product
+                            const skuID = orderItem.sku
+                            if (productID && skuID) {
+                                orderItem.status = OrderItemStatus.changed
+                                const tradeTransaction = await this.stockManager.orderChange(order.selledBy, order.purchasedBy, order.id, productID, skuID, itemID, transaction)
+                                tradeTransactions.push(tradeTransaction)
+                            }
+
+                            this.orderManager.update(order, [orderItem],
+                                {}
+                                , transaction)
+                            resolve({
+                                tradeTransactions: tradeTransactions
+                            })
+                        })
+                    })
+                } catch (error) {
+                    throw error
+                }
+            } else {
+                try {
+                    let refundResult: { [key: string]: any } | undefined = undefined
+                    return await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+
+                            try {
+                                const amount = orderItem.amount * (1 - paymentOptions.refundFeeRate)
+                                if (!refundResult) {
+                                    refundResult = await delegate.partRefund(order.currency, amount, order, orderItem, paymentOptions)
+                                }
+
+                                // stock
+                                const tradeTransactions = []
+                                const productID = orderItem.product
+                                const skuID = orderItem.sku
+                                if (productID && skuID) {
+                                    orderItem.status = OrderItemStatus.changed
+                                    const tradeTransaction = await this.stockManager.orderChange(order.selledBy, order.purchasedBy, order.id, productID, skuID, itemID, transaction)
+                                    tradeTransactions.push(tradeTransaction)
+                                }
+
+                                // payment
+                                const balanceTransaction = this.balanceManager.refund(order.purchasedBy,
+                                    order.id,
+                                    order.currency,
+                                    amount,
+                                    { [paymentOptions.vendorType]: refundResult }
+                                    , transaction)
+
+                                this.orderManager.update(order, [orderItem],
+                                    { [paymentOptions.vendorType]: refundResult }
+                                    , transaction)
+
+                                resolve({
+                                    tradeTransactions: tradeTransactions,
+                                    balanceTransaction: balanceTransaction,
+                                    refundResult: refundResult
+                                })
+                            } catch (error) {
+                                if (refundResult) {
+                                    reject({
+                                        refundResult: refundResult
+                                    })
+                                } else {
+                                    reject(error)
+                                }
+                            }
+                        })
+                    })
+                } catch (error) {
+                    if (error instanceof TradableError) {
+                        throw error
+                    }
+                    let orderCancelResult = error
+                    return orderCancelResult
+                }
+            }
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async orderCancel(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
+        try {
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, Manager required delegate.`)
+            }
+
+            if (!(order.paymentStatus === OrderPaymentStatus.paid)) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, This order status is invalid.`)
+            }
+
+            const tradeDelegate: TradeDelegate | undefined = this.tradeDelegate
+            if (!tradeDelegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required trade delegate.`)
+            }
+
+            this.stockManager.delegate = tradeDelegate
+
+            if (order.amount === 0) {
+                try {
+                    return await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+                            // stock
+                            const tasks = []
+                            for (const orderItem of orderItems) {
+                                const productID = orderItem.product
+                                const skuID = orderItem.sku
+                                const quantity = orderItem.quantity
+                                if (productID && skuID) {
+                                    orderItem.status = OrderItemStatus.canceled
+                                    const task = this.stockManager.orderCancel(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                    tasks.push(task)
+                                }
+                            }
+                            const tradeTransactions = await Promise.all(tasks)
+
+                            order.paymentStatus = OrderPaymentStatus.canceled
+                            this.orderManager.update(order, orderItems,
+                                {}
+                                , transaction)
+                            resolve({
+                                tradeTransactions: tradeTransactions
+                            })
+                        })
+                    })
+                } catch (error) {
+                    throw error
+                }
+            } else {
+                try {
+                    let refundResult: { [key: string]: any } | undefined = undefined
+                    return await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+
+                            try {
+                                const amount = order.amount * (1 - paymentOptions.refundFeeRate)
+                                if (!refundResult) {
+                                    refundResult = await delegate.refund(order.currency, amount, order, paymentOptions)
+                                }
+
+                                // stock
+                                const tasks = []
+                                for (const orderItem of orderItems) {
+                                    const productID = orderItem.product
+                                    const skuID = orderItem.sku
+                                    const quantity = orderItem.quantity
+                                    if (productID && skuID) {
+                                        orderItem.status = OrderItemStatus.canceled
+                                        const task = this.stockManager.orderCancel(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                        tasks.push(task)
+                                    }
+                                }
+                                const tradeTransactions = await Promise.all(tasks)
+
+                                // payment
+                                const balanceTransaction = this.balanceManager.refund(order.purchasedBy,
+                                    order.id,
+                                    order.currency,
+                                    amount,
+                                    { [paymentOptions.vendorType]: refundResult }
+                                    , transaction)
+
+                                order.paymentStatus = OrderPaymentStatus.canceled
+                                this.orderManager.update(order, orderItems,
+                                    { [paymentOptions.vendorType]: refundResult }
+                                    , transaction)
+
+                                resolve({
+                                    tradeTransactions: tradeTransactions,
+                                    balanceTransaction: balanceTransaction,
+                                    refundResult: refundResult
+                                })
+                            } catch (error) {
+                                if (refundResult) {
+                                    reject({
+                                        refundResult: refundResult
+                                    })
+                                } else {
+                                    reject(error)
+                                }
+                            }
+                        })
+                    })
+                } catch (error) {
+                    if (error instanceof TradableError) {
+                        order.paymentStatus = OrderPaymentStatus.cancelFailure
+                        try {
+                            await order.update()
+                        } catch (error) {
+                            throw error
+                        }
+                        throw error
+                    }
+                    let orderCancelResult = error
+                    return orderCancelResult
+                }
+            }
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async transfer(order: Order, transferOptions: TransferOptions) {
+        try {
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, Manager required delegate.`)
+            }
+
+            if (!(order.paymentStatus === OrderPaymentStatus.paid)) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order paymentStatus is invalid.`)
+            }
+
+            if (!(order.transferStatus === OrderTransferStatus.none)) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order transferStatus is invalid.`)
+            }
+
+            if (order.amount === 0) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order is zero amount.`)
+            } else {
+                let transferResult: { [key: string]: any } | undefined = undefined
+                const amount = order.amount * (1 - transferOptions.transferRate)
+                try {
+                    return await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+                            try {
+                                if (!transferResult) {
+                                    const to: Account = new this._Account(order.selledBy, {})
+                                    await to.fetch(transaction)
+                                    transferResult = await delegate.transfer(order.currency, amount, order, to, transferOptions)
+                                    console.log(transferResult)
+                                }
+                                // transfer
+                                const balanceTransaction = await this.balanceManager.transfer(
+                                    BalanceManager.platform,
+                                    order.selledBy,
+                                    order.id,
+                                    order.currency,
+                                    amount,
+                                    { [transferOptions.vendorType]: transferResult },
+                                    transaction)
+
+                                order.transferStatus = OrderTransferStatus.transferred
+                                this.orderManager.update(order, [],
+                                    { [transferOptions.vendorType]: transferResult }
+                                    , transaction)
+                                const result: TransferResult = {
+                                    balanceTransaction: balanceTransaction,
+                                    transferResult: transferResult
+                                }
+                                resolve(result)
+                            } catch (error) {
+                                if (transferResult) {
+                                    reject({
+                                        transferResult: transferResult
+                                    })
+                                } else {
+                                    reject(error)
+                                }
+                            }
+                        })
+                    })
+                } catch (error) {
+                    if (error instanceof TradableError) {
+                        order.transferStatus = OrderTransferStatus.transferFailure
+                        try {
+                            await order.update()
+                        } catch (error) {
+                            throw error
+                        }
+                        throw error
+                    }
+                    let transferResult: TransferResult = error as TransferResult
+                    try {
+                        if (transferResult.transferResult) {
+                            const transferCancelResult = await delegate.transferCancel(order.currency, amount, order, transferOptions, `[Manager] Invalid transfer ORDER/${order.id}, transaction failure.`)
+                            transferResult.transferCancelResult = transferCancelResult
+                        }
+                        throw transferResult
+                    } catch (error) {
+                        order.transferStatus = OrderTransferStatus.transferFailure
+                        try {
+                            await order.update()
+                        } catch (error) {
+                            throw error
+                        }
+                        throw error
+                    }
+                }
+            }
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async transferCancel(order: Order, transferOptions: TransferOptions) {
+        try {
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, Manager required delegate.`)
+            }
+
+            if (!(order.paymentStatus === OrderPaymentStatus.paid)) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order paymentStatus is invalid.`)
+            }
+
+            if (!(order.transferStatus === OrderTransferStatus.transferred)) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order transferStatus is invalid.`)
+            }
+
+            if (order.amount === 0) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order is zero amount.`)
+            } else {
+                const amount = order.amount * (1 - transferOptions.transferRate)
+                const transferCancelResult = await delegate.transferCancel(order.currency, amount, order, transferOptions)
+                try {
+                    await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+
+                            // transfer
+                            const balanceTransaction = await this.balanceManager.transferRefund(
+                                BalanceManager.platform,
+                                order.selledBy,
+                                order.id,
+                                order.currency,
+                                amount,
+                                { [transferOptions.vendorType]: transferCancelResult },
+                                transaction)
+
+                            order.transferStatus = OrderTransferStatus.canceled
+                            this.orderManager.update(order, [],
+                                { [transferOptions.vendorType]: transferCancelResult }
+                                , transaction)
+                            const result: TransferCancelResult = {
+                                balanceTransaction: balanceTransaction,
+                                transferCancelResult: transferCancelResult
+                            }
+                            resolve(result)
+                        })
+                    })
+                } catch (error) {
+                    order.transferStatus = OrderTransferStatus.transferFailure
+                    try {
+                        await order.update()
+                    } catch (error) {
+                        throw error
+                    }
+                    throw error
+                }
+            }
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async payout(accountID: string, currency: Currency, amount: number, payoutOptions: PayoutOptions) {
+        try {
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid payout ACCOUNT/${accountID}, Manager required delegate.`)
+            }
+
+            if (amount === 0) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid payout ACCOUNT/${accountID}, This order is zero amount.`)
+            }
+
+            const result = await delegate.payout(currency, amount, accountID, payoutOptions)
             try {
-                order.status = OrderStatus.transferred
-                const result = await this.delegate.transfer(order, options)
                 await firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
-                        try {
 
-                            const targetOrder: Order = new this._Order(order.id, {})
-                            await targetOrder.fetch(transaction)
-
-                            if (targetOrder.status === OrderStatus.transferred) {
-                                resolve(`[Success] transfer ORDER/${order.id}, USER/${order.selledBy}`)
-                                return
-                            }
-
-                            const account: Account = new this._Account(targetOrder.selledBy, {})
-                            await account.fetch(transaction)
-                            const currency: Currency = targetOrder.currency
-                            const balance: Balance = account.balance || { accountsReceivable: {}, available: {} }
-                            const accountsReceivable: { [currency: string]: number } = balance.accountsReceivable
-                            const available: { [currency: string]: number } = balance.available
-                            const net: number = targetOrder.net
-                            const accountsReceivableAmount: number = accountsReceivable[targetOrder.currency] || 0
-                            const availableAmount: number = available[targetOrder.currency] || 0
-                            const newAccountsReceivableAmount: number = accountsReceivableAmount - net
-                            const newAvailableAmount: number = availableAmount + net
-
-                            // set account data
-                            transaction.set(account.reference as FirebaseFirestore.DocumentReference, {
-                                balance: {
-                                    accountsReceivable: { [currency]: newAccountsReceivableAmount },
-                                    available: { [currency]: newAvailableAmount }
-                                }
-                            }, { merge: true })
-
-                            // set transaction data
-                            const trans: Transaction = new this._Transaction()
-                            trans.amount = targetOrder.amount
-                            trans.fee = targetOrder.fee
-                            trans.net = targetOrder.net
-                            trans.currency = currency
-                            trans.type = TransactionType.transfer
-                            trans.setParent(account.transactions)
-                            trans.order = targetOrder.id
-                            trans.information = {
-                                [options.vendorType]: result
-                            }
-                            transaction.set(trans.reference as FirebaseFirestore.DocumentReference, trans.value())
-
-                            // set order data
-                            transaction.set(targetOrder.reference as FirebaseFirestore.DocumentReference, {
-                                transferInformation: {
-                                    [options.vendorType]: result
-                                },
-                                transferredTo: { [trans.id]: true },
-                                status: OrderStatus.transferred
-                            }, { merge: true })
-
-                            resolve(`[Success] transfer ORDER/${order.id}, USER/${order.selledBy}, TRANSACTION/${trans.id}`)
-                        } catch (error) {
-                            let _error = new TradableError(TradableErrorCode.internal, order, error.message, error.stack)
-                            reject(_error)
-                        }
+                        // payout
+                        this.balanceManager.payout(accountID, currency, amount, result, transaction)
+                        resolve(`[Manager] Success payout ACCOUNT/${accountID}, ${currency}: ${amount}`)
                     })
                 })
             } catch (error) {
-                order.status = OrderStatus.waitingForTransferrd
                 try {
-                    await order.update()
+                    await delegate.payoutCancel(currency, amount, accountID, payoutOptions)
                 } catch (error) {
                     throw error
                 }
                 throw error
             }
+        } catch (error) {
+            throw error
         }
     }
 
-    // async payout(account: Account, currency: Currency, batch?: FirebaseFirestore.WriteBatch) {
+    async payoutCancel(accountID: string, currency: Currency, amount: number, payoutOptions: PayoutOptions) {
+        try {
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid payoutCancel ACCOUNT/${accountID}, Manager required delegate.`)
+            }
 
-    //     if (!account.isSigned) {
-    //         throw new TradableError(order, `[Failure] ACCOUNT/${account.id}, This account has not agreed to the terms of service.`)
-    //     }
-    //     const balance = account.balance
-    //     const amount: number = balance[currency]
+            if (amount === 0) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid payoutCancel ACCOUNT/${accountID}, This order is zero amount.`)
+            }
 
-    //     try {
-    //         const result = await this.delegate.payout(account, amount, currency)
-    //     } catch (error) {
-    //         throw error
-    //     }
+            const result = await delegate.payoutCancel(currency, amount, accountID, payoutOptions)
+            try {
+                await firestore.runTransaction(async (transaction) => {
+                    return new Promise(async (resolve, reject) => {
 
-    // }
-
-    async complete(order: Order, batch: FirebaseFirestore.WriteBatch): Promise<FirebaseFirestore.WriteBatch | void> {
-        if (order.status === OrderStatus.completed) {
-            return
+                        // payout
+                        this.balanceManager.payoutCancel(accountID, currency, amount, result, transaction)
+                        resolve(`[Manager] Success payoutCancel ACCOUNT/${accountID}, ${currency}: ${amount}`)
+                    })
+                })
+            } catch (error) {
+                throw error
+            }
+        } catch (error) {
+            throw error
         }
-        batch.set(order.reference as FirebaseFirestore.DocumentReference, {
-            updateAt: timestamp,
-            status: OrderStatus.completed
-        }, { merge: true })
-        return batch
     }
 }

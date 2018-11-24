@@ -61,4 +61,6 @@ typings/
 # dotenv environment variables file
 .env
 
-lib/
+src/
+
+test/
