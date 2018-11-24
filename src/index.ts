@@ -237,6 +237,15 @@ export type PayoutOptions = {
     vendorType: string
 }
 
+export interface TradeDelegate {
+
+    createItem<T extends ItemProtocol>(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, transaction: FirebaseFirestore.Transaction): T
+
+    getItems<T extends ItemProtocol>(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, transaction: FirebaseFirestore.Transaction): Promise<T[]>
+
+    cancelItem(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, itemID: string, transaction: FirebaseFirestore.Transaction): void
+}
+
 export interface TransactionDelegate {
 
     payment<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions): Promise<any>

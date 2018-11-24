@@ -8,6 +8,7 @@ import {
     ProductProtocol,
     OrderProtocol,
     ItemProtocol,
+    TradeDelegate,
     TradableError,
     TradableErrorCode
 } from "./index"
@@ -28,6 +29,8 @@ export class StockManager
     private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
     private _Item: { new(id?: string, value?: { [key: string]: any }): Item }
     private _TradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction }
+
+    public delegate!: TradeDelegate
 
     constructor(
         user: { new(id?: string, value?: { [key: string]: any }): User },
@@ -70,13 +73,8 @@ export class StockManager
         }
 
         for (let i = 0; i < quantity; i++) {
-            const item: Item = new this._Item()
-            item.selledBy = selledBy
-            item.order = orderID
-            item.product = productID
-            item.sku = skuID
+            const item: Item = this.delegate.createItem(selledBy, purchasedBy, orderID, productID, skuID, transaction)
             tradeTransaction.items.push(item.id)
-            transaction.set(purchaser.items.reference.doc(item.id), item.value(), { merge: true })
         }
 
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
@@ -95,7 +93,6 @@ export class StockManager
         const product: Product = new this._Product(productID, {})
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const item: Item = new this._Item(itemID, {})
         const sku: SKU | undefined = await product.skus.doc(skuID, this._SKU, transaction)
 
         if (!sku) {
@@ -110,7 +107,7 @@ export class StockManager
         tradeTransaction.order = orderID
         tradeTransaction.product = productID
         tradeTransaction.sku = skuID
-        tradeTransaction.items.push(item.id)
+        tradeTransaction.items.push(itemID)
 
         const skuQuantity: number = (sku.inventory.quantity || 0) + 1
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
@@ -120,9 +117,7 @@ export class StockManager
                 quantity: skuQuantity
             }
         }, { merge: true })
-        transaction.set(purchaser.items.reference.doc(item.id), {
-            isCanceled: true
-        }, { merge: true })
+        this.delegate.cancelItem(selledBy, purchasedBy, orderID, productID, skuID, itemID, transaction)
         return tradeTransaction
     }
 
@@ -131,10 +126,10 @@ export class StockManager
         const product: Product = new this._Product(productID, {})
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const result = await Promise.all([product.skus.doc(skuID, this._SKU, transaction), purchaser.items.get(this._Item)])
+        const result = await Promise.all([product.skus.doc(skuID, this._SKU, transaction), this.delegate.getItems(selledBy, purchasedBy, orderID, productID, skuID, transaction)])
 
         const sku: SKU | undefined = result[0]
-        const items: Item[] = result[1]
+        const items = result[1]
 
         if (!sku) {
             throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
@@ -152,9 +147,7 @@ export class StockManager
         const skuQuantity: number = (sku.inventory.quantity || 0) + quantity
         for (const item of items) {
             tradeTransaction.items.push(item.id)
-            transaction.set(purchaser.items.reference.doc(item.id), {
-                isCanceled: true
-            }, { merge: true })
+            this.delegate.cancelItem(selledBy, purchasedBy, orderID, productID, skuID, item.id, transaction)
         }
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })

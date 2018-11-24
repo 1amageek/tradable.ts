@@ -11,8 +11,8 @@ import {
     TradeTransactionProtocol,
     BalanceTransactionProtocol,
     AccountProtocol,
+    OrderResult,
     OrderPaymentStatus,
-    TransactionDelegate,
     PaymentOptions,
     Currency,
     TransferOptions,
@@ -22,7 +22,9 @@ import {
     ItemProtocol,
     UserProtocol,
     OrderTransferStatus,
-    PayoutOptions
+    PayoutOptions,
+    TransactionDelegate,
+    TradeDelegate
 } from "./index"
 
 export type OrderResult <T extends TradeTransactionProtocol> = {
@@ -86,6 +88,8 @@ export class Manager
 
     public delegate?: TransactionDelegate
 
+    public tradeDelegate?: TradeDelegate
+
     constructor(
         sku: { new(id?: string, value?: { [key: string]: any }): SKU },
         product: { new(id?: string, value?: { [key: string]: any }): Product },
@@ -124,6 +128,13 @@ export class Manager
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required delegate.`)
             }
 
+            const tradeDelegate: TradeDelegate | undefined = this.tradeDelegate
+            if (!tradeDelegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required trade delegate.`)
+            }
+
+            this.stockManager.delegate = tradeDelegate
+
             const validator = new OrderValidator(this._Order, this._OrderItem)
             const validationError = validator.validate(order, orderItems)
             if (validationError) {
@@ -155,9 +166,10 @@ export class Manager
                                 const tradeTransactions = await Promise.all(tasks)
                                 order.paymentStatus = OrderPaymentStatus.paid
                                 this.orderManager.update(order, orderItems, {}, transaction)
-                                resolve({
+                                const reuslt: OrderResult<TradeTransaction> = {
                                     tradeTransactions: tradeTransactions
-                                })
+                                }
+                                resolve(reuslt)
                             } catch (error) {
                                 reject(error)
                             }
@@ -264,6 +276,13 @@ export class Manager
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, This order status is invalid.`)
             }
 
+            const tradeDelegate: TradeDelegate | undefined = this.tradeDelegate
+            if (!tradeDelegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required trade delegate.`)
+            }
+
+            this.stockManager.delegate = tradeDelegate
+
             if (orderItem.amount === 0) {
                 try {
                     return await firestore.runTransaction(async (transaction) => {
@@ -362,6 +381,13 @@ export class Manager
             if (!(order.paymentStatus === OrderPaymentStatus.paid)) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid orderCancel ORDER/${order.id}, This order status is invalid.`)
             }
+
+            const tradeDelegate: TradeDelegate | undefined = this.tradeDelegate
+            if (!tradeDelegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required trade delegate.`)
+            }
+
+            this.stockManager.delegate = tradeDelegate
 
             if (order.amount === 0) {
                 try {

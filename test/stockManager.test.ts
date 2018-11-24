@@ -14,6 +14,7 @@ import { TradeTransaction } from './models/tradeTransaction'
 import { Account } from './models/account'
 import { StockManager } from '../src/stockManager'
 import * as firebase from '@firebase/testing'
+import { TradeDelegate } from './tradeDelegate';
 
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
@@ -74,6 +75,8 @@ describe("StockManager", () => {
 
         user.orders.insert(order)
         await Promise.all([user.save(), product.save(), shop.save()])
+
+        stockManager.delegate = new TradeDelegate()
     })
 
     describe("Order", async () => {
