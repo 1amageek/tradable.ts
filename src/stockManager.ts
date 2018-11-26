@@ -17,17 +17,15 @@ export class StockManager
     <
     Order extends OrderProtocol<OrderItem>,
     OrderItem extends OrderItemProtocol,
-    User extends UserProtocol<Order, OrderItem, TradeTransaction, Item>,
+    User extends UserProtocol<Order, OrderItem, TradeTransaction>,
     Product extends ProductProtocol<SKU>,
     SKU extends SKUProtocol,
-    Item extends ItemProtocol,
     TradeTransaction extends TradeTransactionProtocol
     > {
 
     private _User: { new(id?: string, value?: { [key: string]: any }): User }
     private _Product: { new(id?: string, value?: { [key: string]: any }): Product }
     private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
-    private _Item: { new(id?: string, value?: { [key: string]: any }): Item }
     private _TradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction }
 
     public delegate!: TradeDelegate
@@ -36,13 +34,11 @@ export class StockManager
         user: { new(id?: string, value?: { [key: string]: any }): User },
         product: { new(id?: string, value?: { [key: string]: any }): Product },
         sku: { new(id?: string, value?: { [key: string]: any }): SKU },
-        item: { new(id?: string, value?: { [key: string]: any }): Item },
         tradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction }
     ) {
         this._User = user
         this._Product = product
         this._SKU = sku
-        this._Item = item
         this._TradeTransaction = tradeTransaction
     }
 
@@ -73,7 +69,7 @@ export class StockManager
         }
 
         for (let i = 0; i < quantity; i++) {
-            const item: Item = this.delegate.createItem(selledBy, purchasedBy, orderID, productID, skuID, transaction)
+            const item = this.delegate.createItem(selledBy, purchasedBy, orderID, productID, skuID, transaction)
             tradeTransaction.items.push(item.id)
         }
 

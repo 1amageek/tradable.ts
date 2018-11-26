@@ -8,7 +8,7 @@ import "reflect-metadata";
 
 const property = Pring.property
 
-export class User extends Pring.Base implements tradable.UserProtocol<Order, OrderItem, TradeTransaction, Item> {
+export class User extends Pring.Base implements tradable.UserProtocol<Order, OrderItem, TradeTransaction> {
     @property orders: Pring.NestedCollection<Order> = new Pring.NestedCollection(this)
     @property receivedOrders: Pring.NestedCollection<Order> = new Pring.NestedCollection(this)
     @property items: Pring.NestedCollection<Item> = new Pring.NestedCollection(this)

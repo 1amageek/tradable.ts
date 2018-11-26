@@ -5,8 +5,6 @@ import { User } from './models/user'
 
 export class TradeDelegate implements tradable.TradeDelegate {
 
-
-
     createItem<T extends tradable.ItemProtocol>(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, transaction: FirebaseFirestore.Transaction): T {
         const purchaser: User = new User(purchasedBy, {})
         const item: Item = new Item()

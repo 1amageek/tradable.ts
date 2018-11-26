@@ -36,7 +36,7 @@ describe("OrderManager", () => {
     const date: Date = new Date()
     const orderItem: OrderItem = new OrderItem()
 
-    const orderManager: OrderManager<Order, OrderItem, User, Item, TradeTransaction> = new OrderManager(User)
+    const orderManager: OrderManager<Order, OrderItem, User, TradeTransaction> = new OrderManager(User)
 
     beforeAll(async () => {
         product.skus.insert(sku)

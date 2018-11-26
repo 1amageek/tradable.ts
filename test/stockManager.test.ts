@@ -38,7 +38,7 @@ describe("StockManager", () => {
 
     let transactionID: string
 
-    const stockManager: StockManager<Order, OrderItem, User, Product, SKU, Item, TradeTransaction> = new StockManager(User, Product, SKU, Item, TradeTransaction)
+    const stockManager: StockManager<Order, OrderItem, User, Product, SKU, TradeTransaction> = new StockManager(User, Product, SKU, TradeTransaction)
 
     beforeAll(async () => {
         product.skus.insert(sku)

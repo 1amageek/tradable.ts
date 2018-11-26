@@ -5,7 +5,6 @@ import {
     OrderItemProtocol,
     OrderProtocol,
     TradeTransactionProtocol,
-    ItemProtocol,
     UserProtocol,
     TransactionResult
 } from "./index"
@@ -14,8 +13,7 @@ export class OrderManager
     <
     Order extends OrderProtocol<OrderItem>,
     OrderItem extends OrderItemProtocol,
-    User extends UserProtocol<Order, OrderItem, TradeTransaction, Item>,
-    Item extends ItemProtocol,
+    User extends UserProtocol<Order, OrderItem, TradeTransaction>,
     TradeTransaction extends TradeTransactionProtocol
     > {
 

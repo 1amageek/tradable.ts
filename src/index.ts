@@ -20,14 +20,12 @@ export interface UserProtocol
     <
     Order extends OrderProtocol<OrderItem>,
     OrderItem extends OrderItemProtocol,
-    TradeTransaction extends TradeTransactionProtocol,
-    Item extends ItemProtocol
+    TradeTransaction extends TradeTransactionProtocol
     > extends Pring.Base {
     isAvailabled: boolean
     country: string
     orders: Pring.NestedCollection<Order>
     receivedOrders: Pring.NestedCollection<Order>
-    items: Pring.NestedCollection<Item>
     tradeTransactions: Pring.NestedCollection<TradeTransaction>
 }
 
