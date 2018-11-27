@@ -9,10 +9,10 @@ export let firestore: FirebaseFirestore.Firestore
 
 export let timestamp: admin.firestore.FieldValue
 
-export const initialize = (app: admin.app.App, serverTimestamp: admin.firestore.FieldValue) => {
-    Pring.initialize(app.firestore(), serverTimestamp)
+export const initialize = (app: admin.app.App) => {
+    Pring.initialize(app.firestore())
     firestore = app.firestore()
-    timestamp = serverTimestamp
+    timestamp = admin.firestore.FieldValue.serverTimestamp()
 }
 
 /// UserProtocol is a protocol that the user must retain to make it tradeable.
@@ -96,7 +96,7 @@ export interface AccountProtocol<Transaction extends BalanceTransactionProtocol>
 }
 
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
-    title: string
+    title?: string
     selledBy: string
     createdBy: string
     skus: Pring.NestedCollection<SKU>
@@ -128,7 +128,6 @@ export interface SKUProtocol extends Pring.Base {
     product: string
     amount: number
     inventory: Inventory
-    unitSales: number
 }
 
 export enum OrderItemType {
@@ -194,8 +193,9 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     selledBy: string
     shippingTo: { [key: string]: string }
     transferredTo: { [key: string]: true }
-    paidAt?: Date
-    expirationDate?: Date
+    paidAt?: Pring.Timestamp
+    cancelableDate?: Pring.Timestamp
+    expirationDate?: Pring.Timestamp
     currency: Currency
     amount: number
     items: Pring.NestedCollection<OrderItem>

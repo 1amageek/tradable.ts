@@ -24,7 +24,7 @@ const app = admin.initializeApp({
     credential: admin.credential.cert(key)
 })
 
-Tradable.initialize(app, admin.firestore.FieldValue.serverTimestamp())
+Tradable.initialize(app)
 
 describe("StockManager", () => {
 
@@ -70,7 +70,7 @@ describe("StockManager", () => {
         order.selledBy = shop.id
         order.purchasedBy = user.id
         order.shippingTo = { address: "address" }
-        order.expirationDate = new Date(date.setDate(date.getDate() + 14))
+        order.expirationDate = admin.firestore.Timestamp.fromDate(new Date(date.setDate(date.getDate() + 14)))
         order.items.insert(orderItem)
 
         user.orders.insert(order)

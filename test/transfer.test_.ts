@@ -27,7 +27,7 @@ const app = admin.initializeApp({
     credential: admin.credential.cert(key)
 })
 
-Tradable.initialize(app, admin.firestore.FieldValue.serverTimestamp())
+Tradable.initialize(app)
 
 describe("OrderManager", () => {
     /*

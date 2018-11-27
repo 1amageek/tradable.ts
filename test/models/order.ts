@@ -15,8 +15,8 @@ export class Order extends Pring.Base implements tradable.OrderProtocol<OrderIte
     @property selledBy!: string
     @property shippingTo!: { [key: string]: string }
     @property transferredTo!: { [key: string]: true }
-    @property paidAt?: Date
-    @property expirationDate?: Date
+    @property paidAt?: Pring.Timestamp
+    @property expirationDate?: Pring.Timestamp
     @property currency: tradable.Currency = tradable.Currency.JPY
     @property amount: number = 0
     @property fee: number = 0
