@@ -54,7 +54,7 @@ describe("StockManager", () => {
         sku.currency = Tradable.Currency.JPY
         sku.inventory = {
             type: Tradable.StockType.finite,
-            quantity: 1
+            quantity: 2
         }
 
         orderItem.order = order.id
@@ -118,7 +118,7 @@ describe("StockManager", () => {
 
             // SKU
             expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-            expect(_sku.inventory.quantity).toEqual(0)
+            expect(_sku.inventory.quantity).toEqual(1)
 
             // Item
             expect(_item.order).toEqual(order.id)
@@ -133,7 +133,7 @@ describe("StockManager", () => {
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            await stockManager.order(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
+                            await stockManager.order(shop.id, user.id, order.id, product.id, sku.id, 2, transaction)
                         } catch (error) {
                             reject(error)
                         }
@@ -169,13 +169,99 @@ describe("StockManager", () => {
                 
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(0)
+                expect(_sku.inventory.quantity).toEqual(1)
 
                 // Item
                 expect(_item.order).toEqual(order.id)
                 expect(_item.selledBy).toEqual(shop.id)
                 expect(_item.product).toEqual(product.id)
                 expect(_item.sku).toEqual(sku.id)
+            }
+        }, 15000)
+
+        test("Failure SKU is not availabled", async () => {
+
+            const product: Product = new Product()
+            const sku: SKU = new SKU()
+            const order: Order = new Order()
+            const date: Date = new Date()
+            const orderItem: OrderItem = new OrderItem()
+
+            product.skus.insert(sku)
+            product.title = "PRODUCT"
+            product.createdBy = shop.id
+            product.selledBy = shop.id
+    
+            sku.title = "sku"
+            sku.isAvailabled = false
+            sku.selledBy = shop.id
+            sku.createdBy = shop.id
+            sku.product = product.id
+            sku.amount = 100
+            sku.currency = Tradable.Currency.JPY
+            sku.inventory = {
+                type: Tradable.StockType.finite,
+                quantity: 1
+            }
+    
+            orderItem.order = order.id
+            orderItem.selledBy = shop.id
+            orderItem.purchasedBy = user.id
+            orderItem.sku = sku.id
+            orderItem.currency = sku.currency
+            orderItem.amount = sku.amount
+            orderItem.quantity = 1
+    
+            order.amount = sku.amount
+            order.currency = sku.currency
+            order.selledBy = shop.id
+            order.purchasedBy = user.id
+            order.shippingTo = { address: "address" }
+            order.expirationDate = admin.firestore.Timestamp.fromDate(new Date(date.setDate(date.getDate() + 14)))
+            order.items.insert(orderItem)
+    
+            user.orders.insert(order)
+            await Promise.all([user.save(), product.save(), shop.save()])
+
+
+            try {
+                await Pring.firestore.runTransaction(async (transaction) => {
+                    return new Promise(async (resolve, reject) => {
+                        try {
+                            await stockManager.order(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
+                        } catch (error) {
+                            reject(error)
+                        }
+                        resolve(`[Manager] Success order ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
+                    })
+                })
+            } catch (error) {
+                expect(error).not.toBeUndefined()
+                const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
+                const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
+                const _sku = await product.skus.doc(sku.id, SKU) as SKU
+                const _item = (await user.items.get(Item))[0]
+
+                // Shop Trade Transaction
+                expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
+                expect(shopTradeTransaction.quantity).toEqual(1)
+                expect(shopTradeTransaction.selledBy).toEqual(shop.id)
+                expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
+                expect(shopTradeTransaction.items).toEqual([_item.id])
+
+                // User Trade Transaction
+                expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
+                expect(userTradeTransaction.quantity).toEqual(1)
+                expect(userTradeTransaction.selledBy).toEqual(shop.id)
+                expect(userTradeTransaction.purchasedBy).toEqual(user.id)
+                expect(userTradeTransaction.items).toEqual([_item.id])
+                
+                // SKU
+                expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
+                expect(_sku.inventory.quantity).toEqual(1)
+
+                // Item
+                expect(_item.selledBy).toEqual(shop.id)
             }
         }, 15000)
     })
@@ -216,7 +302,7 @@ describe("StockManager", () => {
 
             // SKU
             expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-            expect(_sku.inventory.quantity).toEqual(1)
+            expect(_sku.inventory.quantity).toEqual(2)
 
             // Item
             expect(_item.order).toEqual(order.id)
@@ -269,7 +355,7 @@ describe("StockManager", () => {
 
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(1)
+                expect(_sku.inventory.quantity).toEqual(2)
 
                 // Item
                 expect(_item.order).toEqual(order.id)
@@ -326,7 +412,7 @@ describe("StockManager", () => {
 
             // SKU
             expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-            expect(_sku.inventory.quantity).toEqual(1)
+            expect(_sku.inventory.quantity).toEqual(2)
 
             // Item
             expect(_item.order).toEqual(order.id)

@@ -133,6 +133,8 @@ export interface SKUProtocol extends Pring.Base {
     isAvailabled: boolean
 }
 
+// Order
+
 export enum OrderItemType {
     sku = 'sku',
     tax = 'tax',
