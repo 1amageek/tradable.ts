@@ -14,4 +14,5 @@ export class SKU extends Pring.Base implements tradable.SKUProtocol {
     @property amount: number = 0
     @property unitSales: number = 0
     @property inventory: tradable.Inventory = { type: tradable.StockType.finite, quantity: 1 }
+    @property isAvailabled: boolean = true
 }

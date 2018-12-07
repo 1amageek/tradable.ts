@@ -29,6 +29,25 @@ export interface UserProtocol
     tradeTransactions: Pring.NestedCollection<TradeTransaction>
 }
 
+export type Balance = {
+
+    pending: { [currency: string]: number }
+
+    /// It is the amount that the user can withdraw.
+    available: { [currency: string]: number }
+}
+
+/// AccountProtocol must have the same ID as UserProtocol.
+/// AccountPtotocol holds information that can not be accessed except for principals with a protocol with a high security level.
+export interface AccountProtocol<Transaction extends BalanceTransactionProtocol> extends Pring.Base {
+    country: string
+    isRejected: boolean
+    isSigned: boolean
+    balance: Balance
+    balanceTransactions: Pring.NestedCollection<Transaction>
+    accountInformation: { [key: string]: any }
+}
+
 export enum TradeTransactionType {
     unknown = 'unknown',
     order = 'order',
@@ -76,25 +95,6 @@ export interface BalanceTransactionProtocol extends Pring.Base {
     transactionResults: TransactionResult[]
 }
 
-export type Balance = {
-
-    pending: { [currency: string]: number }
-
-    /// It is the amount that the user can withdraw.
-    available: { [currency: string]: number }
-}
-
-/// AccountProtocol must have the same ID as UserProtocol.
-/// AccountPtotocol holds information that can not be accessed except for principals with a protocol with a high security level.
-export interface AccountProtocol<Transaction extends BalanceTransactionProtocol> extends Pring.Base {
-    country: string
-    isRejected: boolean
-    isSigned: boolean
-    balance: Balance
-    balanceTransactions: Pring.NestedCollection<Transaction>
-    accountInformation: { [key: string]: any }
-}
-
 export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
     title?: string
     selledBy: string
@@ -121,6 +121,8 @@ export type Inventory = {
     value?: StockValue
 }
 
+// SKU
+
 export interface SKUProtocol extends Pring.Base {
     selledBy: string
     createdBy: string
@@ -128,6 +130,7 @@ export interface SKUProtocol extends Pring.Base {
     product: string
     amount: number
     inventory: Inventory
+    isAvailabled: boolean
 }
 
 export enum OrderItemType {
