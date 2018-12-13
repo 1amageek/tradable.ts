@@ -15,9 +15,10 @@
   "allowJs": true,
   "compileOnSave": true,
   "include": [
-    "src"
+    "src/**/*.ts"
   ],
   "exclude": [
+    "package.json",
     "node_modules"
   ]
 }

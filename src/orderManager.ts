@@ -1,7 +1,6 @@
 import * as Pring from 'pring-admin'
 import * as FirebaseFirestore from '@google-cloud/firestore'
 import {
-    timestamp,
     OrderItemProtocol,
     OrderProtocol,
     TradeTransactionProtocol,
@@ -19,6 +18,8 @@ export class OrderManager
 
     private _User: { new(id?: string, value?: { [key: string]: any }): User }
 
+    private timestamp = FirebaseFirestore.FieldValue.serverTimestamp()
+
     constructor(
         user: { new(id?: string, value?: { [key: string]: any }): User }
     ) {
@@ -28,7 +29,7 @@ export class OrderManager
     update(order: Order, orderItems: OrderItem[], transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
     
         const orderValue = order.value() as any
-        orderValue.updatedAt = timestamp
+        orderValue.updatedAt = this.timestamp
 
         if (Object.keys(transactionResult).length > 0) {
             orderValue["transactionResults"] = FirebaseFirestore.FieldValue.arrayUnion(transactionResult)
@@ -39,7 +40,7 @@ export class OrderManager
         transaction.set(seller.receivedOrders.reference.doc(order.id), orderValue, { merge: true })
         for (const orderItem of orderItems) {
             const orderItemValue: Pring.DocumentData = order.value()
-            orderItemValue.updatedAt = timestamp
+            orderItemValue.updatedAt = this.timestamp
             transaction.set(seller.receivedOrders.reference.doc(order.id).collection("items").doc(orderItem.id),
             orderItemValue,
             { merge: true })

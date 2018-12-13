@@ -7,7 +7,6 @@ import {
     OrderItemProtocol,
     ProductProtocol,
     OrderProtocol,
-    ItemProtocol,
     TradeDelegate,
     TradableError,
     TradableErrorCode

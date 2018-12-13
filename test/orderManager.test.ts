@@ -23,6 +23,7 @@ const app = admin.initializeApp({
     credential: admin.credential.cert(key)
 })
 
+Pring.initialize(app.firestore())
 Tradable.initialize(app)
 
 describe("OrderManager", () => {

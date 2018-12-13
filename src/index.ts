@@ -7,12 +7,8 @@ export { Currency, Manager, OrderResult, OrderChangeResult, OrderCancelResult, T
 
 export let firestore: FirebaseFirestore.Firestore
 
-export let timestamp: admin.firestore.FieldValue
-
 export const initialize = (app: admin.app.App) => {
-    Pring.initialize(app.firestore())
     firestore = app.firestore()
-    timestamp = admin.firestore.FieldValue.serverTimestamp()
 }
 
 /// UserProtocol is a protocol that the user must retain to make it tradeable.

@@ -19,7 +19,6 @@ import {
     TradableErrorCode,
     TradableError,
     OrderItemStatus,
-    ItemProtocol,
     UserProtocol,
     OrderTransferStatus,
     PayoutOptions,

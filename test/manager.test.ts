@@ -1,5 +1,5 @@
 process.env.NODE_ENV = 'test'
-
+import * as Pring from 'pring-admin'
 import * as admin from 'firebase-admin'
 import * as Tradable from '../src/index'
 import * as Config from '../config'
@@ -27,6 +27,7 @@ const app = admin.initializeApp({
     credential: admin.credential.cert(key)
 })
 
+Pring.initialize(app.firestore())
 Tradable.initialize(app)
 
 describe("Manager", () => {
