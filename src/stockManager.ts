@@ -72,8 +72,8 @@ export class StockManager
         }
 
         for (let i = 0; i < quantity; i++) {
-            const item = this.delegate.createItem(selledBy, purchasedBy, orderID, productID, skuID, transaction)
-            tradeTransaction.items.push(item.id)
+            const itemID = this.delegate.createItem(selledBy, purchasedBy, orderID, productID, skuID, transaction)
+            tradeTransaction.items.push(itemID)
         }
 
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
@@ -128,7 +128,7 @@ export class StockManager
         const result = await Promise.all([product.skus.doc(skuID, this._SKU, transaction), this.delegate.getItems(selledBy, purchasedBy, orderID, productID, skuID, transaction)])
 
         const sku: SKU | undefined = result[0]
-        const items = result[1]
+        const itemIDs = result[1]
 
         if (!sku) {
             throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
@@ -144,9 +144,9 @@ export class StockManager
         tradeTransaction.sku = skuID
 
         const skuQuantity: number = (sku.inventory.quantity || 0) + quantity
-        for (const item of items) {
-            tradeTransaction.items.push(item.id)
-            this.delegate.cancelItem(selledBy, purchasedBy, orderID, productID, skuID, item.id, transaction)
+        for (const itemID of itemIDs) {
+            tradeTransaction.items.push(itemID)
+            this.delegate.cancelItem(selledBy, purchasedBy, orderID, productID, skuID, itemID, transaction)
         }
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })

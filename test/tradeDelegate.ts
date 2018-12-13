@@ -5,7 +5,7 @@ import { User } from './models/user'
 
 export class TradeDelegate implements tradable.TradeDelegate {
 
-    createItem<T extends tradable.ItemProtocol>(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, transaction: FirebaseFirestore.Transaction): T {
+    createItem(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, transaction: FirebaseFirestore.Transaction): string {
         const purchaser: User = new User(purchasedBy, {})
         const item: Item = new Item()
         item.selledBy = selledBy
@@ -13,7 +13,7 @@ export class TradeDelegate implements tradable.TradeDelegate {
         item.product = productID
         item.sku = skuID
         transaction.set(purchaser.items.reference.doc(item.id), item.value(), { merge: true })
-        return item as T
+        return item.id
     }
 
     cancelItem(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, itemID: string, transaction: FirebaseFirestore.Transaction): void {
@@ -23,8 +23,9 @@ export class TradeDelegate implements tradable.TradeDelegate {
         }, { merge: true })
     }
 
-    getItems<T extends tradable.ItemProtocol>(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, transaction: FirebaseFirestore.Transaction): Promise<T[]> {
+    async getItems(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, transaction: FirebaseFirestore.Transaction): Promise<string[]> {
         const purchaser: User = new User(purchasedBy, {})
-        return purchaser.items.get(Item) as Promise<T[]>
+        const items = await purchaser.items.get(Item, transaction)
+        return  items.map((value) => { return value.id})
     }
 }
