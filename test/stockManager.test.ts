@@ -72,7 +72,7 @@ describe("StockManager", () => {
         order.purchasedBy = user.id
         order.shippingTo = { address: "address" }
         order.expirationDate = admin.firestore.Timestamp.fromDate(new Date(date.setDate(date.getDate() + 14)))
-        order.items.insert(orderItem)
+        order.items.append(orderItem)
 
         user.orders.insert(order)
         await Promise.all([user.save(), product.save(), shop.save()])
@@ -219,7 +219,7 @@ describe("StockManager", () => {
             order.purchasedBy = user.id
             order.shippingTo = { address: "address" }
             order.expirationDate = admin.firestore.Timestamp.fromDate(new Date(date.setDate(date.getDate() + 14)))
-            order.items.insert(orderItem)
+            order.items.append(orderItem)
     
             user.orders.insert(order)
             await Promise.all([user.save(), product.save(), shop.save()])

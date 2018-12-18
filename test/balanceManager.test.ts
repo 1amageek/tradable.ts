@@ -72,7 +72,7 @@ describe("BalanceManager", () => {
         order.purchasedBy = user.id
         order.shippingTo = { address: "address" }
         order.expirationDate = admin.firestore.Timestamp.fromDate(new Date(date.setDate(date.getDate() + 14)))
-        order.items.insert(orderItem)
+        order.items.append(orderItem)
         await order.save()
     })
 

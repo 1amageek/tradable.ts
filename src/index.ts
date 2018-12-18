@@ -199,7 +199,7 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     expirationDate?: Pring.Timestamp
     currency: Currency
     amount: number
-    items: Pring.NestedCollection<OrderItem>
+    items: Pring.List<OrderItem>
     paymentStatus: OrderPaymentStatus
     transferStatus: OrderTransferStatus
     transactionResults: TransactionResult[]
