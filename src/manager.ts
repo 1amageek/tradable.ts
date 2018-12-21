@@ -23,7 +23,8 @@ import {
     OrderTransferStatus,
     PayoutOptions,
     TransactionDelegate,
-    TradeDelegate
+    TradeDelegate,
+    SKUShardProtocol
 } from "./index"
 
 export type OrderResult <T extends TradeTransactionProtocol> = {
@@ -58,8 +59,9 @@ export type TransferCancelResult = {
 
 export class Manager
     <
-    SKU extends SKUProtocol,
-    Product extends ProductProtocol<SKU>,
+    SKUShard extends SKUShardProtocol,
+    SKU extends SKUProtocol<SKUShard>,
+    Product extends ProductProtocol<SKUShard, SKU>,
     OrderItem extends OrderItemProtocol,
     Order extends OrderProtocol<OrderItem>,
     TradeTransaction extends TradeTransactionProtocol,

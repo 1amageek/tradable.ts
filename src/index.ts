@@ -91,7 +91,7 @@ export interface BalanceTransactionProtocol extends Pring.Base {
     transactionResults: TransactionResult[]
 }
 
-export interface ProductProtocol<SKU extends SKUProtocol> extends Pring.Base {
+export interface ProductProtocol<SKUShard extends SKUShardProtocol, SKU extends SKUProtocol<SKUShard>> extends Pring.Base {
     title?: string
     selledBy: string
     createdBy: string
@@ -117,9 +117,15 @@ export type Inventory = {
     value?: StockValue
 }
 
+export interface SKUShardProtocol extends Pring.Base {
+    createdAt: Pring.Timestamp
+    updatedAt: Pring.Timestamp
+    quantity: number
+}
+
 // SKU
 
-export interface SKUProtocol extends Pring.Base {
+export interface SKUProtocol <SKUShard extends SKUShardProtocol> extends Pring.Base {
     selledBy: string
     createdBy: string
     currency: Currency
@@ -127,6 +133,7 @@ export interface SKUProtocol extends Pring.Base {
     amount: number
     inventory: Inventory
     isAvailabled: boolean
+    shards: Pring.NestedCollection<SKUShard>
 }
 
 // Order
