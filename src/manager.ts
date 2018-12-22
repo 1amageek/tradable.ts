@@ -27,20 +27,20 @@ import {
     SKUShardProtocol
 } from "./index"
 
-export type OrderResult <T extends TradeTransactionProtocol> = {
+export type OrderResult<T extends TradeTransactionProtocol> = {
     balanceTransaction?: BalanceTransactionProtocol
     tradeTransactions: T[]
     chargeResult?: any
     refundResult?: any
 }
 
-export type OrderChangeResult <T extends TradeTransactionProtocol> = {
+export type OrderChangeResult<T extends TradeTransactionProtocol> = {
     balanceTransaction?: BalanceTransactionProtocol
     tradeTransactions: T[]
     refundResult: any
 }
 
-export type OrderCancelResult <T extends TradeTransactionProtocol> = {
+export type OrderCancelResult<T extends TradeTransactionProtocol> = {
     balanceTransaction?: BalanceTransactionProtocol
     tradeTransactions: T[]
     refundResult: any
@@ -70,6 +70,7 @@ export class Manager
     Account extends AccountProtocol<BalanceTransaction>
     > {
 
+    private _SKUShard: { new(id?: string, value?: { [key: string]: any }): SKUShard }
     private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
     private _Product: { new(id?: string, value?: { [key: string]: any }): Product }
     private _OrderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem }
@@ -79,7 +80,7 @@ export class Manager
     private _User: { new(id?: string, value?: { [key: string]: any }): User }
     private _Account: { new(id?: string, value?: { [key: string]: any }): Account }
 
-    private stockManager: StockManager<Order, OrderItem, User, Product, SKU, TradeTransaction>
+    private stockManager: StockManager<Order, OrderItem, User, Product, SKUShard, SKU, TradeTransaction>
 
     private balanceManager: BalanceManager<BalanceTransaction, Account>
 
@@ -90,6 +91,7 @@ export class Manager
     public tradeDelegate?: TradeDelegate
 
     constructor(
+        skuShard: { new(id?: string, value?: { [key: string]: any }): SKUShard },
         sku: { new(id?: string, value?: { [key: string]: any }): SKU },
         product: { new(id?: string, value?: { [key: string]: any }): Product },
         orderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem },
@@ -99,6 +101,7 @@ export class Manager
         user: { new(id?: string, value?: { [key: string]: any }): User },
         account: { new(id?: string, value?: { [key: string]: any }): Account }
     ) {
+        this._SKUShard = skuShard
         this._SKU = sku
         this._Product = product
         this._OrderItem = orderItem
@@ -108,7 +111,7 @@ export class Manager
         this._User = user
         this._Account = account
 
-        this.stockManager = new StockManager(this._User, this._Product, this._SKU, this._TradeTransaction)
+        this.stockManager = new StockManager(this._User, this._Product, this._SKUShard, this._SKU, this._TradeTransaction)
         this.balanceManager = new BalanceManager(this._BalanceTransaction, this._Account)
         this.orderManager = new OrderManager(this._User)
     }

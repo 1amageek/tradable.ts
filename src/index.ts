@@ -118,8 +118,6 @@ export type Inventory = {
 }
 
 export interface SKUShardProtocol extends Pring.Base {
-    createdAt: Pring.Timestamp
-    updatedAt: Pring.Timestamp
     quantity: number
 }
 
@@ -133,6 +131,7 @@ export interface SKUProtocol <SKUShard extends SKUShardProtocol> extends Pring.B
     amount: number
     inventory: Inventory
     isAvailabled: boolean
+    numberOfShards: number
     shards: Pring.NestedCollection<SKUShard>
 }
 

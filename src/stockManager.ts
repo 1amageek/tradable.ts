@@ -9,21 +9,25 @@ import {
     OrderProtocol,
     TradeDelegate,
     TradableError,
-    TradableErrorCode
+    TradableErrorCode,
+    SKUShardProtocol
 } from "./index"
+import { Product } from '../test/models/product';
 
 export class StockManager
     <
     Order extends OrderProtocol<OrderItem>,
     OrderItem extends OrderItemProtocol,
     User extends UserProtocol<Order, OrderItem, TradeTransaction>,
-    Product extends ProductProtocol<SKU>,
-    SKU extends SKUProtocol,
+    Product extends ProductProtocol<SKUShard, SKU>,
+    SKUShard extends SKUShardProtocol,
+    SKU extends SKUProtocol<SKUShard>,
     TradeTransaction extends TradeTransactionProtocol
     > {
 
     private _User: { new(id?: string, value?: { [key: string]: any }): User }
     private _Product: { new(id?: string, value?: { [key: string]: any }): Product }
+    private _SKUShard: { new(id?: string, value?: { [key: string]: any }): SKUShard }
     private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
     private _TradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction }
 
@@ -32,11 +36,13 @@ export class StockManager
     constructor(
         user: { new(id?: string, value?: { [key: string]: any }): User },
         product: { new(id?: string, value?: { [key: string]: any }): Product },
+        skuShard: { new(id?: string, value?: { [key: string]: any }): SKUShard },
         sku: { new(id?: string, value?: { [key: string]: any }): SKU },
         tradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction }
     ) {
         this._User = user
         this._Product = product
+        this._SKUShard = skuShard
         this._SKU = sku
         this._TradeTransaction = tradeTransaction
     }
@@ -46,15 +52,28 @@ export class StockManager
         const product: Product = new this._Product(productID, {})
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const sku: SKU | undefined = await product.skus.doc(skuID, this._SKU, transaction)
+        const sku: SKU = product.skus.doc(skuID, this._SKU)
+        const result = await Promise.all([sku.fetch(transaction), sku.shards.get(this._SKUShard, transaction)])
+        const shards: SKUShard[] = result[1]
 
         if (!sku) {
             throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
         }
 
         if (!sku.isAvailabled) {
-            throw new TradableError(TradableErrorCode.outOfStock, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU is out of stock.`)
+            throw new TradableError(TradableErrorCode.outOfStock, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU is not availabled`)
         }
+
+        if (shards.length == 0) {
+            throw new TradableError(TradableErrorCode.internal, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU has not shards`)
+        }
+
+        let skuQuantity: number = 0
+        shards.forEach((shard) => {
+            skuQuantity += shard.quantity
+        })
+
+        skuQuantity += quantity
 
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
         tradeTransaction.type = TradeTransactionType.order
@@ -65,9 +84,8 @@ export class StockManager
         tradeTransaction.product = productID
         tradeTransaction.sku = skuID
 
-        const skuQuantity: number = (sku.inventory.quantity || 0) - quantity
-
-        if (skuQuantity < 0) {
+        const inventoryQuantity: number = sku.inventory.quantity || 0
+        if (inventoryQuantity < skuQuantity) {
             throw new TradableError(TradableErrorCode.outOfStock, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU is out of stock.`)
         }
 
@@ -76,12 +94,14 @@ export class StockManager
             tradeTransaction.items.push(itemID)
         }
 
+        const shardID = Math.floor(Math.random() * sku.numberOfShards);
+        const shard: SKUShard = shards[shardID]
+        const shardQuantity: number = shard.quantity + quantity
+
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
-        transaction.set(sku.reference, {
-            inventory: {
-                quantity: skuQuantity
-            }
+        transaction.set(shard.reference, {
+            quantity: shardQuantity
         }, { merge: true })
 
         return tradeTransaction
@@ -92,10 +112,16 @@ export class StockManager
         const product: Product = new this._Product(productID, {})
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const sku: SKU | undefined = await product.skus.doc(skuID, this._SKU, transaction)
+        const sku: SKU = product.skus.doc(skuID, this._SKU)
+        const result = await Promise.all([sku.fetch(transaction), sku.shards.get(this._SKUShard, transaction)])
+        const shards: SKUShard[] = result[1]
 
         if (!sku) {
             throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
+        }
+
+        if (shards.length == 0) {
+            throw new TradableError(TradableErrorCode.internal, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU has not shards`)
         }
 
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
@@ -108,13 +134,14 @@ export class StockManager
         tradeTransaction.sku = skuID
         tradeTransaction.items.push(itemID)
 
-        const skuQuantity: number = (sku.inventory.quantity || 0) + 1
+        const shardID = Math.floor(Math.random() * sku.numberOfShards);
+        const shard: SKUShard = shards[shardID]
+        const shardQuantity: number = shard.quantity - 1
+ 
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
-        transaction.set(sku.reference, {
-            inventory: {
-                quantity: skuQuantity
-            }
+        transaction.set(shard.reference, {
+            quantity: shardQuantity
         }, { merge: true })
         this.delegate.cancelItem(selledBy, purchasedBy, orderID, productID, skuID, itemID, transaction)
         return tradeTransaction
@@ -125,13 +152,17 @@ export class StockManager
         const product: Product = new this._Product(productID, {})
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const result = await Promise.all([product.skus.doc(skuID, this._SKU, transaction), this.delegate.getItems(selledBy, purchasedBy, orderID, productID, skuID, transaction)])
-
-        const sku: SKU | undefined = result[0]
-        const itemIDs = result[1]
+        const sku: SKU = product.skus.doc(skuID, this._SKU)
+        const result = await Promise.all([sku.fetch(transaction), sku.shards.get(this._SKUShard, transaction), this.delegate.getItems(selledBy, purchasedBy, orderID, productID, skuID, transaction)])
+        const shards: SKUShard[] = result[1]
+        const itemIDs = result[2]
 
         if (!sku) {
             throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
+        }
+
+        if (shards.length == 0) {
+            throw new TradableError(TradableErrorCode.internal, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU has not shards`)
         }
 
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
@@ -143,17 +174,19 @@ export class StockManager
         tradeTransaction.product = productID
         tradeTransaction.sku = skuID
 
-        const skuQuantity: number = (sku.inventory.quantity || 0) + quantity
         for (const itemID of itemIDs) {
             tradeTransaction.items.push(itemID)
             this.delegate.cancelItem(selledBy, purchasedBy, orderID, productID, skuID, itemID, transaction)
         }
+
+        const shardID = Math.floor(Math.random() * sku.numberOfShards);
+        const shard: SKUShard = shards[shardID]
+        const shardQuantity: number = shard.quantity - quantity
+
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
-        transaction.set(sku.reference, {
-            inventory: {
-                quantity: skuQuantity
-            }
+        transaction.set(shard.reference, {
+            quantity: shardQuantity
         }, { merge: true })
         return tradeTransaction
     }

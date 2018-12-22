@@ -6,6 +6,7 @@ import * as Config from '../config'
 import * as Stripe from 'stripe'
 import { User } from './models/user'
 import { Product } from './models/product'
+import { SKUShard } from './models/skuShard'
 import { SKU } from './models/sku'
 import { Order } from './models/order'
 import { OrderItem } from './models/orderItem'
@@ -39,7 +40,7 @@ describe("StockManager", () => {
 
     let transactionID: string
 
-    const stockManager: StockManager<Order, OrderItem, User, Product, SKU, TradeTransaction> = new StockManager(User, Product, SKU, TradeTransaction)
+    const stockManager: StockManager<Order, OrderItem, User, Product, SKUShard, SKU, TradeTransaction> = new StockManager(User, Product, SKUShard, SKU, TradeTransaction)
 
     beforeAll(async () => {
         product.skus.insert(sku)

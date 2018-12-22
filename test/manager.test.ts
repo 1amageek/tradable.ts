@@ -6,6 +6,7 @@ import * as Config from '../config'
 import * as Stripe from 'stripe'
 import { User } from './models/user'
 import { Product } from './models/product'
+import { SKUShard } from './models/skuShard'
 import { SKU } from './models/sku'
 import { Order } from './models/order'
 import { OrderItem } from './models/orderItem'
@@ -17,7 +18,7 @@ import { BalanceTransaction } from './models/BalanceTransaction'
 import { StripePaymentDelegate } from './stripePaymentDelegate'
 import { StripeInvalidPaymentDelegate } from './stripeInvalidPaymentDelegate'
 import * as firebase from '@firebase/testing'
-import { TradeDelegate } from './tradeDelegate';
+import { TradeDelegate } from './tradeDelegate'
 
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
@@ -61,7 +62,7 @@ describe("Manager", () => {
     describe("order", async () => {
         test("Success", async () => {
 
-            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+            const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
             manager.delegate = new StripePaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -156,7 +157,7 @@ describe("Manager", () => {
         
         test("Out of stock", async () => {
 
-            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+            const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
             manager.delegate = new StripePaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -201,7 +202,7 @@ describe("Manager", () => {
 
         test("Invalid Order Status", async () => {
 
-            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+            const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
             manager.delegate = new StripePaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -247,7 +248,7 @@ describe("Manager", () => {
 
         test("Invalid Delegate", async () => {
 
-            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+            const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
 
             const order: Order = new Order()
             const date: Date = new Date()
@@ -290,7 +291,7 @@ describe("Manager", () => {
 
         test("Invalid Stripe charge", async () => {
 
-            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+            const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
             manager.delegate = new StripeInvalidPaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -338,7 +339,7 @@ describe("Manager", () => {
     describe("orderCancel", async () => {
         test("Success", async () => {
 
-            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+            const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
             manager.delegate = new StripePaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -466,7 +467,7 @@ describe("Manager", () => {
             }
 
             try {
-                const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+                const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
                 const cancelResult = await manager.orderCancel(order, [orderItem], paymentOptions) as Tradable.OrderCancelResult<TradeTransaction>
                 expect(cancelResult).toBeUndefined()
             } catch (error) {
@@ -477,7 +478,7 @@ describe("Manager", () => {
 
         test("Invalid Status", async () => {
 
-            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+            const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
             manager.delegate = new StripePaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -521,7 +522,7 @@ describe("Manager", () => {
 
         test("Invalid Stripe refund", async () => {
 
-            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+            const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
             manager.delegate = new StripeInvalidPaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
             const order: Order = new Order()
@@ -566,7 +567,7 @@ describe("Manager", () => {
     describe("orderChange", async () => {
         test("Success", async () => {
 
-            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+            const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
             manager.delegate = new StripePaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -664,7 +665,7 @@ describe("Manager", () => {
 
         test("Invalid Delegate", async () => {
 
-            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+            const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
             manager.delegate = new StripePaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -699,7 +700,7 @@ describe("Manager", () => {
             const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
             const _order = await Order.get(order.id) as Order
             try {
-                const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+                const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
                 const changeResult = await manager.orderChange(_order, orderItem, itemID, paymentOptions) as Tradable.OrderChangeResult<TradeTransaction>
                 expect(changeResult).toBeUndefined()
             } catch (error) {
@@ -710,7 +711,7 @@ describe("Manager", () => {
 
         test("Invalid Status", async () => {
 
-            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+            const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
             manager.delegate = new StripePaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -756,7 +757,7 @@ describe("Manager", () => {
 
         test("Invalid Stripe refund", async () => {
 
-            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+            const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
             manager.delegate = new StripePaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -791,7 +792,7 @@ describe("Manager", () => {
             const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
             const _order = await Order.get(order.id) as Order
             try {
-                const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+                const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
                 manager.delegate = new StripeInvalidPaymentDelegate()
                 manager.tradeDelegate = new TradeDelegate()
                 const changeResult = await manager.orderChange(_order, orderItem, itemID, paymentOptions) as Tradable.OrderChangeResult<TradeTransaction>
@@ -807,7 +808,7 @@ describe("Manager", () => {
     describe("transfer", async () => {
         test("Success", async () => {
 
-            const manager: Tradable.Manager<SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
+            const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
             manager.delegate = new StripePaymentDelegate()
 
             const order: Order = new Order()
