@@ -12,7 +12,6 @@ import {
     TradableErrorCode,
     SKUShardProtocol
 } from "./index"
-import { Product } from '../test/models/product';
 
 export class StockManager
     <

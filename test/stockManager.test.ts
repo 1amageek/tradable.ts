@@ -58,6 +58,11 @@ describe("StockManager", () => {
             type: Tradable.StockType.finite,
             quantity: 2
         }
+        sku.numberOfShards = 5
+        for (let i = 0; i < 5; i++) {
+            const shard: SKUShard = new SKUShard(`${i}`)
+            sku.shards.insert(shard)
+        }
 
         orderItem.order = order.id
         orderItem.selledBy = shop.id
@@ -83,51 +88,64 @@ describe("StockManager", () => {
 
     describe("Order", async () => {
         test("Success", async () => {
-            const result = await Pring.firestore.runTransaction(async (transaction) => {
-                return new Promise(async (resolve, reject) => {
-                    const result = await stockManager.order(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
-                    resolve(result)
+            try {
+                const result = await Pring.firestore.runTransaction(async (transaction) => {
+                    return new Promise(async (resolve, reject) => {
+                        const result = await stockManager.order(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
+                        resolve(result)
+                    })
+                }) as TradeTransaction
+
+                transactionID = result.id
+
+                const shopTradeTransaction = shop.tradeTransactions.doc(result.id, TradeTransaction)
+                const userTradeTransaction = user.tradeTransactions.doc(result.id, TradeTransaction)
+                const _sku: SKU = product.skus.doc(sku.id, SKU)
+                const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
+                const shards: SKUShard[] = promiseResult[1]
+
+                const _item = (await user.items.get(Item))[0]
+
+                let skuQuantity: number = 0
+                shards.forEach((shard) => {
+                    skuQuantity += shard.quantity
                 })
-            }) as TradeTransaction
 
-            transactionID = result.id
-
-            const shopTradeTransaction = await shop.tradeTransactions.doc(result.id, TradeTransaction) as TradeTransaction
-            const userTradeTransaction = await user.tradeTransactions.doc(result.id, TradeTransaction) as TradeTransaction
-            const _sku = await product.skus.doc(sku.id, SKU) as SKU
-            const _item = (await user.items.get(Item))[0]
-
-            // Shop Trade Transaction
-            expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-            expect(shopTradeTransaction.quantity).toEqual(1)
-            expect(shopTradeTransaction.selledBy).toEqual(shop.id)
-            expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
-            expect(shopTradeTransaction.order).toEqual(order.id)
-            expect(shopTradeTransaction.product).toEqual(product.id)
-            expect(shopTradeTransaction.sku).toEqual(sku.id)
-            expect(shopTradeTransaction.items).toEqual([_item.id])
+                // Shop Trade Transaction
+                expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
+                expect(shopTradeTransaction.quantity).toEqual(1)
+                expect(shopTradeTransaction.selledBy).toEqual(shop.id)
+                expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
+                expect(shopTradeTransaction.order).toEqual(order.id)
+                expect(shopTradeTransaction.product).toEqual(product.id)
+                expect(shopTradeTransaction.sku).toEqual(sku.id)
+                expect(shopTradeTransaction.items).toEqual([_item.id])
 
 
-            // User Trade Transaction
-            expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-            expect(userTradeTransaction.quantity).toEqual(1)
-            expect(userTradeTransaction.selledBy).toEqual(shop.id)
-            expect(userTradeTransaction.purchasedBy).toEqual(user.id)
-            expect(userTradeTransaction.order).toEqual(order.id)
-            expect(userTradeTransaction.product).toEqual(product.id)
-            expect(userTradeTransaction.sku).toEqual(sku.id)
-            expect(userTradeTransaction.items).toEqual([_item.id])
+                // User Trade Transaction
+                expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
+                expect(userTradeTransaction.quantity).toEqual(1)
+                expect(userTradeTransaction.selledBy).toEqual(shop.id)
+                expect(userTradeTransaction.purchasedBy).toEqual(user.id)
+                expect(userTradeTransaction.order).toEqual(order.id)
+                expect(userTradeTransaction.product).toEqual(product.id)
+                expect(userTradeTransaction.sku).toEqual(sku.id)
+                expect(userTradeTransaction.items).toEqual([_item.id])
 
-            // SKU
-            expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-            expect(_sku.inventory.quantity).toEqual(1)
+                // SKU
+                expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
+                expect(_sku.inventory.quantity).toEqual(2)
+                expect(skuQuantity).toEqual(1)
 
-            // Item
-            expect(_item.order).toEqual(order.id)
-            expect(_item.selledBy).toEqual(shop.id)
-            expect(_item.product).toEqual(product.id)
-            expect(_item.sku).toEqual(sku.id)
+                // Item
+                expect(_item.order).toEqual(order.id)
+                expect(_item.selledBy).toEqual(shop.id)
+                expect(_item.product).toEqual(product.id)
+                expect(_item.sku).toEqual(sku.id)
 
+            } catch (error) {
+                console.log(error)
+            }
         }, 15000)
 
         test("Failure", async () => {
@@ -146,8 +164,15 @@ describe("StockManager", () => {
                 expect(error).not.toBeUndefined()
                 const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
                 const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-                const _sku = await product.skus.doc(sku.id, SKU) as SKU
+                const _sku: SKU = product.skus.doc(sku.id, SKU)
+                const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard)])
+                const shards: SKUShard[] = promiseResult[1]
                 const _item = (await user.items.get(Item))[0]
+
+                let skuQuantity: number = 0
+                shards.forEach((shard) => {
+                    skuQuantity += shard.quantity
+                })
 
                 // Shop Trade Transaction
                 expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
@@ -168,10 +193,11 @@ describe("StockManager", () => {
                 expect(userTradeTransaction.product).toEqual(product.id)
                 expect(userTradeTransaction.sku).toEqual(sku.id)
                 expect(userTradeTransaction.items).toEqual([_item.id])
-                
+
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(1)
+                expect(_sku.inventory.quantity).toEqual(2)
+                expect(skuQuantity).toEqual(1)
 
                 // Item
                 expect(_item.order).toEqual(order.id)
@@ -193,7 +219,7 @@ describe("StockManager", () => {
             product.title = "PRODUCT"
             product.createdBy = shop.id
             product.selledBy = shop.id
-    
+
             sku.title = "sku"
             sku.isAvailabled = false
             sku.selledBy = shop.id
@@ -203,9 +229,9 @@ describe("StockManager", () => {
             sku.currency = Tradable.Currency.JPY
             sku.inventory = {
                 type: Tradable.StockType.finite,
-                quantity: 1
+                quantity: 5
             }
-    
+
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.purchasedBy = user.id
@@ -213,7 +239,7 @@ describe("StockManager", () => {
             orderItem.currency = sku.currency
             orderItem.amount = sku.amount
             orderItem.quantity = 1
-    
+
             order.amount = sku.amount
             order.currency = sku.currency
             order.selledBy = shop.id
@@ -221,7 +247,7 @@ describe("StockManager", () => {
             order.shippingTo = { address: "address" }
             order.expirationDate = admin.firestore.Timestamp.fromDate(new Date(date.setDate(date.getDate() + 14)))
             order.items.append(orderItem)
-    
+
             user.orders.insert(order)
             await Promise.all([user.save(), product.save(), shop.save()])
 
@@ -241,8 +267,15 @@ describe("StockManager", () => {
                 expect(error).not.toBeUndefined()
                 const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
                 const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-                const _sku = await product.skus.doc(sku.id, SKU) as SKU
+                const _sku: SKU = product.skus.doc(sku.id, SKU)
+                const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard)])
+                const shards: SKUShard[] = promiseResult[1]
                 const _item = (await user.items.get(Item))[0]
+
+                let skuQuantity: number = 0
+                shards.forEach((shard) => {
+                    skuQuantity += shard.quantity
+                })
 
                 // Shop Trade Transaction
                 expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
@@ -257,10 +290,11 @@ describe("StockManager", () => {
                 expect(userTradeTransaction.selledBy).toEqual(shop.id)
                 expect(userTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(userTradeTransaction.items).toEqual([_item.id])
-                
+
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(1)
+                expect(_sku.inventory.quantity).toEqual(5)
+                expect(skuQuantity).toEqual(0)
 
                 // Item
                 expect(_item.selledBy).toEqual(shop.id)
@@ -277,10 +311,17 @@ describe("StockManager", () => {
                 })
             }) as TradeTransaction
 
-            const shopTradeTransaction = await shop.tradeTransactions.doc(result.id, TradeTransaction) as TradeTransaction
-            const userTradeTransaction = await user.tradeTransactions.doc(result.id, TradeTransaction) as TradeTransaction
-            const _sku = await product.skus.doc(sku.id, SKU) as SKU
+            const shopTradeTransaction = shop.tradeTransactions.doc(result.id, TradeTransaction)
+            const userTradeTransaction = user.tradeTransactions.doc(result.id, TradeTransaction)
+            const _sku: SKU = product.skus.doc(sku.id, SKU)
+            const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
+            const shards: SKUShard[] = promiseResult[1]
             const _item = (await user.items.get(Item))[0]
+
+            let skuQuantity: number = 0
+            shards.forEach((shard) => {
+                skuQuantity += shard.quantity
+            })
 
             // Shop Trade Transaction
             expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderCancel)
@@ -305,6 +346,7 @@ describe("StockManager", () => {
             // SKU
             expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
             expect(_sku.inventory.quantity).toEqual(2)
+            expect(skuQuantity).toEqual(0)
 
             // Item
             expect(_item.order).toEqual(order.id)
@@ -330,10 +372,17 @@ describe("StockManager", () => {
             } catch (error) {
                 expect(error).not.toBeUndefined()
 
-                const shopTradeTransaction = await shop.tradeTransactions.doc(transactionID, TradeTransaction) as TradeTransaction
-                const userTradeTransaction = await user.tradeTransactions.doc(transactionID, TradeTransaction) as TradeTransaction
-                const _sku = await product.skus.doc(sku.id, SKU) as SKU
+                const shopTradeTransaction = shop.tradeTransactions.doc(transactionID, TradeTransaction)
+                const userTradeTransaction = user.tradeTransactions.doc(transactionID, TradeTransaction)
+                const _sku: SKU = product.skus.doc(sku.id, SKU)
+                const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
+                const shards: SKUShard[] = promiseResult[1]
                 const _item = (await user.items.get(Item))[0]
+
+                let skuQuantity: number = 0
+                shards.forEach((shard) => {
+                    skuQuantity += shard.quantity
+                })
 
                 // Shop Trade Transaction
                 expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
@@ -358,6 +407,7 @@ describe("StockManager", () => {
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
                 expect(_sku.inventory.quantity).toEqual(2)
+                expect(skuQuantity).toEqual(0)
 
                 // Item
                 expect(_item.order).toEqual(order.id)
@@ -387,10 +437,17 @@ describe("StockManager", () => {
                 })
             }) as TradeTransaction
 
-            const shopTradeTransaction = await shop.tradeTransactions.doc(result.id, TradeTransaction) as TradeTransaction
-            const userTradeTransaction = await user.tradeTransactions.doc(result.id, TradeTransaction) as TradeTransaction
-            const _sku = await product.skus.doc(sku.id, SKU) as SKU
+            const shopTradeTransaction = shop.tradeTransactions.doc(result.id, TradeTransaction)
+            const userTradeTransaction = user.tradeTransactions.doc(result.id, TradeTransaction)
+            const _sku: SKU = product.skus.doc(sku.id, SKU)
+            const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
+            const shards: SKUShard[] = promiseResult[1]
             const _item = (await user.items.get(Item))[0]
+
+            let skuQuantity: number = 0
+            shards.forEach((shard) => {
+                skuQuantity += shard.quantity
+            })
 
             // Shop Trade Transaction
             expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderChange)
@@ -415,6 +472,7 @@ describe("StockManager", () => {
             // SKU
             expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
             expect(_sku.inventory.quantity).toEqual(2)
+            expect(skuQuantity).toEqual(0)
 
             // Item
             expect(_item.order).toEqual(order.id)
@@ -441,8 +499,15 @@ describe("StockManager", () => {
                 expect(error).not.toBeUndefined()
                 const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
                 const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-                const _sku = await product.skus.doc(sku.id, SKU) as SKU
+                const _sku: SKU = product.skus.doc(sku.id, SKU)
+                const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard)])
+                const shards: SKUShard[] = promiseResult[1]
                 const _item = (await user.items.get(Item))[0]
+
+                let skuQuantity: number = 0
+                shards.forEach((shard) => {
+                    skuQuantity += shard.quantity
+                })
 
                 // Shop Trade Transaction
                 expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
@@ -466,7 +531,8 @@ describe("StockManager", () => {
 
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(1)
+                expect(_sku.inventory.quantity).toEqual(2)
+                expect(skuQuantity).toEqual(0)
 
                 // Item
                 expect(_item.order).toEqual(order.id)

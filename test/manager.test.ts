@@ -55,6 +55,11 @@ describe("Manager", () => {
             type: Tradable.StockType.finite,
             quantity: 5
         }
+        sku.numberOfShards = 5
+        for (let i = 0; i < 5; i++) {
+            const shard: SKUShard = new SKUShard(`${i}`)
+            sku.shards.insert(shard)
+        }
 
         await Promise.all([product.save(), shop.save(), user.save()])
     })
@@ -98,8 +103,14 @@ describe("Manager", () => {
 
             const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
             const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-            const _sku = await product.skus.doc(sku.id, SKU) as SKU
+            const _sku: SKU = product.skus.doc(sku.id, SKU)
+            const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard)])
+            const shards: SKUShard[] = promiseResult[1]
             const _item = (await user.items.get(Item))[0]
+            let skuQuantity: number = 0
+            shards.forEach((shard) => {
+                skuQuantity += shard.quantity
+            })
 
             // Shop Trade Transaction
             expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
@@ -121,7 +132,8 @@ describe("Manager", () => {
 
             // SKU
             expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-            expect(_sku.inventory.quantity).toEqual(4)
+            expect(_sku.inventory.quantity).toEqual(5)
+            expect(skuQuantity).toEqual(1)
 
             // Item
             expect(_item.order).toEqual(order.id)
@@ -154,7 +166,7 @@ describe("Manager", () => {
             expect(accountBalanceTransaction.transactionResults[0]['stripe']).toEqual(result.chargeResult)
 
         }, 15000)
-        
+
         test("Out of stock", async () => {
 
             const manager: Tradable.Manager<SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(SKUShard, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
@@ -172,7 +184,7 @@ describe("Manager", () => {
             orderItem.sku = sku.id
             orderItem.currency = sku.currency
             orderItem.amount = sku.amount
-            orderItem.quantity = 3
+            orderItem.quantity = 5
 
             order.amount = sku.amount
             order.currency = sku.currency
@@ -195,7 +207,7 @@ describe("Manager", () => {
 
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(4)
+                expect(_sku.inventory.quantity).toEqual(5)
 
             }
         }, 15000)
@@ -241,7 +253,7 @@ describe("Manager", () => {
 
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(4)
+                expect(_sku.inventory.quantity).toEqual(5)
 
             }
         }, 15000)
@@ -284,7 +296,7 @@ describe("Manager", () => {
 
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(4)
+                expect(_sku.inventory.quantity).toEqual(5)
 
             }
         }, 15000)
@@ -330,7 +342,7 @@ describe("Manager", () => {
 
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-                expect(_sku.inventory.quantity).toEqual(4)
+                expect(_sku.inventory.quantity).toEqual(5)
 
             }
         }, 15000)
@@ -376,11 +388,19 @@ describe("Manager", () => {
             const _order = await Order.get(order.id) as Order
             const cancelResult = await manager.orderCancel(_order, [orderItem], paymentOptions) as Tradable.OrderResult<TradeTransaction>
 
-            const shopTradeTransaction = await shop.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction) as TradeTransaction
-            const userTradeTransaction = await user.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction) as TradeTransaction
-            const _sku = await product.skus.doc(sku.id, SKU) as SKU
+            const shopTradeTransaction = shop.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction) as TradeTransaction
+            const userTradeTransaction = user.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction) as TradeTransaction
+            const _sku = product.skus.doc(sku.id, SKU) as SKU
             const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
-            const _item = await user.items.doc(itemID, Item) as Item
+            const _item = user.items.doc(itemID, Item) as Item
+
+            const shards: SKUShard[] = await sku.shards.get(SKUShard)
+            let skuQuantity: number = 0
+            shards.forEach((shard) => {
+                skuQuantity += shard.quantity
+            })
+
+            await Promise.all([shopTradeTransaction.fetch(), userTradeTransaction.fetch(), _sku.fetch(), _item.fetch()])
 
             // Shop Trade Transaction
             expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderCancel)
@@ -402,7 +422,8 @@ describe("Manager", () => {
 
             // SKU
             expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
-            expect(_sku.inventory.quantity).toEqual(4)
+            expect(_sku.inventory.quantity).toEqual(5)
+            expect(skuQuantity).toEqual(0)
 
             // Item
             expect(_item.order).toEqual(order.id)
@@ -606,7 +627,7 @@ describe("Manager", () => {
             const shopTradeTransaction = await shop.tradeTransactions.doc(changeResult.tradeTransactions[0].id, TradeTransaction) as TradeTransaction
             const userTradeTransaction = await user.tradeTransactions.doc(changeResult.tradeTransactions[0].id, TradeTransaction) as TradeTransaction
             const _sku = await product.skus.doc(sku.id, SKU) as SKU
-            
+
             const _item = await user.items.doc(itemID, Item) as Item
 
             // Shop Trade Transaction
