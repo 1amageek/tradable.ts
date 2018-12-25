@@ -6,6 +6,7 @@ import * as Config from '../config'
 import * as Stripe from 'stripe'
 import { User } from './models/user'
 import { Product } from './models/product'
+import { SKUShard } from './models/skuShard'
 import { SKU } from './models/sku'
 import { Order } from './models/order'
 import { OrderItem } from './models/orderItem'
@@ -55,6 +56,11 @@ describe("OrderManager", () => {
             type: Tradable.StockType.finite,
             quantity: 1
         }
+        sku.numberOfShards = 1
+        for (let i = 0; i < 1; i++) {
+            const shard: SKUShard = new SKUShard(`${i}`)
+            sku.shards.insert(shard)
+        }
 
         orderItem.order = order.id
         orderItem.selledBy = shop.id
@@ -85,8 +91,8 @@ describe("OrderManager", () => {
                 })
             }) as BalanceTransaction
 
-            const userOrder = await user.orders.doc(order.id, Order) as Order
-            const shopOrder = await shop.receivedOrders.doc(order.id, Order) as Order
+            const userOrder = await user.orders.doc(order.id, Order).fetch() as Order
+            const shopOrder = await shop.receivedOrders.doc(order.id, Order).fetch() as Order
 
             expect(userOrder.parentID).toEqual(order.parentID)
             expect(userOrder.purchasedBy).toEqual(order.purchasedBy)

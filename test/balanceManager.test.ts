@@ -6,6 +6,7 @@ import * as Config from '../config'
 import * as Stripe from 'stripe'
 import { User } from './models/user'
 import { Product } from './models/product'
+import { SKUShard } from './models/skuShard'
 import { SKU } from './models/sku'
 import { Order } from './models/order'
 import { OrderItem } from './models/orderItem'
@@ -53,6 +54,11 @@ describe("BalanceManager", () => {
             type: Tradable.StockType.finite,
             quantity: 1
         }
+        sku.numberOfShards = 1
+        for (let i = 0; i < 1; i++) {
+            const shard: SKUShard = new SKUShard(`${i}`)
+            sku.shards.insert(shard)
+        }
 
         await product.save()
         await shop.save()
@@ -87,7 +93,7 @@ describe("BalanceManager", () => {
 
             const account = new Account(user.id, {})
             const systemBalanceTransaction = await BalanceTransaction.get(result.id) as BalanceTransaction
-            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction).fetch() as BalanceTransaction
 
             // System Balance Transaction
             expect(systemBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.payment)
@@ -123,7 +129,7 @@ describe("BalanceManager", () => {
 
             const account = new Account(user.id, {})
             const systemBalanceTransaction = await BalanceTransaction.get(result.id) as BalanceTransaction
-            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction).fetch() as BalanceTransaction
 
             // System Balance Transaction
             expect(systemBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.paymentRefund)
@@ -161,7 +167,7 @@ describe("BalanceManager", () => {
             const account = new Account(order.selledBy, {})
             await account.fetch()
             const systemBalanceTransaction = await BalanceTransaction.get(result.id) as BalanceTransaction
-            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction).fetch() as BalanceTransaction
 
             expect(account.balance.available[order.currency]).toEqual(order.amount)
 
@@ -201,7 +207,7 @@ describe("BalanceManager", () => {
             const account = new Account(order.selledBy, {})
             await account.fetch()
             const systemBalanceTransaction = await BalanceTransaction.get(result.id) as BalanceTransaction
-            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction).fetch() as BalanceTransaction
 
             expect(account.balance.available[order.currency]).toEqual(0)
 
@@ -241,7 +247,7 @@ describe("BalanceManager", () => {
             const account = new Account(order.selledBy, {})
             await account.fetch()
             const systemBalanceTransaction = await BalanceTransaction.get(result.id) as BalanceTransaction
-            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction).fetch() as BalanceTransaction
 
             expect(account.balance.available[order.currency]).toEqual(-order.amount)
 
@@ -281,7 +287,7 @@ describe("BalanceManager", () => {
             const account = new Account(order.selledBy, {})
             await account.fetch()
             const systemBalanceTransaction = await BalanceTransaction.get(result.id) as BalanceTransaction
-            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction).fetch() as BalanceTransaction
 
             expect(account.balance.available[order.currency]).toEqual(0)
 
@@ -322,8 +328,8 @@ describe("BalanceManager", () => {
             const to = new Account(order.selledBy, {})
             await Promise.all([from.fetch(), to.fetch()])
             const systemBalanceTransaction = await BalanceTransaction.get(result.id) as BalanceTransaction
-            const fromBalanceTransaction = await from.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
-            const toBalanceTransaction = await to.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
+            const fromBalanceTransaction = await from.balanceTransactions.doc(result.id, BalanceTransaction).fetch() as BalanceTransaction
+            const toBalanceTransaction = await to.balanceTransactions.doc(result.id, BalanceTransaction).fetch() as BalanceTransaction
 
             expect(from.balance.available[order.currency]).toEqual(-order.amount)
             expect(to.balance.available[order.currency]).toEqual(order.amount)
@@ -374,8 +380,8 @@ describe("BalanceManager", () => {
             const to = new Account(order.purchasedBy, {})
             await Promise.all([from.fetch(), to.fetch()])
             const systemBalanceTransaction = await BalanceTransaction.get(result.id) as BalanceTransaction
-            const fromBalanceTransaction = await from.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
-            const toBalanceTransaction = await to.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
+            const fromBalanceTransaction = await from.balanceTransactions.doc(result.id, BalanceTransaction).fetch() as BalanceTransaction
+            const toBalanceTransaction = await to.balanceTransactions.doc(result.id, BalanceTransaction).fetch() as BalanceTransaction
 
             expect(from.balance.available[order.currency]).toEqual(0)
             expect(to.balance.available[order.currency]).toEqual(0)
@@ -425,7 +431,7 @@ describe("BalanceManager", () => {
             const account = new Account(order.selledBy, {})
             await account.fetch()
             const systemBalanceTransaction = await BalanceTransaction.get(result.id) as BalanceTransaction
-            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction).fetch() as BalanceTransaction
 
             expect(account.balance.available[order.currency]).toEqual(-order.amount)
 
@@ -465,7 +471,7 @@ describe("BalanceManager", () => {
             const account = new Account(order.selledBy, {})
             await account.fetch()
             const systemBalanceTransaction = await BalanceTransaction.get(result.id) as BalanceTransaction
-            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction) as BalanceTransaction
+            const accountBalanceTransaction = await account.balanceTransactions.doc(result.id, BalanceTransaction).fetch() as BalanceTransaction
 
             expect(account.balance.available[order.currency]).toEqual(0)
 
