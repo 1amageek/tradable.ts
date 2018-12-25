@@ -131,6 +131,7 @@ export interface SKUProtocol <SKUShard extends SKUShardProtocol> extends Pring.B
     amount: number
     inventory: Inventory
     isAvailabled: boolean
+    isOutOfStock: boolean
     numberOfShards: number
     shards: Pring.NestedCollection<SKUShard>
 }

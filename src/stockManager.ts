@@ -88,6 +88,10 @@ export class StockManager
             throw new TradableError(TradableErrorCode.outOfStock, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU is out of stock.`)
         }
 
+        if (inventoryQuantity === skuQuantity) {
+            transaction.set(sku.reference, { isOutOfStock: true }, { merge: true })
+        }
+
         for (let i = 0; i < quantity; i++) {
             const itemID = this.delegate.createItem(selledBy, purchasedBy, orderID, productID, skuID, transaction)
             tradeTransaction.items.push(itemID)
@@ -123,6 +127,15 @@ export class StockManager
             throw new TradableError(TradableErrorCode.internal, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU has not shards`)
         }
 
+        const inventoryQuantity: number = sku.inventory.quantity || 0
+        let skuQuantity: number = 0
+        shards.forEach((shard) => {
+            skuQuantity += shard.quantity
+        })
+        if (inventoryQuantity === skuQuantity) {
+            transaction.set(sku.reference, { isOutOfStock: false }, { merge: true })
+        }
+
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
         tradeTransaction.type = TradeTransactionType.orderChange
         tradeTransaction.quantity = 1
@@ -136,7 +149,7 @@ export class StockManager
         const shardID = Math.floor(Math.random() * sku.numberOfShards);
         const shard: SKUShard = shards[shardID]
         const shardQuantity: number = shard.quantity - 1
- 
+
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(shard.reference, {
@@ -162,6 +175,15 @@ export class StockManager
 
         if (shards.length == 0) {
             throw new TradableError(TradableErrorCode.internal, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU has not shards`)
+        }
+
+        const inventoryQuantity: number = sku.inventory.quantity || 0
+        let skuQuantity: number = 0
+        shards.forEach((shard) => {
+            skuQuantity += shard.quantity
+        })
+        if (inventoryQuantity === skuQuantity) {
+            transaction.set(sku.reference, { isOutOfStock: false }, { merge: true })
         }
 
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()

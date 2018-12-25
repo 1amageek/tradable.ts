@@ -15,6 +15,7 @@ export class SKU extends Pring.Base implements tradable.SKUProtocol<SKUShard> {
     @property amount: number = 0
     @property unitSales: number = 0
     @property inventory: tradable.Inventory = { type: tradable.StockType.finite, quantity: 1 }
+    @property isOutOfStock: boolean = false
     @property isAvailabled: boolean = true
     @property numberOfShards: number = 1
     @property shards: Pring.NestedCollection<SKUShard> = new Pring.NestedCollection(this)
