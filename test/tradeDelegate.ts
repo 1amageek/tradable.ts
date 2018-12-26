@@ -5,26 +5,26 @@ import { User } from './models/user'
 
 export class TradeDelegate implements tradable.TradeDelegate {
 
-    createItem(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, transaction: FirebaseFirestore.Transaction): string {
-        const purchaser: User = new User(purchasedBy, {})
+    createItem(information: tradable.TradeInformation, transaction: FirebaseFirestore.Transaction): string {
+        const purchaser: User = new User(information.purchasedBy, {})
         const item: Item = new Item()
-        item.selledBy = selledBy
-        item.order = orderID
-        item.product = productID
-        item.sku = skuID
+        item.selledBy = information.selledBy
+        item.order = information.order
+        item.product = information.product
+        item.sku = information.sku
         transaction.set(purchaser.items.reference.doc(item.id), item.value(), { merge: true })
         return item.id
     }
 
-    cancelItem(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, itemID: string, transaction: FirebaseFirestore.Transaction): void {
-        const purchaser: User = new User(purchasedBy, {})
+    cancelItem(information: tradable.TradeInformation, itemID: string, transaction: FirebaseFirestore.Transaction): void {
+        const purchaser: User = new User(information.purchasedBy, {})
         transaction.set(purchaser.items.reference.doc(itemID), {
             isCanceled: true
         }, { merge: true })
     }
 
-    async getItems(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, transaction: FirebaseFirestore.Transaction): Promise<string[]> {
-        const purchaser: User = new User(purchasedBy, {})
+    async getItems(information: tradable.TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<string[]> {
+        const purchaser: User = new User(information.purchasedBy, {})
         const items = await purchaser.items.get(Item, transaction)
         return  items.map((value) => { return value.id})
     }

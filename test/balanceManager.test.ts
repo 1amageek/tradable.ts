@@ -39,7 +39,6 @@ describe("BalanceManager", () => {
     const balanceManager: BalanceManager<BalanceTransaction, Account> = new BalanceManager(BalanceTransaction, Account)
 
     beforeAll(async () => {
-        product.skus.insert(sku)
         product.title = "PRODUCT"
         product.createdBy = shop.id
         product.selledBy = shop.id
@@ -60,10 +59,6 @@ describe("BalanceManager", () => {
             sku.shards.insert(shard)
         }
 
-        await product.save()
-        await shop.save()
-        await user.save()
-
         orderItem.order = order.id
         orderItem.selledBy = shop.id
         orderItem.purchasedBy = user.id
@@ -79,7 +74,7 @@ describe("BalanceManager", () => {
         order.shippingTo = { address: "address" }
         order.expirationDate = admin.firestore.Timestamp.fromDate(new Date(date.setDate(date.getDate() + 14)))
         order.items.append(orderItem)
-        await order.save()
+        await Promise.all([order.save(), await product.save(), await shop.save(), await user.save()])
     })
 
     describe("payment", async () => {

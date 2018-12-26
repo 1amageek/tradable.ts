@@ -40,7 +40,6 @@ describe("Manager", () => {
     const account: Account = new Account(shop.id, {})
 
     beforeAll(async () => {
-        product.skus.insert(sku)
         product.title = "PRODUCT"
         product.createdBy = shop.id
         product.selledBy = shop.id
@@ -61,7 +60,7 @@ describe("Manager", () => {
             sku.shards.insert(shard)
         }
 
-        await Promise.all([product.save(), shop.save(), user.save()])
+        await Promise.all([product.save(), shop.save(), user.save(), sku.save()])
     })
 
     describe("order", async () => {
@@ -103,7 +102,7 @@ describe("Manager", () => {
 
             const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
             const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-            const _sku: SKU = product.skus.doc(sku.id, SKU)
+            const _sku: SKU = new SKU(sku.id, {})
             const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard)])
             const shards: SKUShard[] = promiseResult[1]
             const _item = (await user.items.get(Item))[0]
@@ -203,7 +202,7 @@ describe("Manager", () => {
                 const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult<TradeTransaction>
             } catch (error) {
                 expect(error).not.toBeUndefined()
-                const _sku = await product.skus.doc(sku.id, SKU).fetch() as SKU
+                const _sku = await new SKU(sku.id, {}).fetch() as SKU
 
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
@@ -249,8 +248,7 @@ describe("Manager", () => {
                 const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult<TradeTransaction>
             } catch (error) {
                 expect(error).not.toBeUndefined()
-                const _sku = await product.skus.doc(sku.id, SKU).fetch() as SKU
-
+                const _sku = await new SKU(sku.id, {}).fetch() as SKU
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
                 expect(_sku.inventory.quantity).toEqual(5)
@@ -292,8 +290,7 @@ describe("Manager", () => {
                 const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult<TradeTransaction>
             } catch (error) {
                 expect(error).not.toBeUndefined()
-                const _sku = await product.skus.doc(sku.id, SKU).fetch() as SKU
-
+                const _sku = await new SKU(sku.id, {}).fetch() as SKU
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
                 expect(_sku.inventory.quantity).toEqual(5)
@@ -338,7 +335,7 @@ describe("Manager", () => {
                 const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult<TradeTransaction>
             } catch (error) {
                 expect(error).not.toBeUndefined()
-                const _sku = await product.skus.doc(sku.id, SKU).fetch() as SKU
+                const _sku = await new SKU(sku.id, {}).fetch() as SKU
 
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)

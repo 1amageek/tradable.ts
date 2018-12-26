@@ -40,7 +40,7 @@ describe("Manager", () => {
     const account: Account = new Account(shop.id, {})
 
     beforeAll(async () => {
-        product.skus.insert(sku)
+
         product.title = "PRODUCT"
         product.createdBy = shop.id
         product.selledBy = shop.id
@@ -61,7 +61,7 @@ describe("Manager", () => {
             sku.shards.insert(shard)
         }
 
-        await Promise.all([product.save(), shop.save(), user.save()])
+        await Promise.all([product.save(), shop.save(), user.save(), sku.save()])
     })
 
     describe("orderCancel", async () => {
@@ -106,7 +106,7 @@ describe("Manager", () => {
 
             const shopTradeTransaction = shop.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction)
             const userTradeTransaction = user.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction)
-            const _sku = product.skus.doc(sku.id, SKU) as SKU
+            const _sku = new SKU(sku.id, {})
             const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
             const _item = user.items.doc(itemID, Item) as Item
 

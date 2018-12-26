@@ -24,6 +24,7 @@ import {
     PayoutOptions,
     TransactionDelegate,
     TradeDelegate,
+    TradeInformation,
     SKUShardProtocol
 } from "./index"
 
@@ -61,7 +62,7 @@ export class Manager
     <
     SKUShard extends SKUShardProtocol,
     SKU extends SKUProtocol<SKUShard>,
-    Product extends ProductProtocol<SKUShard, SKU>,
+    Product extends ProductProtocol,
     OrderItem extends OrderItemProtocol,
     Order extends OrderProtocol<OrderItem>,
     TradeTransaction extends TradeTransactionProtocol,
@@ -158,8 +159,15 @@ export class Manager
                                     const productID = orderItem.product
                                     const skuID = orderItem.sku
                                     const quantity = orderItem.quantity
-                                    if (productID && skuID) {
-                                        const task = this.stockManager.order(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                    if (skuID) {
+                                        const tradeInformation: TradeInformation = {
+                                            selledBy: order.selledBy,
+                                            purchasedBy: order.purchasedBy,
+                                            order: order.id,
+                                            sku: skuID,
+                                            product: productID
+                                        }
+                                        const task = this.stockManager.order(tradeInformation, quantity, transaction)
                                         tasks.push(task)
                                     }
                                 }
@@ -191,8 +199,15 @@ export class Manager
                                     const productID = orderItem.product
                                     const skuID = orderItem.sku
                                     const quantity = orderItem.quantity
-                                    if (productID && skuID) {
-                                        const task = this.stockManager.order(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                    if (skuID) {
+                                        const tradeInformation: TradeInformation = {
+                                            selledBy: order.selledBy,
+                                            purchasedBy: order.purchasedBy,
+                                            order: order.id,
+                                            sku: skuID,
+                                            product: productID
+                                        }
+                                        const task = this.stockManager.order(tradeInformation, quantity, transaction)
                                         tasks.push(task)
                                     }
                                 }
@@ -291,9 +306,16 @@ export class Manager
                             const tradeTransactions = []
                             const productID = orderItem.product
                             const skuID = orderItem.sku
-                            if (productID && skuID) {
+                            if (skuID) {
+                                const tradeInformation: TradeInformation = {
+                                    selledBy: order.selledBy,
+                                    purchasedBy: order.purchasedBy,
+                                    order: order.id,
+                                    sku: skuID,
+                                    product: productID
+                                }
                                 orderItem.status = OrderItemStatus.changed
-                                const tradeTransaction = await this.stockManager.orderChange(order.selledBy, order.purchasedBy, order.id, productID, skuID, itemID, transaction)
+                                const tradeTransaction = await this.stockManager.orderChange(tradeInformation, itemID, transaction)
                                 tradeTransactions.push(tradeTransaction)
                             }
 
@@ -324,9 +346,16 @@ export class Manager
                                 const tradeTransactions = []
                                 const productID = orderItem.product
                                 const skuID = orderItem.sku
-                                if (productID && skuID) {
+                                if (skuID) {
+                                    const tradeInformation: TradeInformation = {
+                                        selledBy: order.selledBy,
+                                        purchasedBy: order.purchasedBy,
+                                        order: order.id,
+                                        sku: skuID,
+                                        product: productID
+                                    }
                                     orderItem.status = OrderItemStatus.changed
-                                    const tradeTransaction = await this.stockManager.orderChange(order.selledBy, order.purchasedBy, order.id, productID, skuID, itemID, transaction)
+                                    const tradeTransaction = await this.stockManager.orderChange(tradeInformation, itemID, transaction)
                                     tradeTransactions.push(tradeTransaction)
                                 }
 
@@ -399,9 +428,16 @@ export class Manager
                                 const productID = orderItem.product
                                 const skuID = orderItem.sku
                                 const quantity = orderItem.quantity
-                                if (productID && skuID) {
+                                if (skuID) {
+                                    const tradeInformation: TradeInformation = {
+                                        selledBy: order.selledBy,
+                                        purchasedBy: order.purchasedBy,
+                                        order: order.id,
+                                        sku: skuID,
+                                        product: productID
+                                    }
                                     orderItem.status = OrderItemStatus.canceled
-                                    const task = this.stockManager.orderCancel(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                    const task = this.stockManager.orderCancel(tradeInformation, quantity, transaction)
                                     tasks.push(task)
                                 }
                             }
@@ -437,9 +473,16 @@ export class Manager
                                     const productID = orderItem.product
                                     const skuID = orderItem.sku
                                     const quantity = orderItem.quantity
-                                    if (productID && skuID) {
+                                    if (skuID) {
+                                        const tradeInformation: TradeInformation = {
+                                            selledBy: order.selledBy,
+                                            purchasedBy: order.purchasedBy,
+                                            order: order.id,
+                                            sku: skuID,
+                                            product: productID
+                                        }
                                         orderItem.status = OrderItemStatus.canceled
-                                        const task = this.stockManager.orderCancel(order.selledBy, order.purchasedBy, order.id, productID, skuID, quantity, transaction)
+                                        const task = this.stockManager.orderCancel(tradeInformation, quantity, transaction)
                                         tasks.push(task)
                                     }
                                 }

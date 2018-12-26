@@ -10,6 +10,7 @@ import {
     TradeDelegate,
     TradableError,
     TradableErrorCode,
+    TradeInformation,
     SKUShardProtocol
 } from "./index"
 
@@ -18,7 +19,7 @@ export class StockManager
     Order extends OrderProtocol<OrderItem>,
     OrderItem extends OrderItemProtocol,
     User extends UserProtocol<Order, OrderItem, TradeTransaction>,
-    Product extends ProductProtocol<SKUShard, SKU>,
+    Product extends ProductProtocol,
     SKUShard extends SKUShardProtocol,
     SKU extends SKUProtocol<SKUShard>,
     TradeTransaction extends TradeTransactionProtocol
@@ -46,12 +47,17 @@ export class StockManager
         this._TradeTransaction = tradeTransaction
     }
 
-    async order(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, quantity: number, transaction: FirebaseFirestore.Transaction) {
+    async order(tradeInformation: TradeInformation, quantity: number, transaction: FirebaseFirestore.Transaction) {
 
-        const product: Product = new this._Product(productID, {})
+        const orderID: string = tradeInformation.order
+        const skuID: string = tradeInformation.sku
+        const purchasedBy: string = tradeInformation.purchasedBy
+        const selledBy: string = tradeInformation.selledBy
+        const productID: string | undefined = tradeInformation.product
+
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const sku: SKU = product.skus.doc(skuID, this._SKU)
+        const sku: SKU = new this._SKU(skuID, {})
         const result = await Promise.all([sku.fetch(transaction), sku.shards.get(this._SKUShard, transaction)])
         const shards: SKUShard[] = result[1]
 
@@ -93,7 +99,7 @@ export class StockManager
         }
 
         for (let i = 0; i < quantity; i++) {
-            const itemID = this.delegate.createItem(selledBy, purchasedBy, orderID, productID, skuID, transaction)
+            const itemID = this.delegate.createItem(tradeInformation, transaction)
             tradeTransaction.items.push(itemID)
         }
 
@@ -110,12 +116,17 @@ export class StockManager
         return tradeTransaction
     }
 
-    async orderChange(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, itemID: string, transaction: FirebaseFirestore.Transaction) {
+    async orderChange(tradeInformation: TradeInformation, itemID: string, transaction: FirebaseFirestore.Transaction) {
 
-        const product: Product = new this._Product(productID, {})
+        const orderID: string = tradeInformation.order
+        const skuID: string = tradeInformation.sku
+        const purchasedBy: string = tradeInformation.purchasedBy
+        const selledBy: string = tradeInformation.selledBy
+        const productID: string | undefined = tradeInformation.product
+
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const sku: SKU = product.skus.doc(skuID, this._SKU)
+        const sku: SKU = new this._SKU(skuID, {})
         const result = await Promise.all([sku.fetch(transaction), sku.shards.get(this._SKUShard, transaction)])
         const shards: SKUShard[] = result[1]
 
@@ -155,17 +166,22 @@ export class StockManager
         transaction.set(shard.reference, {
             quantity: shardQuantity
         }, { merge: true })
-        this.delegate.cancelItem(selledBy, purchasedBy, orderID, productID, skuID, itemID, transaction)
+        this.delegate.cancelItem(tradeInformation, itemID, transaction)
         return tradeTransaction
     }
 
-    async orderCancel(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, quantity: number, transaction: FirebaseFirestore.Transaction) {
+    async orderCancel(tradeInformation: TradeInformation, quantity: number, transaction: FirebaseFirestore.Transaction) {
 
-        const product: Product = new this._Product(productID, {})
+        const orderID: string = tradeInformation.order
+        const skuID: string = tradeInformation.sku
+        const purchasedBy: string = tradeInformation.purchasedBy
+        const selledBy: string = tradeInformation.selledBy
+        const productID: string | undefined = tradeInformation.product
+
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const sku: SKU = product.skus.doc(skuID, this._SKU)
-        const result = await Promise.all([sku.fetch(transaction), sku.shards.get(this._SKUShard, transaction), this.delegate.getItems(selledBy, purchasedBy, orderID, productID, skuID, transaction)])
+        const sku: SKU = new this._SKU(skuID, {})
+        const result = await Promise.all([sku.fetch(transaction), sku.shards.get(this._SKUShard, transaction), this.delegate.getItems(tradeInformation, transaction)])
         const shards: SKUShard[] = result[1]
         const itemIDs = result[2]
 
@@ -197,7 +213,7 @@ export class StockManager
 
         for (const itemID of itemIDs) {
             tradeTransaction.items.push(itemID)
-            this.delegate.cancelItem(selledBy, purchasedBy, orderID, productID, skuID, itemID, transaction)
+            this.delegate.cancelItem(tradeInformation, itemID, transaction)
         }
 
         const shardID = Math.floor(Math.random() * sku.numberOfShards);

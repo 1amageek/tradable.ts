@@ -43,7 +43,7 @@ describe("StockManager", () => {
     const stockManager: StockManager<Order, OrderItem, User, Product, SKUShard, SKU, TradeTransaction> = new StockManager(User, Product, SKUShard, SKU, TradeTransaction)
 
     beforeAll(async () => {
-        product.skus.insert(sku)
+
         product.title = "PRODUCT"
         product.createdBy = shop.id
         product.selledBy = shop.id
@@ -81,7 +81,7 @@ describe("StockManager", () => {
         order.items.append(orderItem)
 
         user.orders.insert(order)
-        await Promise.all([user.save(), product.save(), shop.save()])
+        await Promise.all([user.save(), product.save(), shop.save(), sku.save()])
 
         stockManager.delegate = new TradeDelegate()
     })
@@ -91,7 +91,14 @@ describe("StockManager", () => {
             try {
                 const result = await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
-                        const result = await stockManager.order(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
+                        const tradeInformation = {
+                            selledBy: shop.id,
+                            purchasedBy: user.id,
+                            order: order.id,
+                            sku: sku.id,
+                            product: product.id
+                        }
+                        const result = await stockManager.order(tradeInformation, 1, transaction)
                         resolve(result)
                     })
                 }) as TradeTransaction
@@ -100,7 +107,7 @@ describe("StockManager", () => {
 
                 const shopTradeTransaction = shop.tradeTransactions.doc(result.id, TradeTransaction)
                 const userTradeTransaction = user.tradeTransactions.doc(result.id, TradeTransaction)
-                const _sku: SKU = product.skus.doc(sku.id, SKU)
+                const _sku = new SKU(sku.id, {})
                 const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
                 const shards: SKUShard[] = promiseResult[1]
 
@@ -153,7 +160,14 @@ describe("StockManager", () => {
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            await stockManager.order(shop.id, user.id, order.id, product.id, sku.id, 2, transaction)
+                            const tradeInformation = {
+                                selledBy: shop.id,
+                                purchasedBy: user.id,
+                                order: order.id,
+                                sku: sku.id,
+                                product: product.id
+                            }
+                            const result = await stockManager.order(tradeInformation, 2, transaction)
                         } catch (error) {
                             reject(error)
                         }
@@ -164,7 +178,7 @@ describe("StockManager", () => {
                 expect(error).not.toBeUndefined()
                 const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
                 const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-                const _sku: SKU = product.skus.doc(sku.id, SKU)
+                const _sku = new SKU(sku.id, {})
                 const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard)])
                 const shards: SKUShard[] = promiseResult[1]
                 const _item = (await user.items.get(Item))[0]
@@ -215,7 +229,6 @@ describe("StockManager", () => {
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
 
-            product.skus.insert(sku)
             product.title = "PRODUCT"
             product.createdBy = shop.id
             product.selledBy = shop.id
@@ -249,14 +262,21 @@ describe("StockManager", () => {
             order.items.append(orderItem)
 
             user.orders.insert(order)
-            await Promise.all([user.save(), product.save(), shop.save()])
+            await Promise.all([user.save(), product.save(), shop.save(), sku.save()])
 
 
             try {
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            await stockManager.order(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
+                            const tradeInformation = {
+                                selledBy: shop.id,
+                                purchasedBy: user.id,
+                                order: order.id,
+                                sku: sku.id,
+                                product: product.id
+                            }
+                            const result = await stockManager.order(tradeInformation, 1, transaction)
                         } catch (error) {
                             reject(error)
                         }
@@ -267,7 +287,7 @@ describe("StockManager", () => {
                 expect(error).not.toBeUndefined()
                 const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
                 const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-                const _sku: SKU = product.skus.doc(sku.id, SKU)
+                const _sku = new SKU(sku.id, {})
                 const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard)])
                 const shards: SKUShard[] = promiseResult[1]
                 const _item = (await user.items.get(Item))[0]
@@ -306,14 +326,21 @@ describe("StockManager", () => {
         test("Success", async () => {
             const result = await Pring.firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
-                    const result = await stockManager.orderCancel(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
+                    const tradeInformation = {
+                        selledBy: shop.id,
+                        purchasedBy: user.id,
+                        order: order.id,
+                        sku: sku.id,
+                        product: product.id
+                    }
+                    const result = await stockManager.orderCancel(tradeInformation, 1, transaction)
                     resolve(result)
                 })
             }) as TradeTransaction
 
             const shopTradeTransaction = shop.tradeTransactions.doc(result.id, TradeTransaction)
             const userTradeTransaction = user.tradeTransactions.doc(result.id, TradeTransaction)
-            const _sku: SKU = product.skus.doc(sku.id, SKU)
+            const _sku = new SKU(sku.id, {})
             const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
             const shards: SKUShard[] = promiseResult[1]
             const _item = (await user.items.get(Item))[0]
@@ -362,7 +389,14 @@ describe("StockManager", () => {
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            await stockManager.orderCancel(shop.id, user.id, order.id, product.id, "sku.id", 1, transaction)
+                            const tradeInformation = {
+                                selledBy: shop.id,
+                                purchasedBy: user.id,
+                                order: order.id,
+                                sku: "sku.id",
+                                product: product.id
+                            }
+                            await stockManager.orderCancel(tradeInformation, 1, transaction)
                         } catch (error) {
                             reject(error)
                         }
@@ -374,7 +408,7 @@ describe("StockManager", () => {
 
                 const shopTradeTransaction = shop.tradeTransactions.doc(transactionID, TradeTransaction)
                 const userTradeTransaction = user.tradeTransactions.doc(transactionID, TradeTransaction)
-                const _sku: SKU = product.skus.doc(sku.id, SKU)
+                const _sku = new SKU(sku.id, {})
                 const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
                 const shards: SKUShard[] = promiseResult[1]
                 const _item = (await user.items.get(Item))[0]
@@ -423,7 +457,14 @@ describe("StockManager", () => {
         test("Success", async () => {
             await Pring.firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
-                    await stockManager.order(shop.id, user.id, order.id, product.id, sku.id, 1, transaction)
+                    const tradeInformation = {
+                        selledBy: shop.id,
+                        purchasedBy: user.id,
+                        order: order.id,
+                        sku: sku.id,
+                        product: product.id
+                    }
+                    await stockManager.order(tradeInformation, 1, transaction)
                     resolve(`[Manager] Success order ORDER/${order.id}, USER/${order.selledBy} USER/${order.purchasedBy}`)
                 })
             })
@@ -432,14 +473,21 @@ describe("StockManager", () => {
 
             const result = await Pring.firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
-                    const result = await stockManager.orderChange(shop.id, user.id, order.id, product.id, sku.id, item.id, transaction)
+                    const tradeInformation = {
+                        selledBy: shop.id,
+                        purchasedBy: user.id,
+                        order: order.id,
+                        sku: sku.id,
+                        product: product.id
+                    }
+                    const result = await stockManager.orderChange(tradeInformation, item.id, transaction)
                     resolve(result)
                 })
             }) as TradeTransaction
 
             const shopTradeTransaction = shop.tradeTransactions.doc(result.id, TradeTransaction)
             const userTradeTransaction = user.tradeTransactions.doc(result.id, TradeTransaction)
-            const _sku: SKU = product.skus.doc(sku.id, SKU)
+            const _sku = new SKU(sku.id, {})
             const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
             const shards: SKUShard[] = promiseResult[1]
             const _item = (await user.items.get(Item))[0]
@@ -488,7 +536,14 @@ describe("StockManager", () => {
                 await Pring.firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            await stockManager.orderChange(shop.id, user.id, order.id, product.id, sku.id, "item.id", transaction)
+                            const tradeInformation = {
+                                selledBy: shop.id,
+                                purchasedBy: user.id,
+                                order: order.id,
+                                sku: sku.id,
+                                product: product.id
+                            }
+                            await stockManager.orderChange(tradeInformation, "item.id", transaction)
                         } catch (error) {
                             reject(error)
                         }
@@ -499,7 +554,7 @@ describe("StockManager", () => {
                 expect(error).not.toBeUndefined()
                 const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
                 const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-                const _sku: SKU = product.skus.doc(sku.id, SKU)
+                const _sku = new SKU(sku.id, {})
                 const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard)])
                 const shards: SKUShard[] = promiseResult[1]
                 const _item = (await user.items.get(Item))[0]

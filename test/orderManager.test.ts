@@ -41,7 +41,6 @@ describe("OrderManager", () => {
     const orderManager: OrderManager<Order, OrderItem, User, TradeTransaction> = new OrderManager(User)
 
     beforeAll(async () => {
-        product.skus.insert(sku)
         product.title = "PRODUCT"
         product.createdBy = shop.id
         product.selledBy = shop.id
@@ -79,7 +78,7 @@ describe("OrderManager", () => {
         order.items.append(orderItem)
 
         user.orders.insert(order)
-        await Promise.all([user.save(), product.save(), shop.save()])
+        await Promise.all([user.save(), product.save(), shop.save(), sku.save()])
     })
 
     describe("update", async () => {

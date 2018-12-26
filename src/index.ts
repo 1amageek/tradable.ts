@@ -59,7 +59,7 @@ export interface TradeTransactionProtocol extends Pring.Base {
     selledBy: string
     purchasedBy: string
     order: string
-    product: string
+    product?: string
     sku: string
     items: string[]
 }
@@ -91,11 +91,10 @@ export interface BalanceTransactionProtocol extends Pring.Base {
     transactionResults: TransactionResult[]
 }
 
-export interface ProductProtocol<SKUShard extends SKUShardProtocol, SKU extends SKUProtocol<SKUShard>> extends Pring.Base {
+export interface ProductProtocol extends Pring.Base {
     title?: string
     selledBy: string
     createdBy: string
-    skus: Pring.NestedCollection<SKU>
 }
 
 export enum StockType {
@@ -127,7 +126,7 @@ export interface SKUProtocol <SKUShard extends SKUShardProtocol> extends Pring.B
     selledBy: string
     createdBy: string
     currency: Currency
-    product: string
+    product?: string
     amount: number
     inventory: Inventory
     isAvailabled: boolean
@@ -215,7 +214,7 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
 export interface ItemProtocol extends Pring.Base {
     selledBy: string
     order: string
-    product: string
+    product?: string
     sku: string
     isCanceled: boolean
 }
@@ -243,13 +242,21 @@ export type PayoutOptions = {
     vendorType: string
 }
 
+export type TradeInformation = {
+    selledBy: string
+    purchasedBy: string
+    order: string
+    product?: string
+    sku: string
+}
+
 export interface TradeDelegate {
 
-    createItem(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, transaction: FirebaseFirestore.Transaction): string
+    createItem(information: TradeInformation, transaction: FirebaseFirestore.Transaction): string
 
-    getItems(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, transaction: FirebaseFirestore.Transaction): Promise<string[]>
+    getItems(information: TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<string[]>
 
-    cancelItem(selledBy: string, purchasedBy: string, orderID: string, productID: string, skuID: string, itemID: string, transaction: FirebaseFirestore.Transaction): void
+    cancelItem(information: TradeInformation, itemID: string, transaction: FirebaseFirestore.Transaction): void
 }
 
 export interface TransactionDelegate {
