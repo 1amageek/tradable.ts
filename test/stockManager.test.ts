@@ -44,7 +44,7 @@ describe("StockManager", () => {
 
     beforeAll(async () => {
 
-        product.title = "PRODUCT"
+        product.name = "PRODUCT"
         product.createdBy = shop.id
         product.selledBy = shop.id
 
@@ -59,6 +59,7 @@ describe("StockManager", () => {
             quantity: 2
         }
         sku.numberOfShards = 5
+        product.SKUs.insert(sku)
         for (let i = 0; i < 5; i++) {
             const shard: SKUShard = new SKUShard(`${i}`)
             sku.shards.insert(shard)
@@ -81,7 +82,7 @@ describe("StockManager", () => {
         order.items.append(orderItem)
 
         user.orders.insert(order)
-        await Promise.all([user.save(), product.save(), shop.save(), sku.save()])
+        await Promise.all([user.save(), product.save(), shop.save()])
 
         stockManager.delegate = new TradeDelegate()
     })
@@ -107,7 +108,8 @@ describe("StockManager", () => {
 
                 const shopTradeTransaction = shop.tradeTransactions.doc(result.id, TradeTransaction)
                 const userTradeTransaction = user.tradeTransactions.doc(result.id, TradeTransaction)
-                const _sku = new SKU(sku.id, {})
+                const _product: Product = new Product(product.id, {})
+                const _sku = _product.SKUs.doc(sku.id, SKU)
                 const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
                 const shards: SKUShard[] = promiseResult[1]
 
@@ -178,7 +180,8 @@ describe("StockManager", () => {
                 expect(error).not.toBeUndefined()
                 const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
                 const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-                const _sku = new SKU(sku.id, {})
+                const _product: Product = new Product(product.id, {})
+                const _sku = _product.SKUs.doc(sku.id, SKU)
                 const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard)])
                 const shards: SKUShard[] = promiseResult[1]
                 const _item = (await user.items.get(Item))[0]
@@ -229,7 +232,7 @@ describe("StockManager", () => {
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
 
-            product.title = "PRODUCT"
+            product.name = "PRODUCT"
             product.createdBy = shop.id
             product.selledBy = shop.id
 
@@ -244,7 +247,7 @@ describe("StockManager", () => {
                 type: Tradable.StockType.finite,
                 quantity: 5
             }
-
+            product.SKUs.insert(sku)
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.purchasedBy = user.id
@@ -262,8 +265,7 @@ describe("StockManager", () => {
             order.items.append(orderItem)
 
             user.orders.insert(order)
-            await Promise.all([user.save(), product.save(), shop.save(), sku.save()])
-
+            await Promise.all([user.save(), product.save(), shop.save()])
 
             try {
                 await Pring.firestore.runTransaction(async (transaction) => {
@@ -287,7 +289,8 @@ describe("StockManager", () => {
                 expect(error).not.toBeUndefined()
                 const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
                 const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-                const _sku = new SKU(sku.id, {})
+                const _product: Product = new Product(product.id, {})
+                const _sku = _product.SKUs.doc(sku.id, SKU)
                 const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard)])
                 const shards: SKUShard[] = promiseResult[1]
                 const _item = (await user.items.get(Item))[0]
@@ -340,7 +343,8 @@ describe("StockManager", () => {
 
             const shopTradeTransaction = shop.tradeTransactions.doc(result.id, TradeTransaction)
             const userTradeTransaction = user.tradeTransactions.doc(result.id, TradeTransaction)
-            const _sku = new SKU(sku.id, {})
+            const _product: Product = new Product(product.id, {})
+            const _sku = _product.SKUs.doc(sku.id, SKU)
             const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
             const shards: SKUShard[] = promiseResult[1]
             const _item = (await user.items.get(Item))[0]
@@ -408,7 +412,8 @@ describe("StockManager", () => {
 
                 const shopTradeTransaction = shop.tradeTransactions.doc(transactionID, TradeTransaction)
                 const userTradeTransaction = user.tradeTransactions.doc(transactionID, TradeTransaction)
-                const _sku = new SKU(sku.id, {})
+                const _product: Product = new Product(product.id, {})
+                const _sku = _product.SKUs.doc(sku.id, SKU)
                 const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
                 const shards: SKUShard[] = promiseResult[1]
                 const _item = (await user.items.get(Item))[0]
@@ -487,7 +492,8 @@ describe("StockManager", () => {
 
             const shopTradeTransaction = shop.tradeTransactions.doc(result.id, TradeTransaction)
             const userTradeTransaction = user.tradeTransactions.doc(result.id, TradeTransaction)
-            const _sku = new SKU(sku.id, {})
+            const _product: Product = new Product(product.id, {})
+            const _sku = _product.SKUs.doc(sku.id, SKU)
             const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
             const shards: SKUShard[] = promiseResult[1]
             const _item = (await user.items.get(Item))[0]
@@ -554,7 +560,8 @@ describe("StockManager", () => {
                 expect(error).not.toBeUndefined()
                 const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
                 const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-                const _sku = new SKU(sku.id, {})
+                const _product: Product = new Product(product.id, {})
+                const _sku = _product.SKUs.doc(sku.id, SKU)
                 const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard)])
                 const shards: SKUShard[] = promiseResult[1]
                 const _item = (await user.items.get(Item))[0]

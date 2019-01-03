@@ -62,7 +62,7 @@ export class Manager
     <
     SKUShard extends SKUShardProtocol,
     SKU extends SKUProtocol<SKUShard>,
-    Product extends ProductProtocol,
+    Product extends ProductProtocol<SKUShard, SKU>,
     OrderItem extends OrderItemProtocol,
     Order extends OrderProtocol<OrderItem>,
     TradeTransaction extends TradeTransactionProtocol,

@@ -39,7 +39,7 @@ describe("BalanceManager", () => {
     const balanceManager: BalanceManager<BalanceTransaction, Account> = new BalanceManager(BalanceTransaction, Account)
 
     beforeAll(async () => {
-        product.title = "PRODUCT"
+        product.name = "PRODUCT"
         product.createdBy = shop.id
         product.selledBy = shop.id
 
@@ -53,6 +53,7 @@ describe("BalanceManager", () => {
             type: Tradable.StockType.finite,
             quantity: 1
         }
+        product.SKUs.insert(sku)
         sku.numberOfShards = 1
         for (let i = 0; i < 1; i++) {
             const shard: SKUShard = new SKUShard(`${i}`)

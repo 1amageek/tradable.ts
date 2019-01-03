@@ -91,10 +91,13 @@ export interface BalanceTransactionProtocol extends Pring.Base {
     transactionResults: TransactionResult[]
 }
 
-export interface ProductProtocol extends Pring.Base {
-    title?: string
+export interface ProductProtocol <SKUShard extends SKUShardProtocol, SKU extends SKUProtocol<SKUShard>> extends Pring.Base {
+    name?: string
+    caption?: string
     selledBy: string
     createdBy: string
+    isAvailabled: boolean
+    SKUs: Pring.NestedCollection<SKU>
 }
 
 export enum StockType {

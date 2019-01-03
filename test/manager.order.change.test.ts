@@ -40,7 +40,7 @@ describe("Manager", () => {
     const account: Account = new Account(shop.id, {})
 
     beforeAll(async () => {
-        product.title = "PRODUCT"
+        product.name = "PRODUCT"
         product.createdBy = shop.id
         product.selledBy = shop.id
 
@@ -54,13 +54,14 @@ describe("Manager", () => {
             type: Tradable.StockType.finite,
             quantity: 5
         }
+        product.SKUs.insert(sku)
         sku.numberOfShards = 1
         for (let i = 0; i < 1; i++) {
             const shard: SKUShard = new SKUShard(`${i}`)
             sku.shards.insert(shard)
         }
 
-        await Promise.all([product.save(), shop.save(), user.save(), sku.save()])
+        await Promise.all([product.save(), shop.save(), user.save()])
     })
 
     describe("orderChange", async () => {
@@ -103,7 +104,8 @@ describe("Manager", () => {
 
             const shopTradeTransaction = await shop.tradeTransactions.doc(changeResult.tradeTransactions[0].id, TradeTransaction).fetch() as TradeTransaction
             const userTradeTransaction = await user.tradeTransactions.doc(changeResult.tradeTransactions[0].id, TradeTransaction).fetch() as TradeTransaction
-            const _sku = await new SKU(sku.id, {}).fetch() as SKU
+            const _product: Product = new Product(product.id, {})
+            const _sku = await _product.SKUs.doc(sku.id, SKU).fetch()
             const _item = await user.items.doc(itemID, Item).fetch() as Item
             const shards: SKUShard[] = await sku.shards.get(SKUShard)
             let skuQuantity: number = 0

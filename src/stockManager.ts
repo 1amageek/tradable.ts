@@ -19,7 +19,7 @@ export class StockManager
     Order extends OrderProtocol<OrderItem>,
     OrderItem extends OrderItemProtocol,
     User extends UserProtocol<Order, OrderItem, TradeTransaction>,
-    Product extends ProductProtocol,
+    Product extends ProductProtocol<SKUShard, SKU>,
     SKUShard extends SKUShardProtocol,
     SKU extends SKUProtocol<SKUShard>,
     TradeTransaction extends TradeTransactionProtocol
@@ -57,7 +57,8 @@ export class StockManager
 
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const sku: SKU = new this._SKU(skuID, {})
+        const product: Product = new this._Product(productID, {})
+        const sku: SKU = product.SKUs.doc(skuID, this._SKU)
         const result = await Promise.all([sku.fetch(transaction), sku.shards.get(this._SKUShard, transaction)])
         const shards: SKUShard[] = result[1]
 
@@ -126,7 +127,8 @@ export class StockManager
 
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const sku: SKU = new this._SKU(skuID, {})
+        const product: Product = new this._Product(productID, {})
+        const sku: SKU = product.SKUs.doc(skuID, this._SKU)
         const result = await Promise.all([sku.fetch(transaction), sku.shards.get(this._SKUShard, transaction)])
         const shards: SKUShard[] = result[1]
 
@@ -180,7 +182,8 @@ export class StockManager
 
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const sku: SKU = new this._SKU(skuID, {})
+        const product: Product = new this._Product(productID, {})
+        const sku: SKU = product.SKUs.doc(skuID, this._SKU)
         const result = await Promise.all([sku.fetch(transaction), sku.shards.get(this._SKUShard, transaction), this.delegate.getItems(tradeInformation, transaction)])
         const shards: SKUShard[] = result[1]
         const itemIDs = result[2]

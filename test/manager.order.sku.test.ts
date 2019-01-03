@@ -41,7 +41,7 @@ describe("Manager", () => {
 
     beforeAll(async () => {
         
-        product.title = "PRODUCT"
+        product.name = "PRODUCT"
         product.createdBy = shop.id
         product.selledBy = shop.id
 
@@ -55,13 +55,14 @@ describe("Manager", () => {
             type: Tradable.StockType.finite,
             quantity: 5
         }
+        product.SKUs.insert(sku)
         sku.numberOfShards = 1
         for (let i = 0; i < 1; i++) {
             const shard: SKUShard = new SKUShard(`${i}`)
             sku.shards.insert(shard)
         }
 
-        await Promise.all([product.save(), shop.save(), user.save(), sku.save()])
+        await Promise.all([product.save(), shop.save(), user.save()])
     })
 
     describe("order", async () => {
@@ -103,7 +104,8 @@ describe("Manager", () => {
 
             const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
             const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
-            const _sku: SKU = new SKU(sku.id, {})
+            const _product: Product = new Product(product.id, {})
+            const _sku = _product.SKUs.doc(sku.id, SKU)
             const promiseResult = await Promise.all([_sku.fetch(), sku.shards.get(SKUShard)])
             const shards: SKUShard[] = promiseResult[1]
             const _item = (await user.items.get(Item))[0]
@@ -172,7 +174,8 @@ describe("Manager", () => {
 
                 const shopTradeTransaction = shop.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction)
                 const userTradeTransaction = user.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction)
-                const _sku = new SKU(sku.id, {})
+                const _product: Product = new Product(product.id, {})
+                const _sku = _product.SKUs.doc(sku.id, SKU)
                 const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
                 const _item = user.items.doc(itemID, Item) as Item
 

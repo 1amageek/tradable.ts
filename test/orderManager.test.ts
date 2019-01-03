@@ -41,7 +41,7 @@ describe("OrderManager", () => {
     const orderManager: OrderManager<Order, OrderItem, User, TradeTransaction> = new OrderManager(User)
 
     beforeAll(async () => {
-        product.title = "PRODUCT"
+        product.name = "PRODUCT"
         product.createdBy = shop.id
         product.selledBy = shop.id
 
@@ -56,6 +56,7 @@ describe("OrderManager", () => {
             quantity: 1
         }
         sku.numberOfShards = 1
+        product.SKUs.insert(sku)
         for (let i = 0; i < 1; i++) {
             const shard: SKUShard = new SKUShard(`${i}`)
             sku.shards.insert(shard)
@@ -78,7 +79,7 @@ describe("OrderManager", () => {
         order.items.append(orderItem)
 
         user.orders.insert(order)
-        await Promise.all([user.save(), product.save(), shop.save(), sku.save()])
+        await Promise.all([user.save(), product.save(), shop.save()])
     })
 
     describe("update", async () => {
