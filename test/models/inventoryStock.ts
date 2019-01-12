@@ -9,4 +9,5 @@ export class InventoryStock extends Pring.Base implements tradable.InventoryStoc
     @property isAvailabled: boolean = true
     @property SKU!: string
     @property item?: string
+    @property order?: string
 }

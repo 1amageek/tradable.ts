@@ -122,6 +122,7 @@ export type Inventory = {
 export interface InventoryStockProtocol extends Pring.Base {
     isAvailabled: boolean
     SKU: string
+    order?: string
     item?: string
 }
 
