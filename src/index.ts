@@ -91,7 +91,7 @@ export interface BalanceTransactionProtocol extends Pring.Base {
     transactionResults: TransactionResult[]
 }
 
-export interface ProductProtocol <SKUShard extends SKUShardProtocol, SKU extends SKUProtocol<SKUShard>> extends Pring.Base {
+export interface ProductProtocol <InventoryStock extends InventoryStockProtocol, SKU extends SKUProtocol<InventoryStock>> extends Pring.Base {
     name?: string
     caption?: string
     selledBy: string
@@ -119,13 +119,14 @@ export type Inventory = {
     value?: StockValue
 }
 
-export interface SKUShardProtocol extends Pring.Base {
-    quantity: number
+export interface InventoryStockProtocol extends Pring.Base {
+    isAvailabled: boolean
+    SKU: string
 }
 
 // SKU
 
-export interface SKUProtocol <SKUShard extends SKUShardProtocol> extends Pring.Base {
+export interface SKUProtocol <InventoryStock extends InventoryStockProtocol> extends Pring.Base {
     selledBy: string
     createdBy: string
     currency: Currency
@@ -133,9 +134,10 @@ export interface SKUProtocol <SKUShard extends SKUShardProtocol> extends Pring.B
     amount: number
     inventory: Inventory
     isAvailabled: boolean
-    isOutOfStock: boolean
-    numberOfShards: number
-    shards: Pring.NestedCollection<SKUShard>
+
+    /// Maximum number of fetches to acquire at one time
+    numberOfFetchCount: number
+    inventoryStocks: Pring.NestedCollection<InventoryStock>
 }
 
 // Order
