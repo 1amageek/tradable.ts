@@ -122,6 +122,7 @@ export type Inventory = {
 export interface InventoryStockProtocol extends Pring.Base {
     isAvailabled: boolean
     SKU: string
+    item?: string
 }
 
 // SKU
@@ -221,6 +222,7 @@ export interface ItemProtocol extends Pring.Base {
     order: string
     product?: string
     sku: string
+    inventoryStock?: string
     isCanceled: boolean
 }
 
@@ -257,7 +259,7 @@ export type TradeInformation = {
 
 export interface TradeDelegate {
 
-    createItem(information: TradeInformation, transaction: FirebaseFirestore.Transaction): string
+    createItem(information: TradeInformation, invetoryStock: string, transaction: FirebaseFirestore.Transaction): string
 
     getItems(information: TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<string[]>
 

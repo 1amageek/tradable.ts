@@ -5,13 +5,14 @@ import { User } from './models/user'
 
 export class TradeDelegate implements tradable.TradeDelegate {
 
-    createItem(information: tradable.TradeInformation, transaction: FirebaseFirestore.Transaction): string {
+    createItem(information: tradable.TradeInformation, inventoryStock: string, transaction: FirebaseFirestore.Transaction): string {
         const purchaser: User = new User(information.purchasedBy, {})
         const item: Item = new Item()
         item.selledBy = information.selledBy
         item.order = information.order
         item.product = information.product
         item.sku = information.sku
+        item.inventoryStock = inventoryStock
         transaction.set(purchaser.items.reference.doc(item.id), item.value(), { merge: true })
         return item.id
     }

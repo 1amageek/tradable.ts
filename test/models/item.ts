@@ -1,6 +1,7 @@
 import * as Pring from 'pring-admin'
 import * as tradable from '../../src/index'
 import "reflect-metadata";
+import { InventoryStock } from './inventoryStock';
 
 const property = Pring.property
 
@@ -10,4 +11,5 @@ export class Item extends Pring.Base implements tradable.ItemProtocol {
     @property product?: string
     @property sku: string = ''
     @property isCanceled: boolean = false
+    @property inventoryStock?: string
 }
