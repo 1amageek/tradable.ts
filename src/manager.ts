@@ -25,7 +25,7 @@ import {
     TransactionDelegate,
     TradeDelegate,
     TradeInformation,
-    SKUShardProtocol
+    InventoryStockProtocol
 } from "./index"
 
 export type OrderResult<T extends TradeTransactionProtocol> = {
@@ -60,9 +60,9 @@ export type TransferCancelResult = {
 
 export class Manager
     <
-    SKUShard extends SKUShardProtocol,
-    SKU extends SKUProtocol<SKUShard>,
-    Product extends ProductProtocol<SKUShard, SKU>,
+    InventoryStock extends InventoryStockProtocol,
+    SKU extends SKUProtocol<InventoryStock>,
+    Product extends ProductProtocol<InventoryStock, SKU>,
     OrderItem extends OrderItemProtocol,
     Order extends OrderProtocol<OrderItem>,
     TradeTransaction extends TradeTransactionProtocol,
@@ -71,7 +71,7 @@ export class Manager
     Account extends AccountProtocol<BalanceTransaction>
     > {
 
-    private _SKUShard: { new(id?: string, value?: { [key: string]: any }): SKUShard }
+    private _InventoryStock: { new(id?: string, value?: { [key: string]: any }): InventoryStock }
     private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
     private _Product: { new(id?: string, value?: { [key: string]: any }): Product }
     private _OrderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem }
@@ -81,7 +81,7 @@ export class Manager
     private _User: { new(id?: string, value?: { [key: string]: any }): User }
     private _Account: { new(id?: string, value?: { [key: string]: any }): Account }
 
-    private stockManager: StockManager<Order, OrderItem, User, Product, SKUShard, SKU, TradeTransaction>
+    private stockManager: StockManager<Order, OrderItem, User, Product, InventoryStock, SKU, TradeTransaction>
 
     private balanceManager: BalanceManager<BalanceTransaction, Account>
 
@@ -92,7 +92,7 @@ export class Manager
     public tradeDelegate?: TradeDelegate
 
     constructor(
-        skuShard: { new(id?: string, value?: { [key: string]: any }): SKUShard },
+        inventoryStock: { new(id?: string, value?: { [key: string]: any }): InventoryStock },
         sku: { new(id?: string, value?: { [key: string]: any }): SKU },
         product: { new(id?: string, value?: { [key: string]: any }): Product },
         orderItem: { new(id?: string, value?: { [key: string]: any }): OrderItem },
@@ -102,7 +102,7 @@ export class Manager
         user: { new(id?: string, value?: { [key: string]: any }): User },
         account: { new(id?: string, value?: { [key: string]: any }): Account }
     ) {
-        this._SKUShard = skuShard
+        this._InventoryStock = inventoryStock
         this._SKU = sku
         this._Product = product
         this._OrderItem = orderItem
@@ -112,7 +112,7 @@ export class Manager
         this._User = user
         this._Account = account
 
-        this.stockManager = new StockManager(this._User, this._Product, this._SKUShard, this._SKU, this._TradeTransaction)
+        this.stockManager = new StockManager(this._User, this._Product, this._InventoryStock, this._SKU, this._TradeTransaction)
         this.balanceManager = new BalanceManager(this._BalanceTransaction, this._Account)
         this.orderManager = new OrderManager(this._User)
     }
@@ -315,7 +315,7 @@ export class Manager
                                     product: productID
                                 }
                                 orderItem.status = OrderItemStatus.changed
-                                const tradeTransaction = await this.stockManager.orderChange(tradeInformation, itemID, transaction)
+                                const tradeTransaction = await this.stockManager.itemCancel(tradeInformation, itemID, transaction)
                                 tradeTransactions.push(tradeTransaction)
                             }
 
@@ -355,7 +355,7 @@ export class Manager
                                         product: productID
                                     }
                                     orderItem.status = OrderItemStatus.changed
-                                    const tradeTransaction = await this.stockManager.orderChange(tradeInformation, itemID, transaction)
+                                    const tradeTransaction = await this.stockManager.itemCancel(tradeInformation, itemID, transaction)
                                     tradeTransactions.push(tradeTransaction)
                                 }
 
@@ -427,7 +427,6 @@ export class Manager
                             for (const orderItem of orderItems) {
                                 const productID = orderItem.product
                                 const skuID = orderItem.sku
-                                const quantity = orderItem.quantity
                                 if (skuID) {
                                     const tradeInformation: TradeInformation = {
                                         selledBy: order.selledBy,
@@ -437,7 +436,7 @@ export class Manager
                                         product: productID
                                     }
                                     orderItem.status = OrderItemStatus.canceled
-                                    const task = this.stockManager.orderCancel(tradeInformation, quantity, transaction)
+                                    const task = this.stockManager.orderCancel(tradeInformation, transaction)
                                     tasks.push(task)
                                 }
                             }
@@ -472,7 +471,6 @@ export class Manager
                                 for (const orderItem of orderItems) {
                                     const productID = orderItem.product
                                     const skuID = orderItem.sku
-                                    const quantity = orderItem.quantity
                                     if (skuID) {
                                         const tradeInformation: TradeInformation = {
                                             selledBy: order.selledBy,
@@ -482,7 +480,7 @@ export class Manager
                                             product: productID
                                         }
                                         orderItem.status = OrderItemStatus.canceled
-                                        const task = this.stockManager.orderCancel(tradeInformation, quantity, transaction)
+                                        const task = this.stockManager.orderCancel(tradeInformation, transaction)
                                         tasks.push(task)
                                     }
                                 }
