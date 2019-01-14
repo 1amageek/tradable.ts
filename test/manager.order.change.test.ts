@@ -131,7 +131,7 @@ describe("Manager", () => {
             // SKU
             expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
             expect(_sku.inventory.quantity).toEqual(5)
-            expect(inventoryStocks).toEqual(4)
+            expect(inventoryStocks.length).toEqual(5)
 
             // Item
             expect(_item.order).toEqual(order.id)
@@ -192,7 +192,6 @@ describe("Manager", () => {
             order.expirationDate = admin.firestore.Timestamp.fromDate(new Date(date.setDate(date.getDate() + 14)))
             order.items.append(orderItem)
             await order.save()
-
 
             const paymentOptions: Tradable.PaymentOptions = {
                 vendorType: "stripe",
