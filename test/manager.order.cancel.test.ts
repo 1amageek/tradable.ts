@@ -138,7 +138,7 @@ describe("Manager", () => {
             // SKU
             expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
             expect(_sku.inventory.quantity).toEqual(5)
-            expect(inventoryStocks.length).toEqual(0)
+            expect(inventoryStocks.length).toEqual(5)
 
             // Item
             expect(_item.order).toEqual(order.id)
@@ -241,7 +241,6 @@ describe("Manager", () => {
             order.paymentStatus = Tradable.OrderPaymentStatus.none
             await order.save()
 
-
             const paymentOptions: Tradable.PaymentOptions = {
                 vendorType: "stripe",
                 refundFeeRate: 0
@@ -295,7 +294,7 @@ describe("Manager", () => {
                 expect(cancelResult).toBeUndefined()
             } catch (error) {
                 expect(error).not.toBeUndefined()
-                expect(error instanceof Tradable.TradableError).toEqual(false)
+                expect(error instanceof Tradable.TradableError).toEqual(true)
             }
         }, 15000)
     })
