@@ -78,13 +78,15 @@ export type TransactionResult = {
     [key: string]: any
 }
 
+export type AccountOrDestination = string | "platform" | "bank_account"
+
 /// Transaction is the history that changed Balance. Tranasaction is made from the ID of the event.
 export interface BalanceTransactionProtocol extends Pring.Base {
     type: BalanceTransactionType
     currency: Currency
     amount: number
-    from?: string
-    to?: string
+    from: AccountOrDestination
+    to: AccountOrDestination
     order?: string
     transfer?: string
     payout?: string
