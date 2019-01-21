@@ -10,6 +10,6 @@ export class Item extends Pring.Base implements tradable.ItemProtocol {
     @property selledBy: string = ''
     @property product?: string
     @property sku: string = ''
-    @property isCanceled: boolean = false
+    @property isCancelled: boolean = false
     @property inventoryStock?: string
 }

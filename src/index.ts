@@ -157,7 +157,7 @@ export enum OrderItemStatus {
     none = 'none',
     ordered = 'ordered',
     changed = 'changed',
-    canceled = 'canceld'
+    cancelled = 'cancelled'
 }
 
 export enum OrderTransferStatus {
@@ -168,7 +168,7 @@ export enum OrderTransferStatus {
 
     transferred = 'transferred',
 
-    canceled = 'canceled',
+    cancelled = 'cancelled',
 
     transferFailure = 'failure',
 
@@ -185,7 +185,7 @@ export enum OrderPaymentStatus {
 
     paid = 'paid',
 
-    canceled = 'canceled',
+    cancelled = 'cancelled',
 
     paymentFailure = 'failure',
 
@@ -220,6 +220,7 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
     paymentStatus: OrderPaymentStatus
     transferStatus: OrderTransferStatus
     transactionResults: TransactionResult[]
+    isCancelled: boolean
 }
 
 export interface ItemProtocol extends Pring.Base {
@@ -228,7 +229,7 @@ export interface ItemProtocol extends Pring.Base {
     product?: string
     sku: string
     inventoryStock?: string
-    isCanceled: boolean
+    isCancelled: boolean
 }
 
 export type PaymentOptions = {
@@ -274,6 +275,8 @@ export interface TradeDelegate {
 export interface TransactionDelegate {
 
     authorize<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions): Promise<any>
+
+    authorizeCancel<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions): Promise<any>
 
     pay<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions): Promise<any>
 

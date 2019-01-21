@@ -371,7 +371,7 @@ describe("StockManager", () => {
             expect(_item.selledBy).toEqual(shop.id)
             expect(_item.product).toEqual(product.id)
             expect(_item.sku).toEqual(sku.id)
-            expect(_item.isCanceled).toEqual(true)
+            expect(_item.isCancelled).toEqual(true)
 
         }, 15000)
 
@@ -436,7 +436,7 @@ describe("StockManager", () => {
                 expect(_item.selledBy).toEqual(shop.id)
                 expect(_item.product).toEqual(product.id)
                 expect(_item.sku).toEqual(sku.id)
-                expect(_item.isCanceled).toEqual(true)
+                expect(_item.isCancelled).toEqual(true)
             }
         }, 15000)
     })
@@ -517,7 +517,7 @@ describe("StockManager", () => {
             expect(_item.selledBy).toEqual(shop.id)
             expect(_item.product).toEqual(product.id)
             expect(_item.sku).toEqual(sku.id)
-            expect(_item.isCanceled).toEqual(true)
+            expect(_item.isCancelled).toEqual(true)
 
         }, 15000)
 
@@ -581,7 +581,7 @@ describe("StockManager", () => {
                 expect(_item.selledBy).toEqual(shop.id)
                 expect(_item.product).toEqual(product.id)
                 expect(_item.sku).toEqual(sku.id)
-                expect(_item.isCanceled).toEqual(true)
+                expect(_item.isCancelled).toEqual(true)
             }
         }, 15000)
     })

@@ -32,6 +32,10 @@ export type ReserveResult = {
     authorizeResult?: any
 }
 
+export type ReserveCancelResult = {
+    authorizeCancelResult?: any
+}
+
 export type TradeResult<T extends TradeTransactionProtocol> = {
     tradeTransactions: T[]
 }
@@ -153,12 +157,6 @@ export class Manager
             const validator = new OrderValidator(this._Order, this._OrderItem)
             const validationError = validator.validate(order, orderItems)
             if (validationError) {
-                order.paymentStatus = OrderPaymentStatus.rejected
-                try {
-                    await order.update()
-                } catch (error) {
-                    throw error
-                }
                 throw validationError
             }
 
@@ -181,7 +179,7 @@ export class Manager
                 }
             } else {
                 try {
-                    let authorizeResult: ReserveResult | undefined = undefined
+                    let authorizeResult: { [key: string]: any } | undefined = undefined
                     return await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
                             try {
@@ -192,9 +190,84 @@ export class Manager
                                 this.orderManager.update(order, orderItems,
                                     { [paymentOptions.vendorType]: authorizeResult }
                                     , transaction)
-                                resolve({
+                                const result: ReserveResult = {
                                     authorizeResult: authorizeResult
-                                })
+                                }
+                                resolve(result)
+                            } catch (error) {
+                                reject(error)
+                            }
+                        })
+                    })
+                } catch (error) {
+                    throw error
+                }
+            }
+        } catch (error) {
+            throw error
+        }
+    }
+
+    /**
+     * オーダーをSellerに渡して、オーソリを作る
+     * 
+     * @param order 
+     * @param orderItems 
+     * @param paymentOptions 
+     */
+    async reserveCancel(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
+        try {
+
+            if (!(order.paymentStatus === OrderPaymentStatus.authorized)) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order paymentStatus is invalid.`)
+            }
+
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required delegate.`)
+            }
+
+            const validator = new OrderValidator(this._Order, this._OrderItem)
+            const validationError = validator.validate(order, orderItems)
+            if (validationError) {
+                throw validationError
+            }
+
+            if (order.amount === 0) {
+                try {
+                    return await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+                            try {
+                                order.paymentStatus = OrderPaymentStatus.cancelled
+                                order.isCancelled = true
+                                this.orderManager.update(order, orderItems, {}, transaction)
+                                resolve({})
+                            } catch (error) {
+                                reject(error)
+                            }
+                        })
+                    })
+                } catch (error) {
+                    throw error
+                }
+            } else {
+                try {
+                    let authorizeCancelResult: { [key: string]: any } | undefined = undefined
+                    return await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+                            try {
+                                if (!authorizeCancelResult) {
+                                    authorizeCancelResult = await delegate.authorizeCancel(order.currency, order.amount, order, paymentOptions)
+                                }
+                                order.paymentStatus = OrderPaymentStatus.cancelled
+                                order.isCancelled = true
+                                this.orderManager.update(order, orderItems,
+                                    { [paymentOptions.vendorType]: authorizeCancelResult }
+                                    , transaction)
+                                const result: ReserveCancelResult = {
+                                    authorizeCancelResult: authorizeCancelResult
+                                }
+                                resolve(result)
                             } catch (error) {
                                 reject(error)
                             }
@@ -226,12 +299,6 @@ export class Manager
             const validator = new OrderValidator(this._Order, this._OrderItem)
             const validationError = validator.validate(order, orderItems)
             if (validationError) {
-                order.paymentStatus = OrderPaymentStatus.rejected
-                try {
-                    await order.update()
-                } catch (error) {
-                    throw error
-                }
                 throw validationError
             }
 
@@ -303,12 +370,6 @@ export class Manager
             const validator = new OrderValidator(this._Order, this._OrderItem)
             const validationError = validator.validate(order, orderItems)
             if (validationError) {
-                order.paymentStatus = OrderPaymentStatus.rejected
-                try {
-                    await order.update()
-                } catch (error) {
-                    throw error
-                }
                 throw validationError
             }
 
@@ -741,14 +802,14 @@ export class Manager
                                         sku: skuID,
                                         product: productID
                                     }
-                                    orderItem.status = OrderItemStatus.canceled
+                                    orderItem.status = OrderItemStatus.cancelled
                                     const task = this.stockManager.orderCancel(tradeInformation, transaction)
                                     tasks.push(task)
                                 }
                             }
                             const tradeTransactions = await Promise.all(tasks)
-
-                            order.paymentStatus = OrderPaymentStatus.canceled
+                            order.isCancelled = true
+                            order.paymentStatus = OrderPaymentStatus.cancelled
                             this.orderManager.update(order, orderItems,
                                 {}
                                 , transaction)
@@ -785,7 +846,7 @@ export class Manager
                                             sku: skuID,
                                             product: productID
                                         }
-                                        orderItem.status = OrderItemStatus.canceled
+                                        orderItem.status = OrderItemStatus.cancelled
                                         const task = this.stockManager.orderCancel(tradeInformation, transaction)
                                         tasks.push(task)
                                     }
@@ -799,8 +860,8 @@ export class Manager
                                     amount,
                                     { [paymentOptions.vendorType]: refundResult }
                                     , transaction)
-
-                                order.paymentStatus = OrderPaymentStatus.canceled
+                                order.isCancelled = true
+                                order.paymentStatus = OrderPaymentStatus.cancelled
                                 this.orderManager.update(order, orderItems,
                                     { [paymentOptions.vendorType]: refundResult }
                                     , transaction)
@@ -845,6 +906,10 @@ export class Manager
             const delegate: TransactionDelegate | undefined = this.delegate
             if (!delegate) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, Manager required delegate.`)
+            }
+
+            if (order.isCancelled) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid transfer ORDER/${order.id}, This order is Cancelled`)
             }
 
             if (!(order.paymentStatus === OrderPaymentStatus.paid)) {
@@ -967,7 +1032,7 @@ export class Manager
                                 { [transferOptions.vendorType]: transferCancelResult },
                                 transaction)
 
-                            order.transferStatus = OrderTransferStatus.canceled
+                            order.transferStatus = OrderTransferStatus.cancelled
                             this.orderManager.update(order, [],
                                 { [transferOptions.vendorType]: transferCancelResult }
                                 , transaction)

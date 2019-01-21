@@ -37,6 +37,10 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
         }
     }
 
+    async authorizeCancel<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions) {
+        return {}
+    }
+
     async pay<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions) {
         const idempotency_key = order.id
         const data: Stripe.charges.IChargeCreationOptions = {

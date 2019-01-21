@@ -19,10 +19,9 @@ export class Order extends Pring.Base implements tradable.OrderProtocol<OrderIte
     @property expirationDate?: Pring.Timestamp
     @property currency: tradable.Currency = tradable.Currency.JPY
     @property amount: number = 0
-    @property fee: number = 0
-    @property net: number = 0
     @property items: Pring.List<OrderItem> = new Pring.List(this, OrderItem)
     @property paymentStatus: tradable.OrderPaymentStatus = tradable.OrderPaymentStatus.none
     @property transferStatus: tradable.OrderTransferStatus = tradable.OrderTransferStatus.none
     @property transactionResults: tradable.TransactionResult[] = []
+    @property isCancelled: boolean = false
 }

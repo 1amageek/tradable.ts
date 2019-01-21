@@ -10,6 +10,10 @@ export class StripeInvalidPaymentDelegate implements tradable.TransactionDelegat
         throw new Error("Method not implemented.");
     }
 
+    async authorizeCancel<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions) {
+        throw new Error("Method not implemented.");
+    }
+
     async pay<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions) {
         throw new Error("Method not implemented.");
     }
