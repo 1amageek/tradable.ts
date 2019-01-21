@@ -32,10 +32,14 @@ export type ReserveResult = {
     authorizeResult?: any
 }
 
+export type TradeResult<T extends TradeTransactionProtocol> = {
+    tradeTransactions: T[]
+}
+
 export type CheckoutResult<T extends TradeTransactionProtocol> = {
     balanceTransaction?: BalanceTransactionProtocol
     tradeTransactions: T[]
-    chargeResult?: any
+    paymentResult?: any
     refundResult?: any
 }
 
@@ -122,7 +126,7 @@ export class Manager
     }
 
     /**
-     * 予約する
+     * オーダーをSellerに渡して、オーソリを作る
      * 
      * @param order 
      * @param orderItems 
@@ -157,6 +161,7 @@ export class Manager
                     return await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
                             try {
+                                order.paymentStatus = OrderPaymentStatus.authorized
                                 this.orderManager.update(order, orderItems, {}, transaction)
                                 const reuslt: ReserveResult = {}
                                 resolve(reuslt)
@@ -192,6 +197,71 @@ export class Manager
                 } catch (error) {
                     throw error
                 }
+            }
+        } catch (error) {
+            throw error
+        }
+    }
+
+    /**
+     * 在庫を減らす
+     * 
+     * @param order 
+     * @param orderItems 
+     * @param paymentOptions 
+     */
+    async trade(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
+        try {
+
+            if (!(order.paymentStatus === OrderPaymentStatus.authorized)) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order paymentStatus is invalid.`)
+            }
+
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required delegate.`)
+            }
+
+            const tradeDelegate: TradeDelegate | undefined = this.tradeDelegate
+            if (!tradeDelegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required trade delegate.`)
+            }
+
+            this.stockManager.delegate = tradeDelegate
+            try {
+                return await firestore.runTransaction(async (transaction) => {
+                    return new Promise(async (resolve, reject) => {
+                        try {
+                            const tasks = []
+                            for (const orderItem of orderItems) {
+                                const productID = orderItem.product
+                                const skuID = orderItem.sku
+                                const quantity = orderItem.quantity
+                                if (skuID) {
+                                    const tradeInformation: TradeInformation = {
+                                        selledBy: order.selledBy,
+                                        purchasedBy: order.purchasedBy,
+                                        order: order.id,
+                                        sku: skuID,
+                                        product: productID
+                                    }
+                                    const task = this.stockManager.order(tradeInformation, quantity, transaction)
+                                    tasks.push(task)
+                                }
+                            }
+                            const tradeTransactions = await Promise.all(tasks)
+                            this.orderManager.update(order, orderItems, {}, transaction)
+                            const reuslt: TradeResult<TradeTransaction> = {
+                                tradeTransactions: tradeTransactions
+                            }
+                            resolve(reuslt)
+                        } catch (error) {
+                            reject(error)
+                        }
+                    })
+                })
+            } catch (error) {
+                throw error
             }
         } catch (error) {
             throw error
@@ -276,7 +346,7 @@ export class Manager
                 }
             } else {
                 try {
-                    let chargeResult: { [key: string]: any } | undefined = undefined
+                    let paymentResult: { [key: string]: any } | undefined = undefined
                     return await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
 
@@ -301,30 +371,30 @@ export class Manager
                                 }
                                 const tradeTransactions = await Promise.all(tasks)
                                 try {
-                                    if (!chargeResult) {
-                                        chargeResult = await delegate.pay(order.currency, order.amount, order, paymentOptions)
+                                    if (!paymentResult) {
+                                        paymentResult = await delegate.pay(order.currency, order.amount, order, paymentOptions)
                                     }
                                     // payment
-                                    const balanceTransaction = this.balanceManager.payment(order.purchasedBy,
+                                    const balanceTransaction = this.balanceManager.pay(order.purchasedBy,
                                         order.id,
                                         order.currency,
                                         order.amount,
-                                        { [paymentOptions.vendorType]: chargeResult }
+                                        { [paymentOptions.vendorType]: paymentResult }
                                         , transaction)
 
                                     order.paymentStatus = OrderPaymentStatus.paid
                                     this.orderManager.update(order, orderItems,
-                                        { [paymentOptions.vendorType]: chargeResult }
+                                        { [paymentOptions.vendorType]: paymentResult }
                                         , transaction)
                                     resolve({
                                         tradeTransactions: tradeTransactions,
                                         balanceTransaction: balanceTransaction,
-                                        chargeResult: chargeResult
+                                        paymentResult: paymentResult
                                     })
                                 } catch (error) {
-                                    if (chargeResult) {
+                                    if (paymentResult) {
                                         reject({
-                                            chargeResult: chargeResult
+                                            paymentResult: paymentResult
                                         })
                                     } else {
                                         reject(error)
@@ -347,7 +417,7 @@ export class Manager
                     }
                     let orderReuslt = error
                     try {
-                        if (orderReuslt.chargeResult) {
+                        if (orderReuslt.paymentResult) {
                             const refundResult = await delegate.refund(order.currency, order.amount, order, paymentOptions, `[Manager] Invalid order ORDER/${order.id}, transaction failure.`)
                             orderReuslt.refundResult = refundResult
                         }

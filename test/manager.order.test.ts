@@ -150,7 +150,7 @@ describe("Manager", () => {
             expect(systemBalanceTransaction.to).toEqual(BalanceManager.platform)
             expect(systemBalanceTransaction.transfer).toBeUndefined()
             expect(systemBalanceTransaction.payout).toBeUndefined()
-            expect(systemBalanceTransaction.transactionResults[0]['stripe']).toEqual(result.chargeResult)
+            expect(systemBalanceTransaction.transactionResults[0]['stripe']).toEqual(result.paymentResult)
 
             // Account Trade Transaction
             expect(accountBalanceTransaction.type).toEqual(Tradable.BalanceTransactionType.payment)
@@ -160,7 +160,7 @@ describe("Manager", () => {
             expect(accountBalanceTransaction.to).toEqual(BalanceManager.platform)
             expect(accountBalanceTransaction.transfer).toBeUndefined()
             expect(accountBalanceTransaction.payout).toBeUndefined()
-            expect(accountBalanceTransaction.transactionResults[0]['stripe']).toEqual(result.chargeResult)
+            expect(accountBalanceTransaction.transactionResults[0]['stripe']).toEqual(result.paymentResult)
 
         }, 15000)
 
