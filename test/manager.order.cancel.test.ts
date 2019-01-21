@@ -99,10 +99,10 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
 
-            const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult<TradeTransaction>
+            const result = await manager.checkout(order, [orderItem], paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
 
             const _order = await Order.get(order.id) as Order
-            const cancelResult = await manager.orderCancel(_order, [orderItem], paymentOptions) as Tradable.OrderResult<TradeTransaction>
+            const cancelResult = await manager.checkoutCancel(_order, [orderItem], paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
 
             const shopTradeTransaction = shop.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction)
             const userTradeTransaction = user.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction)
@@ -204,7 +204,7 @@ describe("Manager", () => {
 
             try {
                 const manager: Tradable.Manager<InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account> = new Tradable.Manager(InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, User, Account)
-                const cancelResult = await manager.orderCancel(order, [orderItem], paymentOptions) as Tradable.OrderCancelResult<TradeTransaction>
+                const cancelResult = await manager.checkoutCancel(order, [orderItem], paymentOptions) as Tradable.CheckoutCancelResult<TradeTransaction>
                 expect(cancelResult).toBeUndefined()
             } catch (error) {
                 expect(error).not.toBeUndefined()
@@ -247,7 +247,7 @@ describe("Manager", () => {
             }
 
             try {
-                const cancelResult = await manager.orderCancel(order, [orderItem], paymentOptions) as Tradable.OrderCancelResult<TradeTransaction>
+                const cancelResult = await manager.checkoutCancel(order, [orderItem], paymentOptions) as Tradable.CheckoutCancelResult<TradeTransaction>
                 expect(cancelResult).toBeUndefined()
             } catch (error) {
                 expect(error).not.toBeUndefined()
@@ -290,7 +290,7 @@ describe("Manager", () => {
             }
 
             try {
-                const cancelResult = await manager.orderCancel(order, [orderItem], paymentOptions) as Tradable.OrderCancelResult<TradeTransaction>
+                const cancelResult = await manager.checkoutCancel(order, [orderItem], paymentOptions) as Tradable.CheckoutCancelResult<TradeTransaction>
                 expect(cancelResult).toBeUndefined()
             } catch (error) {
                 expect(error).not.toBeUndefined()

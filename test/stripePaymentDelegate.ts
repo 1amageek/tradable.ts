@@ -6,7 +6,38 @@ export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
 export class StripePaymentDelegate implements tradable.TransactionDelegate {
 
-    async payment<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions) {
+    async authorize<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions) {
+        const idempotency_key = order.id
+        const data: Stripe.charges.IChargeCreationOptions = {
+            amount: order.amount,
+            currency: order.currency,
+            capture: false,
+            description: `Charge for user/${order.purchasedBy}`
+        }
+
+        if (options) {
+            if (options.customer) {
+                data.customer = options.customer
+            }
+            if (options.source) {
+                data.source = options.source
+            }
+        }
+        data.customer = Config.STRIPE_CUS_TOKEN
+        data.source = Config.STRIPE_CORD_TOKEN
+
+        try {
+            const charge = await stripe.charges.create(data, {
+                idempotency_key: idempotency_key
+            })
+            return charge
+        } catch (error) {
+            console.log(error)
+            throw error
+        }
+    }
+
+    async pay<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions) {
         const idempotency_key = order.id
         const data: Stripe.charges.IChargeCreationOptions = {
             amount: order.amount,

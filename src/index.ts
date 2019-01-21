@@ -1,9 +1,9 @@
 import * as Pring from 'pring-admin'
 import * as admin from 'firebase-admin'
 import * as FirebaseFirestore from '@google-cloud/firestore'
-import { Manager, OrderResult, OrderChangeResult, OrderCancelResult, TransferResult, TransferCancelResult } from './manager'
+import { Manager, ReserveResult, CheckoutResult, CheckoutChangeResult, CheckoutCancelResult, TransferResult, TransferCancelResult } from './manager'
 import { Currency } from './currency'
-export { Currency, Manager, OrderResult, OrderChangeResult, OrderCancelResult, TransferResult, TransferCancelResult }
+export { Currency, Manager, ReserveResult, CheckoutResult, CheckoutChangeResult, CheckoutCancelResult, TransferResult, TransferCancelResult }
 
 export let firestore: FirebaseFirestore.Firestore
 
@@ -181,6 +181,8 @@ export enum OrderPaymentStatus {
 
     rejected = 'rejected',
 
+    authorized = 'authorized',
+
     paid = 'paid',
 
     canceled = 'canceled',
@@ -271,7 +273,9 @@ export interface TradeDelegate {
 
 export interface TransactionDelegate {
 
-    payment<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions): Promise<any>
+    authorize<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions): Promise<any>
+
+    pay<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions): Promise<any>
 
     refund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: PaymentOptions, reason?: string): Promise<any>
 

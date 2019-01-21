@@ -99,7 +99,7 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
 
-            const result = await manager.order(order, [orderItem], paymentOptions) as Tradable.OrderResult<TradeTransaction>
+            const result = await manager.checkout(order, [orderItem], paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
 
             const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
             const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
@@ -165,7 +165,7 @@ describe("Manager", () => {
 
             {
                 const _order = await Order.get(order.id) as Order
-                const cancelResult = await manager.orderCancel(_order, [orderItem], paymentOptions) as Tradable.OrderResult<TradeTransaction>
+                const cancelResult = await manager.checkoutCancel(_order, [orderItem], paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
 
                 const shopTradeTransaction = shop.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction)
                 const userTradeTransaction = user.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction)

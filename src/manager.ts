@@ -11,7 +11,6 @@ import {
     TradeTransactionProtocol,
     BalanceTransactionProtocol,
     AccountProtocol,
-    OrderResult,
     OrderPaymentStatus,
     PaymentOptions,
     Currency,
@@ -28,20 +27,25 @@ import {
     InventoryStockProtocol
 } from "./index"
 
-export type OrderResult<T extends TradeTransactionProtocol> = {
+
+export type ReserveResult = {
+    authorizeResult?: any
+}
+
+export type CheckoutResult<T extends TradeTransactionProtocol> = {
     balanceTransaction?: BalanceTransactionProtocol
     tradeTransactions: T[]
     chargeResult?: any
     refundResult?: any
 }
 
-export type OrderChangeResult<T extends TradeTransactionProtocol> = {
+export type CheckoutChangeResult<T extends TradeTransactionProtocol> = {
     balanceTransaction?: BalanceTransactionProtocol
     tradeTransactions: T[]
     refundResult: any
 }
 
-export type OrderCancelResult<T extends TradeTransactionProtocol> = {
+export type CheckoutCancelResult<T extends TradeTransactionProtocol> = {
     balanceTransaction?: BalanceTransactionProtocol
     tradeTransactions: T[]
     refundResult: any
@@ -117,7 +121,91 @@ export class Manager
         this.orderManager = new OrderManager(this._User)
     }
 
-    async order(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
+    /**
+     * 予約する
+     * 
+     * @param order 
+     * @param orderItems 
+     * @param paymentOptions 
+     */
+    async reserve(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
+        try {
+
+            if (!(order.paymentStatus === OrderPaymentStatus.none)) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order paymentStatus is invalid.`)
+            }
+
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required delegate.`)
+            }
+
+            const validator = new OrderValidator(this._Order, this._OrderItem)
+            const validationError = validator.validate(order, orderItems)
+            if (validationError) {
+                order.paymentStatus = OrderPaymentStatus.rejected
+                try {
+                    await order.update()
+                } catch (error) {
+                    throw error
+                }
+                throw validationError
+            }
+
+            if (order.amount === 0) {
+                try {
+                    return await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+                            try {
+                                this.orderManager.update(order, orderItems, {}, transaction)
+                                const reuslt: ReserveResult = {}
+                                resolve(reuslt)
+                            } catch (error) {
+                                reject(error)
+                            }
+                        })
+                    })
+                } catch (error) {
+                    throw error
+                }
+            } else {
+                try {
+                    let authorizeResult: ReserveResult | undefined = undefined
+                    return await firestore.runTransaction(async (transaction) => {
+                        return new Promise(async (resolve, reject) => {
+                            try {
+                                if (!authorizeResult) {
+                                    authorizeResult = await delegate.authorize(order.currency, order.amount, order, paymentOptions)
+                                }
+                                order.paymentStatus = OrderPaymentStatus.authorized
+                                this.orderManager.update(order, orderItems,
+                                    { [paymentOptions.vendorType]: authorizeResult }
+                                    , transaction)
+                                resolve({
+                                    authorizeResult: authorizeResult
+                                })
+                            } catch (error) {
+                                reject(error)
+                            }
+                        })
+                    })
+                } catch (error) {
+                    throw error
+                }
+            }
+        } catch (error) {
+            throw error
+        }
+    }
+
+    /**
+     * オーダーに対して支払いを発生させる処理
+     * 
+     * @param order 
+     * @param orderItems 
+     * @param paymentOptions 
+     */
+    async checkout(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
         try {
 
             if (!(order.paymentStatus === OrderPaymentStatus.none)) {
@@ -174,7 +262,7 @@ export class Manager
                                 const tradeTransactions = await Promise.all(tasks)
                                 order.paymentStatus = OrderPaymentStatus.paid
                                 this.orderManager.update(order, orderItems, {}, transaction)
-                                const reuslt: OrderResult<TradeTransaction> = {
+                                const reuslt: CheckoutResult<TradeTransaction> = {
                                     tradeTransactions: tradeTransactions
                                 }
                                 resolve(reuslt)
@@ -214,7 +302,7 @@ export class Manager
                                 const tradeTransactions = await Promise.all(tasks)
                                 try {
                                     if (!chargeResult) {
-                                        chargeResult = await delegate.payment(order.currency, order.amount, order, paymentOptions)
+                                        chargeResult = await delegate.pay(order.currency, order.amount, order, paymentOptions)
                                     }
                                     // payment
                                     const balanceTransaction = this.balanceManager.payment(order.purchasedBy,
@@ -280,7 +368,15 @@ export class Manager
         }
     }
 
-    async orderChange(order: Order, orderItem: OrderItem, itemID: string, paymentOptions: PaymentOptions) {
+    /**
+     * 支払い後、支払いの内容を変更する
+     * 
+     * @param order 
+     * @param orderItem 
+     * @param itemID 
+     * @param paymentOptions 
+     */
+    async checkoutChange(order: Order, orderItem: OrderItem, itemID: string, paymentOptions: PaymentOptions) {
         try {
             const delegate: TransactionDelegate | undefined = this.delegate
             if (!delegate) {
@@ -391,8 +487,8 @@ export class Manager
                     if (error instanceof TradableError) {
                         throw error
                     }
-                    let orderCancelResult = error
-                    return orderCancelResult
+                    let CheckoutCancelResult = error
+                    return CheckoutCancelResult
                 }
             }
         } catch (error) {
@@ -400,7 +496,14 @@ export class Manager
         }
     }
 
-    async orderCancel(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
+    /**
+     * 支払い後、支払いをキャンセルする
+     * 
+     * @param order 
+     * @param orderItems 
+     * @param paymentOptions 
+     */
+    async checkoutCancel(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
         try {
             const delegate: TransactionDelegate | undefined = this.delegate
             if (!delegate) {
@@ -525,8 +628,8 @@ export class Manager
                         }
                         throw error
                     }
-                    let orderCancelResult = error
-                    return orderCancelResult
+                    let CheckoutCancelResult = error
+                    return CheckoutCancelResult
                 }
             }
         } catch (error) {

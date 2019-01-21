@@ -7,6 +7,7 @@ import {
     UserProtocol,
     TransactionResult
 } from "./index"
+import { Order } from '../test/models/order';
 
 export class OrderManager
     <
@@ -18,8 +19,6 @@ export class OrderManager
 
     private _User: { new(id?: string, value?: { [key: string]: any }): User }
 
-    private timestamp = FirebaseFirestore.FieldValue.serverTimestamp()
-
     constructor(
         user: { new(id?: string, value?: { [key: string]: any }): User }
     ) {
@@ -29,14 +28,17 @@ export class OrderManager
     update(order: Order, orderItems: OrderItem[], transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
     
         const orderValue = order.value() as any
-        orderValue.updatedAt = this.timestamp
+        orderValue.updatedAt = FirebaseFirestore.FieldValue.serverTimestamp()
 
         if (Object.keys(transactionResult).length > 0) {
             orderValue["transactionResults"] = FirebaseFirestore.FieldValue.arrayUnion(transactionResult)
         }
 
-        transaction.set(order.reference, orderValue, { merge: true })
+        const orderReference = Order.getReference()
         const seller = new this._User(order.selledBy, {})
+        const purchaser = new this._User(order.purchasedBy, {})
+        transaction.set(orderReference.doc(order.id), orderValue, { merge: true })
         transaction.set(seller.receivedOrders.reference.doc(order.id), orderValue, { merge: true })
+        transaction.set(purchaser.orders.reference.doc(order.id), orderValue, { merge: true })
     }
 }
