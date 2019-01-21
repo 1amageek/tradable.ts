@@ -11,7 +11,7 @@ import {
     TradableError,
     TradableErrorCode,
     TradeInformation,
-    SKUShardProtocol
+    InventoryStockProtocol
 } from "./index"
 
 export class StockManager
@@ -19,15 +19,15 @@ export class StockManager
     Order extends OrderProtocol<OrderItem>,
     OrderItem extends OrderItemProtocol,
     User extends UserProtocol<Order, OrderItem, TradeTransaction>,
-    Product extends ProductProtocol<SKUShard, SKU>,
-    SKUShard extends SKUShardProtocol,
-    SKU extends SKUProtocol<SKUShard>,
+    Product extends ProductProtocol<InventoryStock, SKU>,
+    InventoryStock extends InventoryStockProtocol,
+    SKU extends SKUProtocol<InventoryStock>,
     TradeTransaction extends TradeTransactionProtocol
     > {
 
     private _User: { new(id?: string, value?: { [key: string]: any }): User }
     private _Product: { new(id?: string, value?: { [key: string]: any }): Product }
-    private _SKUShard: { new(id?: string, value?: { [key: string]: any }): SKUShard }
+    private _InventoryStock: { new(id?: string, value?: { [key: string]: any }): InventoryStock }
     private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
     private _TradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction }
 
@@ -36,13 +36,13 @@ export class StockManager
     constructor(
         user: { new(id?: string, value?: { [key: string]: any }): User },
         product: { new(id?: string, value?: { [key: string]: any }): Product },
-        skuShard: { new(id?: string, value?: { [key: string]: any }): SKUShard },
+        inventoryStock: { new(id?: string, value?: { [key: string]: any }): InventoryStock },
         sku: { new(id?: string, value?: { [key: string]: any }): SKU },
         tradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction }
     ) {
         this._User = user
         this._Product = product
-        this._SKUShard = skuShard
+        this._InventoryStock = inventoryStock
         this._SKU = sku
         this._TradeTransaction = tradeTransaction
     }
@@ -59,8 +59,9 @@ export class StockManager
         const purchaser: User = new this._User(purchasedBy, {})
         const product: Product = new this._Product(productID, {})
         const sku: SKU = product.SKUs.doc(skuID, this._SKU)
-        const result = await Promise.all([sku.fetch(transaction), sku.shards.get(this._SKUShard, transaction)])
-        const shards: SKUShard[] = result[1]
+        const inventoryStockQuery = sku.inventoryStocks.reference.where("isAvailabled", "==", true).limit(quantity)
+        const snapshot: FirebaseFirestore.QuerySnapshot = await transaction.get(inventoryStockQuery)
+        const inventoryStocks: FirebaseFirestore.QueryDocumentSnapshot[] = snapshot.docs
 
         if (!sku) {
             throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
@@ -70,16 +71,13 @@ export class StockManager
             throw new TradableError(TradableErrorCode.outOfStock, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU is not availabled`)
         }
 
-        if (shards.length == 0) {
-            throw new TradableError(TradableErrorCode.internal, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU has not shards`)
+        if (inventoryStocks.length == 0) {
+            throw new TradableError(TradableErrorCode.internal, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU is out of stock.`)
         }
 
-        let skuQuantity: number = 0
-        shards.forEach((shard) => {
-            skuQuantity += shard.quantity
-        })
-
-        skuQuantity += quantity
+        if (inventoryStocks.length < quantity) {
+            throw new TradableError(TradableErrorCode.internal, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU is out of stock.`)
+        }
 
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
         tradeTransaction.type = TradeTransactionType.order
@@ -90,34 +88,24 @@ export class StockManager
         tradeTransaction.product = productID
         tradeTransaction.sku = skuID
 
-        const inventoryQuantity: number = sku.inventory.quantity || 0
-        if (inventoryQuantity < skuQuantity) {
-            throw new TradableError(TradableErrorCode.outOfStock, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU is out of stock.`)
-        }
-
-        if (inventoryQuantity === skuQuantity) {
-            transaction.set(sku.reference, { isOutOfStock: true }, { merge: true })
-        }
-
         for (let i = 0; i < quantity; i++) {
-            const itemID = this.delegate.createItem(tradeInformation, transaction)
+            const inventoryStockSnapshot: FirebaseFirestore.QueryDocumentSnapshot = inventoryStocks[i]
+            const itemID = this.delegate.createItem(tradeInformation, inventoryStocks[i].id, transaction)
             tradeTransaction.items.push(itemID)
+            transaction.set(inventoryStockSnapshot.ref, {
+                "isAvailabled": false,
+                "item": itemID,
+                "order": orderID
+            }, { merge: true })
         }
 
-        const shardID = Math.floor(Math.random() * sku.numberOfShards);
-        const shard: SKUShard = shards[shardID]
-        const shardQuantity: number = shard.quantity + quantity
-
+        transaction.set(tradeTransaction.reference, tradeTransaction.value(), { merge: true })
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
-        transaction.set(shard.reference, {
-            quantity: shardQuantity
-        }, { merge: true })
-
         return tradeTransaction
     }
 
-    async orderChange(tradeInformation: TradeInformation, itemID: string, transaction: FirebaseFirestore.Transaction) {
+    async itemCancel(tradeInformation: TradeInformation, itemID: string, transaction: FirebaseFirestore.Transaction) {
 
         const orderID: string = tradeInformation.order
         const skuID: string = tradeInformation.sku
@@ -129,26 +117,19 @@ export class StockManager
         const purchaser: User = new this._User(purchasedBy, {})
         const product: Product = new this._Product(productID, {})
         const sku: SKU = product.SKUs.doc(skuID, this._SKU)
-        const result = await Promise.all([sku.fetch(transaction), sku.shards.get(this._SKUShard, transaction)])
-        const shards: SKUShard[] = result[1]
+        const inventoryStockQuery = sku.inventoryStocks.reference.where("item", "==", itemID).limit(1)
+        const snapshot: FirebaseFirestore.QuerySnapshot = await transaction.get(inventoryStockQuery)
+        const inventoryStocks: FirebaseFirestore.QueryDocumentSnapshot[] = snapshot.docs
 
         if (!sku) {
             throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
         }
 
-        if (shards.length == 0) {
-            throw new TradableError(TradableErrorCode.internal, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU has not shards`)
+        if (inventoryStocks.length == 0) {
+            throw new TradableError(TradableErrorCode.internal, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} Inventory Stock is empty`)
         }
 
-        const inventoryQuantity: number = sku.inventory.quantity || 0
-        let skuQuantity: number = 0
-        shards.forEach((shard) => {
-            skuQuantity += shard.quantity
-        })
-        if (inventoryQuantity === skuQuantity) {
-            transaction.set(sku.reference, { isOutOfStock: false }, { merge: true })
-        }
-
+        const inventoryStockSnapshot: FirebaseFirestore.QueryDocumentSnapshot = inventoryStocks[0]
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
         tradeTransaction.type = TradeTransactionType.orderChange
         tradeTransaction.quantity = 1
@@ -159,20 +140,20 @@ export class StockManager
         tradeTransaction.sku = skuID
         tradeTransaction.items.push(itemID)
 
-        const shardID = Math.floor(Math.random() * sku.numberOfShards);
-        const shard: SKUShard = shards[shardID]
-        const shardQuantity: number = shard.quantity - 1
+        transaction.set(inventoryStockSnapshot.ref, {
+            "isAvailabled": true,
+            "item": FirebaseFirestore.FieldValue.delete(),
+            "order": FirebaseFirestore.FieldValue.delete()
+        }, { merge: true })
 
+        transaction.set(tradeTransaction.reference, tradeTransaction.value(), { merge: true })
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
-        transaction.set(shard.reference, {
-            quantity: shardQuantity
-        }, { merge: true })
         this.delegate.cancelItem(tradeInformation, itemID, transaction)
         return tradeTransaction
     }
 
-    async orderCancel(tradeInformation: TradeInformation, quantity: number, transaction: FirebaseFirestore.Transaction) {
+    async orderCancel(tradeInformation: TradeInformation, transaction: FirebaseFirestore.Transaction) {
 
         const orderID: string = tradeInformation.order
         const skuID: string = tradeInformation.sku
@@ -184,27 +165,18 @@ export class StockManager
         const purchaser: User = new this._User(purchasedBy, {})
         const product: Product = new this._Product(productID, {})
         const sku: SKU = product.SKUs.doc(skuID, this._SKU)
-        const result = await Promise.all([sku.fetch(transaction), sku.shards.get(this._SKUShard, transaction), this.delegate.getItems(tradeInformation, transaction)])
-        const shards: SKUShard[] = result[1]
-        const itemIDs = result[2]
+        const inventoryStockQuery = sku.inventoryStocks.reference.where("order", "==", orderID)
+        const snapshot: FirebaseFirestore.QuerySnapshot = await transaction.get(inventoryStockQuery)
+        const inventoryStocks: FirebaseFirestore.QueryDocumentSnapshot[] = snapshot.docs
 
         if (!sku) {
             throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
         }
 
-        if (shards.length == 0) {
-            throw new TradableError(TradableErrorCode.internal, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU has not shards`)
+        if (inventoryStocks.length == 0) {
+            throw new TradableError(TradableErrorCode.internal, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} Invetory has not shards`)
         }
-
-        const inventoryQuantity: number = sku.inventory.quantity || 0
-        let skuQuantity: number = 0
-        shards.forEach((shard) => {
-            skuQuantity += shard.quantity
-        })
-        if (inventoryQuantity === skuQuantity) {
-            transaction.set(sku.reference, { isOutOfStock: false }, { merge: true })
-        }
-
+        const quantity: number = inventoryStocks.length
         const tradeTransaction: TradeTransaction = new this._TradeTransaction()
         tradeTransaction.type = TradeTransactionType.orderCancel
         tradeTransaction.quantity = quantity
@@ -214,20 +186,20 @@ export class StockManager
         tradeTransaction.product = productID
         tradeTransaction.sku = skuID
 
-        for (const itemID of itemIDs) {
+        for (let i = 0; i < quantity; i++) {
+            const inventoryStockSnapshot: FirebaseFirestore.QueryDocumentSnapshot = inventoryStocks[i]
+            const itemID: string = inventoryStockSnapshot.data()["item"]
             tradeTransaction.items.push(itemID)
             this.delegate.cancelItem(tradeInformation, itemID, transaction)
+            transaction.set(inventoryStockSnapshot.ref, {
+                "isAvailabled": true,
+                "item": FirebaseFirestore.FieldValue.delete(),
+                "order": FirebaseFirestore.FieldValue.delete()
+            }, { merge: true })
         }
-
-        const shardID = Math.floor(Math.random() * sku.numberOfShards);
-        const shard: SKUShard = shards[shardID]
-        const shardQuantity: number = shard.quantity - quantity
-
+        transaction.set(tradeTransaction.reference, tradeTransaction.value(), { merge: true })
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
-        transaction.set(shard.reference, {
-            quantity: shardQuantity
-        }, { merge: true })
         return tradeTransaction
     }
 }

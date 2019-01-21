@@ -1,11 +1,11 @@
 import * as Pring from 'pring-admin'
 import * as tradable from '../../src/index'
-import { SKUShard } from './skuShard'
+import { InventoryStock } from './inventoryStock'
 import "reflect-metadata";
 
 const property = Pring.property
 
-export class SKU extends Pring.Base implements tradable.SKUProtocol<SKUShard> {
+export class SKU extends Pring.Base implements tradable.SKUProtocol<InventoryStock> {
     @property selledBy!: string
     @property createdBy!: string
     @property currency: tradable.Currency = tradable.Currency.JPY
@@ -17,6 +17,6 @@ export class SKU extends Pring.Base implements tradable.SKUProtocol<SKUShard> {
     @property inventory: tradable.Inventory = { type: tradable.StockType.finite, quantity: 1 }
     @property isOutOfStock: boolean = false
     @property isAvailabled: boolean = true
-    @property numberOfShards: number = 1
-    @property shards: Pring.NestedCollection<SKUShard> = new Pring.NestedCollection(this)
+    @property numberOfFetchCount: number = 2
+    @property inventoryStocks: Pring.NestedCollection<InventoryStock> = new Pring.NestedCollection(this)
 }

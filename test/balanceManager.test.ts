@@ -6,7 +6,7 @@ import * as Config from '../config'
 import * as Stripe from 'stripe'
 import { User } from './models/user'
 import { Product } from './models/product'
-import { SKUShard } from './models/skuShard'
+import { InventoryStock } from './models/inventoryStock'
 import { SKU } from './models/sku'
 import { Order } from './models/order'
 import { OrderItem } from './models/orderItem'
@@ -54,10 +54,10 @@ describe("BalanceManager", () => {
             quantity: 1
         }
         product.SKUs.insert(sku)
-        sku.numberOfShards = 1
-        for (let i = 0; i < 1; i++) {
-            const shard: SKUShard = new SKUShard(`${i}`)
-            sku.shards.insert(shard)
+
+        for (let i = 0; i < sku.inventory.quantity!; i++) {
+            const shard: InventoryStock = new InventoryStock(`${i}`)
+            sku.inventoryStocks.insert(shard)
         }
 
         orderItem.order = order.id
