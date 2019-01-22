@@ -1,8 +1,9 @@
 import * as Pring from 'pring-admin'
 import * as admin from 'firebase-admin'
 import * as FirebaseFirestore from '@google-cloud/firestore'
-import { Manager, ReserveResult, CheckoutResult, CheckoutChangeResult, CheckoutCancelResult, TransferResult, TransferCancelResult } from './manager'
-import { Currency } from './currency'
+import { Manager, ReserveResult, CheckoutResult, CheckoutChangeResult, CheckoutCancelResult, TransferResult, TransferCancelResult } from './Manager'
+import { Currency } from './Currency'
+import { InventoryStock } from '../test/models/inventoryStock';
 export { Currency, Manager, ReserveResult, CheckoutResult, CheckoutChangeResult, CheckoutCancelResult, TransferResult, TransferCancelResult }
 
 export let firestore: FirebaseFirestore.Firestore
@@ -35,12 +36,13 @@ export type Balance = {
 
 /// AccountProtocol must have the same ID as UserProtocol.
 /// AccountPtotocol holds information that can not be accessed except for principals with a protocol with a high security level.
-export interface AccountProtocol<Transaction extends BalanceTransactionProtocol> extends Pring.Base {
+export interface AccountProtocol<Transaction extends BalanceTransactionProtocol, Payout extends PayoutProtocol> extends Pring.Base {
     country: string
     isRejected: boolean
     isSigned: boolean
     balance: Balance
     balanceTransactions: Pring.NestedCollection<Transaction>
+    payoutRequests: Pring.NestedCollection<Payout>
     accountInformation: { [key: string]: any }
 }
 
@@ -61,6 +63,7 @@ export interface TradeTransactionProtocol extends Pring.Base {
     order: string
     product?: string
     sku: string
+    inventoryStocks: string[]
     items: string[]
 }
 
@@ -232,6 +235,28 @@ export interface ItemProtocol extends Pring.Base {
     isCancelled: boolean
 }
 
+export enum PayoutStatus {
+
+    none = 'none',
+
+    requested = 'requested',
+
+    rejected = 'rejected',
+
+    completed = 'completed',
+
+    cancelled = 'cancelled'
+}
+
+export interface PayoutProtocol extends Pring.Base {
+    account: string
+    currency: Currency
+    amount: number
+    status: PayoutStatus
+    transactionResults: TransactionResult[]
+    isCancelled: boolean
+}
+
 export type PaymentOptions = {
     source?: string
     customer?: string
@@ -284,8 +309,10 @@ export interface TransactionDelegate {
 
     partRefund<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, orderItem: U, options: PaymentOptions, reason?: string): Promise<any>
 
-    transfer<U extends OrderItemProtocol, T extends OrderProtocol<U>, 
-    V extends BalanceTransactionProtocol, W extends AccountProtocol<V>>(currency: Currency, amount: number, order: T, toAccount: W, options: TransferOptions): Promise<any>
+    transfer<OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>, 
+    BalanceTransaction extends BalanceTransactionProtocol,
+    Payout extends PayoutProtocol,
+    Account extends AccountProtocol<BalanceTransaction, Payout>>(currency: Currency, amount: number, order: Order, toAccount: Account, options: TransferOptions): Promise<any>
 
     transferCancel<U extends OrderItemProtocol, T extends OrderProtocol<U>>(currency: Currency, amount: number, order: T, options: TransferOptions, reason?: string): Promise<any>
 

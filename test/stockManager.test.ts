@@ -13,7 +13,7 @@ import { OrderItem } from './models/orderItem'
 import { Item } from './models/item'
 import { TradeTransaction } from './models/tradeTransaction'
 import { Account } from './models/account'
-import { StockManager } from '../src/stockManager'
+import { StockManager } from '../src/StockManager'
 import * as firebase from '@firebase/testing'
 import { TradeDelegate } from './tradeDelegate';
 
@@ -339,7 +339,7 @@ describe("StockManager", () => {
             const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
             const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get(), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
             const inventoryStocks: InventoryStock[] = promiseResult[1]
-            const _item = (await user.items.query(Item).orderBy("createdAt").dataSource().get())[0]
+            const _item = (await user.items.query(Item).where("inventoryStock", "==", userTradeTransaction.inventoryStocks[0]).dataSource().get())[0]
 
             // Shop Trade Transaction
             expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderCancel)
@@ -404,7 +404,7 @@ describe("StockManager", () => {
                 const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
                 const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get(), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
                 const inventoryStocks: InventoryStock[] = promiseResult[1]
-                const _item = (await user.items.query(Item).orderBy("createdAt").dataSource().get())[0]
+                const _item = (await user.items.query(Item).where("inventoryStock", "==", userTradeTransaction.inventoryStocks[0]).dataSource().get())[0]
 
                 // Shop Trade Transaction
                 expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
@@ -485,7 +485,7 @@ describe("StockManager", () => {
             const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
             const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get(), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
             const inventoryStocks: InventoryStock[] = promiseResult[1]
-            const _item = (await user.items.query(Item).orderBy("createdAt").dataSource().get())[0]
+            const _item = (await user.items.query(Item).where("inventoryStock", "==", userTradeTransaction.inventoryStocks[0]).dataSource().get())[0]
 
             // Shop Trade Transaction
             expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderChange)
@@ -549,7 +549,7 @@ describe("StockManager", () => {
                 const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
                 const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get(), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
                 const inventoryStocks: InventoryStock[] = promiseResult[1]
-                const _item = (await user.items.query(Item).orderBy("createdAt", "desc").dataSource().get())[0]
+                const _item = (await user.items.query(Item).where("inventoryStock", "==", userTradeTransaction.inventoryStocks[0]).dataSource().get())[0]
 
                 // Shop Trade Transaction
                 expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderChange)
@@ -570,7 +570,7 @@ describe("StockManager", () => {
                 expect(userTradeTransaction.product).toEqual(product.id)
                 expect(userTradeTransaction.sku).toEqual(sku.id)
                 expect(userTradeTransaction.items).toEqual([_item.id])
-
+                
                 // SKU
                 expect(_sku.inventory.type).toEqual(Tradable.StockType.finite)
                 expect(_sku.inventory.quantity).toEqual(2)

@@ -115,10 +115,12 @@ export class StripePaymentDelegate implements tradable.TransactionDelegate {
             throw error
         }
     }
-
-    async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>,
-        V extends tradable.BalanceTransactionProtocol, W extends tradable.AccountProtocol<V>>
-        (currency: tradable.Currency, amount: number, order: T, toAccount: W, options: tradable.TransferOptions) {
+    async transfer<OrderItem extends tradable.OrderItemProtocol, 
+    Order extends tradable.OrderProtocol<OrderItem>, 
+    BalanceTransaction extends tradable.BalanceTransactionProtocol, 
+    Payout extends tradable.PayoutProtocol, 
+    Account extends tradable.AccountProtocol<BalanceTransaction, Payout>>
+    (currency: tradable.Currency, amount: number, order: Order, toAccount: Account, options: tradable.TransferOptions) {
         const idempotency_key = order.id
         const destination = toAccount.accountInformation['stripe']['id']
         const data: Stripe.transfers.ITransferCreationOptions = {

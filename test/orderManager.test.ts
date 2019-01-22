@@ -13,7 +13,7 @@ import { OrderItem } from './models/orderItem'
 import { Item } from './models/item'
 import { TradeTransaction } from './models/tradeTransaction'
 import { Account } from './models/account'
-import { OrderManager } from '../src/orderManager'
+import { OrderManager } from '../src/OrderManager'
 import { BalanceTransaction } from './models/BalanceTransaction'
 
 
@@ -38,7 +38,7 @@ describe("OrderManager", () => {
     const date: Date = new Date()
     const orderItem: OrderItem = new OrderItem()
 
-    const orderManager: OrderManager<Order, OrderItem, User, TradeTransaction> = new OrderManager(User)
+    const orderManager: OrderManager<Order, OrderItem, User, TradeTransaction> = new OrderManager(User, Order)
 
     beforeAll(async () => {
         product.name = "PRODUCT"

@@ -20,7 +20,7 @@ export class TradeDelegate implements tradable.TradeDelegate {
     cancelItem(information: tradable.TradeInformation, itemID: string, transaction: FirebaseFirestore.Transaction): void {
         const purchaser: User = new User(information.purchasedBy, {})
         transaction.set(purchaser.items.reference.doc(itemID), {
-            isCanceled: true
+            isCancelled: true
         }, { merge: true })
     }
 

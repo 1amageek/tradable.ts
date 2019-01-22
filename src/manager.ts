@@ -1,7 +1,8 @@
-import { StockManager } from './stockManager'
-import { BalanceManager } from './balanceManager'
-import { OrderManager } from './orderManager'
-import { OrderValidator } from './orderValidator'
+import { StockManager } from './StockManager'
+import { BalanceManager } from './BalanceManager'
+import { OrderManager } from './OrderManager'
+import { PayoutManager } from './PayoutManager'
+import { OrderValidator } from './OrderValidator'
 import {
     firestore,
     SKUProtocol,
@@ -24,7 +25,9 @@ import {
     TransactionDelegate,
     TradeDelegate,
     TradeInformation,
-    InventoryStockProtocol
+    InventoryStockProtocol,
+    PayoutProtocol,
+    PayoutStatus
 } from "./index"
 
 
@@ -76,6 +79,11 @@ export type TransferCancelResult = {
     transferCancelResult?: any
 }
 
+export type PayoutResult = {
+    balanceTransaction?: BalanceTransactionProtocol
+    payoutResult?: any
+}
+
 export class Manager
     <
     InventoryStock extends InventoryStockProtocol,
@@ -85,8 +93,9 @@ export class Manager
     Order extends OrderProtocol<OrderItem>,
     TradeTransaction extends TradeTransactionProtocol,
     BalanceTransaction extends BalanceTransactionProtocol,
+    Payout extends PayoutProtocol,
     User extends UserProtocol<Order, OrderItem, TradeTransaction>,
-    Account extends AccountProtocol<BalanceTransaction>
+    Account extends AccountProtocol<BalanceTransaction, Payout>
     > {
 
     private _InventoryStock: { new(id?: string, value?: { [key: string]: any }): InventoryStock }
@@ -96,14 +105,17 @@ export class Manager
     private _Order: { new(id?: string, value?: { [key: string]: any }): Order }
     private _TradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction }
     private _BalanceTransaction: { new(id?: string, value?: { [key: string]: any }): BalanceTransaction }
+    private _Payout: { new(id?: string, value?: { [key: string]: any }): Payout }
     private _User: { new(id?: string, value?: { [key: string]: any }): User }
     private _Account: { new(id?: string, value?: { [key: string]: any }): Account }
 
     private stockManager: StockManager<Order, OrderItem, User, Product, InventoryStock, SKU, TradeTransaction>
 
-    private balanceManager: BalanceManager<BalanceTransaction, Account>
+    private balanceManager: BalanceManager<BalanceTransaction, Payout, Account>
 
     private orderManager: OrderManager<Order, OrderItem, User, TradeTransaction>
+
+    private payoutManager: PayoutManager<BalanceTransaction, Payout, Account>
 
     public delegate?: TransactionDelegate
 
@@ -117,6 +129,7 @@ export class Manager
         order: { new(id?: string, value?: { [key: string]: any }): Order },
         tradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction },
         balanceTransaction: { new(id?: string, value?: { [key: string]: any }): BalanceTransaction },
+        payout: { new(id?: string, value?: { [key: string]: any }): Payout },
         user: { new(id?: string, value?: { [key: string]: any }): User },
         account: { new(id?: string, value?: { [key: string]: any }): Account }
     ) {
@@ -127,12 +140,14 @@ export class Manager
         this._Order = order
         this._TradeTransaction = tradeTransaction
         this._BalanceTransaction = balanceTransaction
+        this._Payout = payout
         this._User = user
         this._Account = account
 
         this.stockManager = new StockManager(this._User, this._Product, this._InventoryStock, this._SKU, this._TradeTransaction)
         this.balanceManager = new BalanceManager(this._BalanceTransaction, this._Account)
-        this.orderManager = new OrderManager(this._User)
+        this.orderManager = new OrderManager(this._User, this._Order)
+        this.payoutManager = new PayoutManager(this._BalanceTransaction, this._Payout, this._Account)
     }
 
     /**
@@ -1058,25 +1073,56 @@ export class Manager
         }
     }
 
-    async payout(accountID: string, currency: Currency, amount: number, payoutOptions: PayoutOptions) {
+    async request(payout: Payout, payoutOptions?: PayoutOptions) {
         try {
+            if (payout.amount === 0) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid payout ACCOUNT/${payout.account}, This payout is zero amount.`)
+            }
+            try {
+                await firestore.runTransaction(async (transaction) => {
+                    payout.status = PayoutStatus.requested
+                    this.payoutManager.update(payout, {}, transaction)
+                    return
+                })
+            } catch (error) {
+                throw error
+            }
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async payout(payout: Payout, payoutOptions: PayoutOptions) {
+        try {
+
+            if (!(payout.status === PayoutStatus.requested)) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid payout Payout/${payout.id}, This payout status is invalid.`)
+            }
             const delegate: TransactionDelegate | undefined = this.delegate
             if (!delegate) {
-                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid payout ACCOUNT/${accountID}, Manager required delegate.`)
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid payout ACCOUNT/${payout.account}, Manager required delegate.`)
             }
 
-            if (amount === 0) {
-                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid payout ACCOUNT/${accountID}, This order is zero amount.`)
+            if (payout.amount === 0) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid payout ACCOUNT/${payout.account}, This order is zero amount.`)
             }
-
+            const currency = payout.currency
+            const amount = payout.amount
+            const accountID = payout.account
             const result = await delegate.payout(currency, amount, accountID, payoutOptions)
             try {
                 await firestore.runTransaction(async (transaction) => {
                     return new Promise(async (resolve, reject) => {
 
                         // payout
-                        this.balanceManager.payout(accountID, currency, amount, result, transaction)
-                        resolve(`[Manager] Success payout ACCOUNT/${accountID}, ${currency}: ${amount}`)
+                        const balanceTransaction = await this.balanceManager.payout(accountID, currency, amount, result, transaction)
+                        payout.status = PayoutStatus.completed
+                        this.payoutManager.update(payout, { [payoutOptions.vendorType]: result }, transaction)
+                        const payoutResult: PayoutResult = {
+                            balanceTransaction: balanceTransaction,
+                            payoutResult: result
+                        }
+                        resolve(payoutResult)
                     })
                 })
             } catch (error) {

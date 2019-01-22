@@ -92,6 +92,7 @@ export class StockManager
             const inventoryStockSnapshot: FirebaseFirestore.QueryDocumentSnapshot = inventoryStocks[i]
             const itemID = this.delegate.createItem(tradeInformation, inventoryStocks[i].id, transaction)
             tradeTransaction.items.push(itemID)
+            tradeTransaction.inventoryStocks.push(inventoryStocks[i].id)
             transaction.set(inventoryStockSnapshot.ref, {
                 "isAvailabled": false,
                 "item": itemID,
@@ -139,6 +140,7 @@ export class StockManager
         tradeTransaction.product = productID
         tradeTransaction.sku = skuID
         tradeTransaction.items.push(itemID)
+        tradeTransaction.inventoryStocks.push(inventoryStockSnapshot.id)
 
         transaction.set(inventoryStockSnapshot.ref, {
             "isAvailabled": true,
@@ -190,6 +192,7 @@ export class StockManager
             const inventoryStockSnapshot: FirebaseFirestore.QueryDocumentSnapshot = inventoryStocks[i]
             const itemID: string = inventoryStockSnapshot.data()["item"]
             tradeTransaction.items.push(itemID)
+            tradeTransaction.inventoryStocks.push(inventoryStocks[i].id)
             this.delegate.cancelItem(tradeInformation, itemID, transaction)
             transaction.set(inventoryStockSnapshot.ref, {
                 "isAvailabled": true,

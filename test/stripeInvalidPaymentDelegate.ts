@@ -6,6 +6,7 @@ export const stripe = new Stripe(Config.STRIPE_API_KEY)
 
 export class StripeInvalidPaymentDelegate implements tradable.TransactionDelegate {
 
+
     async authorize<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions) {
         throw new Error("Method not implemented.");
     }
@@ -26,7 +27,12 @@ export class StripeInvalidPaymentDelegate implements tradable.TransactionDelegat
         throw new Error("Method not implemented.");
     }
 
-    async transfer<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>, V extends tradable.BalanceTransactionProtocol, W extends tradable.AccountProtocol<V>>(currency: tradable.Currency, amount: number, order: T, toAccount: W, options: tradable.TransferOptions) {
+    async transfer<OrderItem extends tradable.OrderItemProtocol, 
+    Order extends tradable.OrderProtocol<OrderItem>, 
+    BalanceTransaction extends tradable.BalanceTransactionProtocol, 
+    Payout extends tradable.PayoutProtocol, 
+    Account extends tradable.AccountProtocol<BalanceTransaction, Payout>>
+    (currency: tradable.Currency, amount: number, order: Order, toAccount: Account, options: tradable.TransferOptions) {
         throw new Error("Method not implemented.");
     }
 

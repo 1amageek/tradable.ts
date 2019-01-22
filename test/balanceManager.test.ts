@@ -11,8 +11,9 @@ import { SKU } from './models/sku'
 import { Order } from './models/order'
 import { OrderItem } from './models/orderItem'
 import { Account } from './models/account'
-import { BalanceManager } from '../src/balanceManager';
+import { BalanceManager } from '../src/BalanceManager';
 import { BalanceTransaction } from './models/BalanceTransaction';
+import { Payout } from './models/payout';
 
 
 export const stripe = new Stripe(Config.STRIPE_API_KEY)
@@ -36,7 +37,7 @@ describe("BalanceManager", () => {
     const date: Date = new Date()
     const orderItem: OrderItem = new OrderItem()
 
-    const balanceManager: BalanceManager<BalanceTransaction, Account> = new BalanceManager(BalanceTransaction, Account)
+    const balanceManager: BalanceManager<BalanceTransaction, Payout, Account> = new BalanceManager(BalanceTransaction, Account)
 
     beforeAll(async () => {
         product.name = "PRODUCT"

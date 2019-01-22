@@ -1,4 +1,3 @@
-import * as Pring from 'pring-admin'
 import * as FirebaseFirestore from '@google-cloud/firestore'
 import {
     OrderItemProtocol,
@@ -7,7 +6,6 @@ import {
     UserProtocol,
     TransactionResult
 } from "./index"
-import { Order } from '../test/models/order';
 
 export class OrderManager
     <
@@ -18,11 +16,14 @@ export class OrderManager
     > {
 
     private _User: { new(id?: string, value?: { [key: string]: any }): User }
+    private _Order: { new(id?: string, value?: { [key: string]: any }): Order }
 
     constructor(
-        user: { new(id?: string, value?: { [key: string]: any }): User }
+        user: { new(id?: string, value?: { [key: string]: any }): User },
+        order: { new(id?: string, value?: { [key: string]: any }): Order }
     ) {
         this._User = user
+        this._Order = order
     }
 
     update(order: Order, orderItems: OrderItem[], transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
@@ -34,10 +35,10 @@ export class OrderManager
             orderValue["transactionResults"] = FirebaseFirestore.FieldValue.arrayUnion(transactionResult)
         }
 
-        const orderReference = Order.getReference()
+        const orderReference = new this._Order(order.id, {}).reference
         const seller = new this._User(order.selledBy, {})
         const purchaser = new this._User(order.purchasedBy, {})
-        transaction.set(orderReference.doc(order.id), orderValue, { merge: true })
+        transaction.set(orderReference, orderValue, { merge: true })
         transaction.set(seller.receivedOrders.reference.doc(order.id), orderValue, { merge: true })
         transaction.set(purchaser.orders.reference.doc(order.id), orderValue, { merge: true })
     }

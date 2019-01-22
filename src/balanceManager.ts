@@ -4,13 +4,15 @@ import {
     AccountProtocol,
     Currency,
     TransactionResult,
-    BalanceTransactionType
+    BalanceTransactionType,
+    PayoutProtocol
 } from "./index"
 
 export class BalanceManager
     <
     BalanceTransaction extends BalanceTransactionProtocol,
-    Account extends AccountProtocol<BalanceTransaction>
+    Payout extends PayoutProtocol,
+    Account extends AccountProtocol<BalanceTransaction, Payout>
     > {
 
     private _BalanceTransaction: { new(id?: string, value?: { [key: string]: any }): BalanceTransaction }
