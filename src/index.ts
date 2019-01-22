@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin'
 import * as FirebaseFirestore from '@google-cloud/firestore'
 import { Manager, ReserveResult, CheckoutResult, CheckoutChangeResult, CheckoutCancelResult, TransferResult, TransferCancelResult } from './Manager'
 import { Currency } from './Currency'
-import { InventoryStock } from '../test/models/inventoryStock';
 export { Currency, Manager, ReserveResult, CheckoutResult, CheckoutChangeResult, CheckoutCancelResult, TransferResult, TransferCancelResult }
 
 export let firestore: FirebaseFirestore.Firestore
