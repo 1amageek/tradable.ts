@@ -169,6 +169,12 @@ export class Manager
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required delegate.`)
             }
 
+            const tradeDelegate: TradeDelegate | undefined = this.tradeDelegate
+            if (!tradeDelegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, Manager required trade delegate.`)
+            }
+            this.stockManager.delegate = tradeDelegate
+
             const validator = new OrderValidator(this._Order, this._OrderItem)
             const validationError = validator.validate(order, orderItems)
             if (validationError) {
@@ -198,6 +204,9 @@ export class Manager
                     return await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
                             try {
+
+                                this.tradeDelegate
+
                                 if (!authorizeResult) {
                                     authorizeResult = await delegate.authorize(order.currency, order.amount, order, paymentOptions)
                                 }

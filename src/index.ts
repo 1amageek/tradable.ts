@@ -289,6 +289,8 @@ export type TradeInformation = {
 
 export interface TradeDelegate {
 
+    reserve(information: TradeInformation, transaction: FirebaseFirestore.Transaction): void
+
     createItem(information: TradeInformation, invetoryStock: string, transaction: FirebaseFirestore.Transaction): string
 
     getItems(information: TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<string[]>

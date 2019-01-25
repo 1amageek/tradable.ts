@@ -5,6 +5,10 @@ import { User } from './models/user'
 
 export class TradeDelegate implements tradable.TradeDelegate {
 
+    reserve(information: tradable.TradeInformation, transaction: FirebaseFirestore.Transaction) {
+
+    }
+
     createItem(information: tradable.TradeInformation, inventoryStock: string, transaction: FirebaseFirestore.Transaction): string {
         const purchaser: User = new User(information.purchasedBy, {})
         const item: Item = new Item()
