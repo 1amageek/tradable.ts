@@ -4,8 +4,8 @@ import { User } from './models/user'
 
 
 export class TradeDelegate implements tradable.TradeDelegate {
-
-    reserve(information: tradable.TradeInformation, transaction: FirebaseFirestore.Transaction) {
+    
+    reserve<OrderItem extends tradable.OrderItemProtocol, Order extends tradable.OrderProtocol<OrderItem>>(order: Order, orderItem: OrderItem, transaction: FirebaseFirestore.Transaction): void {
 
     }
 

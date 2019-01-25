@@ -189,19 +189,11 @@ export class Manager
                             try {
                                 const tasks = []
                                 for (const orderItem of orderItems) {
-                                    const productID = orderItem.product
                                     const skuID = orderItem.sku
                                     if (orderItem.type === OrderItemType.sku && skuID) {
-                                        const tradeInformation: TradeInformation = {
-                                            selledBy: order.selledBy,
-                                            purchasedBy: order.purchasedBy,
-                                            order: order.id,
-                                            sku: skuID,
-                                            product: productID
-                                        }
-                                        orderItem.status = OrderItemStatus.cancelled
-                                        const task = this.stockManager.reserve(tradeInformation, orderItem.quantity, transaction)
+                                        const task = this.stockManager.reserve(order, orderItem, transaction)
                                         tasks.push(task)
+                                        
                                     }
                                 }
                                 await Promise.all(tasks)
@@ -225,23 +217,13 @@ export class Manager
                             try {
                                 const tasks = []
                                 for (const orderItem of orderItems) {
-                                    const productID = orderItem.product
                                     const skuID = orderItem.sku
                                     if (orderItem.type === OrderItemType.sku && skuID) {
-                                        const tradeInformation: TradeInformation = {
-                                            selledBy: order.selledBy,
-                                            purchasedBy: order.purchasedBy,
-                                            order: order.id,
-                                            sku: skuID,
-                                            product: productID
-                                        }
-                                        orderItem.status = OrderItemStatus.cancelled
-                                        const task = this.stockManager.reserve(tradeInformation, orderItem.quantity, transaction)
+                                        const task = this.stockManager.reserve(order, orderItem, transaction)
                                         tasks.push(task)
                                     }
                                 }
                                 await Promise.all(tasks)
-
                                 if (!authorizeResult) {
                                     authorizeResult = await delegate.authorize(order.currency, order.amount, order, paymentOptions)
                                 }

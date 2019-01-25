@@ -47,24 +47,22 @@ export class StockManager
         this._TradeTransaction = tradeTransaction
     }
 
-    async reserve(tradeInformation: TradeInformation, quantity: number, transaction: FirebaseFirestore.Transaction) {
+    async reserve(order: Order, orderItem: OrderItem, transaction: FirebaseFirestore.Transaction) {
 
-        const orderID: string = tradeInformation.order
-        const skuID: string = tradeInformation.sku
-        const productID: string | undefined = tradeInformation.product
-        const product: Product = new this._Product(productID, {})
-        const sku: SKU = await product.SKUs.doc(skuID, this._SKU).fetch()
+        const orderID: string = order.id
+        const skuID: string | undefined = orderItem.sku
+        const productID: string | undefined = orderItem.product
 
-        if (!sku) {
-            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
-        }
-
-        if (!sku.isAvailabled) {
-            throw new TradableError(TradableErrorCode.outOfStock, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU is not availabled`)
-        }
-
-        for (let i = 0; i < quantity; i++) {
-            this.delegate.reserve(tradeInformation, transaction)
+        if (skuID && productID) {
+            const product: Product = new this._Product(productID, {})
+            const sku: SKU = await product.SKUs.doc(skuID, this._SKU).fetch()
+            if (!sku) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
+            }
+            if (!sku.isAvailabled) {
+                throw new TradableError(TradableErrorCode.outOfStock, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} SKU is not availabled`)
+            }
+            this.delegate.reserve(order, orderItem, transaction)
         }
     }
 

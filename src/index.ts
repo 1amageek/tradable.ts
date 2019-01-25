@@ -289,7 +289,7 @@ export type TradeInformation = {
 
 export interface TradeDelegate {
 
-    reserve(information: TradeInformation, transaction: FirebaseFirestore.Transaction): void
+    reserve<OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>>(order: Order, orderItem: OrderItem, transaction: FirebaseFirestore.Transaction): void
 
     createItem(information: TradeInformation, invetoryStock: string, transaction: FirebaseFirestore.Transaction): string
 
