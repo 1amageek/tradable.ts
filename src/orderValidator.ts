@@ -3,7 +3,8 @@ import {
     OrderProtocol,
     Currency,
     TradableErrorCode,
-    TradableError
+    TradableError,
+    OrderItemType
 } from "./index"
 
 const isUndefined = (value: any): boolean => {
@@ -78,12 +79,14 @@ export class OrderValidator
             const productID: string | undefined = orderItem.product
             const skuID: string | undefined = orderItem.sku
 
-            if (!productID) {
-                return new TradableError(TradableErrorCode.internal, `[Failure] ORDER/${order.id} Order requires productID.`)
-            }
-    
-            if (!skuID) {
-                return new TradableError(TradableErrorCode.internal, `[Failure] ORDER/${order.id} Order requires skuID.`)
+            if (orderItem.type === OrderItemType.sku) {
+                if (!productID) {
+                    return new TradableError(TradableErrorCode.internal, `[Failure] ORDER/${order.id} Order requires productID.`)
+                }
+        
+                if (!skuID) {
+                    return new TradableError(TradableErrorCode.internal, `[Failure] ORDER/${order.id} Order requires skuID.`)
+                }
             }
         }
     }
