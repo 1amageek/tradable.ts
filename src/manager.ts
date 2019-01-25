@@ -27,7 +27,8 @@ import {
     TradeInformation,
     InventoryStockProtocol,
     PayoutProtocol,
-    PayoutStatus
+    PayoutStatus,
+    OrderItemType
 } from "./index"
 
 
@@ -186,6 +187,24 @@ export class Manager
                     return await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
                             try {
+                                const tasks = []
+                                for (const orderItem of orderItems) {
+                                    const productID = orderItem.product
+                                    const skuID = orderItem.sku
+                                    if (orderItem.type === OrderItemType.sku && skuID) {
+                                        const tradeInformation: TradeInformation = {
+                                            selledBy: order.selledBy,
+                                            purchasedBy: order.purchasedBy,
+                                            order: order.id,
+                                            sku: skuID,
+                                            product: productID
+                                        }
+                                        orderItem.status = OrderItemStatus.cancelled
+                                        const task = this.stockManager.reserve(tradeInformation, orderItem.quantity, transaction)
+                                        tasks.push(task)
+                                    }
+                                }
+                                await Promise.all(tasks)
                                 order.paymentStatus = OrderPaymentStatus.authorized
                                 this.orderManager.update(order, orderItems, {}, transaction)
                                 const reuslt: ReserveResult = {}
@@ -204,8 +223,24 @@ export class Manager
                     return await firestore.runTransaction(async (transaction) => {
                         return new Promise(async (resolve, reject) => {
                             try {
-
-                                this.tradeDelegate
+                                const tasks = []
+                                for (const orderItem of orderItems) {
+                                    const productID = orderItem.product
+                                    const skuID = orderItem.sku
+                                    if (orderItem.type === OrderItemType.sku && skuID) {
+                                        const tradeInformation: TradeInformation = {
+                                            selledBy: order.selledBy,
+                                            purchasedBy: order.purchasedBy,
+                                            order: order.id,
+                                            sku: skuID,
+                                            product: productID
+                                        }
+                                        orderItem.status = OrderItemStatus.cancelled
+                                        const task = this.stockManager.reserve(tradeInformation, orderItem.quantity, transaction)
+                                        tasks.push(task)
+                                    }
+                                }
+                                await Promise.all(tasks)
 
                                 if (!authorizeResult) {
                                     authorizeResult = await delegate.authorize(order.currency, order.amount, order, paymentOptions)
@@ -341,7 +376,7 @@ export class Manager
                                 const productID = orderItem.product
                                 const skuID = orderItem.sku
                                 const quantity = orderItem.quantity
-                                if (skuID) {
+                                if (orderItem.type === OrderItemType.sku && skuID) {
                                     const tradeInformation: TradeInformation = {
                                         selledBy: order.selledBy,
                                         purchasedBy: order.purchasedBy,
@@ -535,7 +570,7 @@ export class Manager
                                     const productID = orderItem.product
                                     const skuID = orderItem.sku
                                     const quantity = orderItem.quantity
-                                    if (skuID) {
+                                    if (orderItem.type === OrderItemType.sku && skuID) {
                                         const tradeInformation: TradeInformation = {
                                             selledBy: order.selledBy,
                                             purchasedBy: order.purchasedBy,
@@ -575,7 +610,7 @@ export class Manager
                                     const productID = orderItem.product
                                     const skuID = orderItem.sku
                                     const quantity = orderItem.quantity
-                                    if (skuID) {
+                                    if (orderItem.type === OrderItemType.sku && skuID) {
                                         const tradeInformation: TradeInformation = {
                                             selledBy: order.selledBy,
                                             purchasedBy: order.purchasedBy,
@@ -690,7 +725,7 @@ export class Manager
                             const tradeTransactions = []
                             const productID = orderItem.product
                             const skuID = orderItem.sku
-                            if (skuID) {
+                            if (orderItem.type === OrderItemType.sku && skuID) {
                                 const tradeInformation: TradeInformation = {
                                     selledBy: order.selledBy,
                                     purchasedBy: order.purchasedBy,
@@ -730,7 +765,7 @@ export class Manager
                                 const tradeTransactions = []
                                 const productID = orderItem.product
                                 const skuID = orderItem.sku
-                                if (skuID) {
+                                if (orderItem.type === OrderItemType.sku && skuID) {
                                     const tradeInformation: TradeInformation = {
                                         selledBy: order.selledBy,
                                         purchasedBy: order.purchasedBy,
@@ -818,7 +853,7 @@ export class Manager
                             for (const orderItem of orderItems) {
                                 const productID = orderItem.product
                                 const skuID = orderItem.sku
-                                if (skuID) {
+                                if (orderItem.type === OrderItemType.sku && skuID) {
                                     const tradeInformation: TradeInformation = {
                                         selledBy: order.selledBy,
                                         purchasedBy: order.purchasedBy,
@@ -862,7 +897,7 @@ export class Manager
                                 for (const orderItem of orderItems) {
                                     const productID = orderItem.product
                                     const skuID = orderItem.sku
-                                    if (skuID) {
+                                    if (orderItem.type === OrderItemType.sku && skuID) {
                                         const tradeInformation: TradeInformation = {
                                             selledBy: order.selledBy,
                                             purchasedBy: order.purchasedBy,
