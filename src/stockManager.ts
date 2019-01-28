@@ -5,7 +5,6 @@ import {
     TradeTransactionType,
     TradeTransactionProtocol,
     OrderItemProtocol,
-    ProductProtocol,
     OrderProtocol,
     TradeDelegate,
     TradableError,
@@ -13,20 +12,19 @@ import {
     TradeInformation,
     InventoryStockProtocol
 } from "./index"
+import { toASCII } from 'punycode';
 
 export class StockManager
     <
     Order extends OrderProtocol<OrderItem>,
     OrderItem extends OrderItemProtocol,
     User extends UserProtocol<Order, OrderItem, TradeTransaction>,
-    Product extends ProductProtocol<InventoryStock, SKU>,
     InventoryStock extends InventoryStockProtocol,
     SKU extends SKUProtocol<InventoryStock>,
     TradeTransaction extends TradeTransactionProtocol
     > {
 
     private _User: { new(id?: string, value?: { [key: string]: any }): User }
-    private _Product: { new(id?: string, value?: { [key: string]: any }): Product }
     private _InventoryStock: { new(id?: string, value?: { [key: string]: any }): InventoryStock }
     private _SKU: { new(id?: string, value?: { [key: string]: any }): SKU }
     private _TradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction }
@@ -35,13 +33,11 @@ export class StockManager
 
     constructor(
         user: { new(id?: string, value?: { [key: string]: any }): User },
-        product: { new(id?: string, value?: { [key: string]: any }): Product },
         inventoryStock: { new(id?: string, value?: { [key: string]: any }): InventoryStock },
         sku: { new(id?: string, value?: { [key: string]: any }): SKU },
         tradeTransaction: { new(id?: string, value?: { [key: string]: any }): TradeTransaction }
     ) {
         this._User = user
-        this._Product = product
         this._InventoryStock = inventoryStock
         this._SKU = sku
         this._TradeTransaction = tradeTransaction
@@ -51,11 +47,8 @@ export class StockManager
 
         const orderID: string = order.id
         const skuID: string | undefined = orderItem.sku
-        const productID: string | undefined = orderItem.product
-
-        if (skuID && productID) {
-            const product: Product = new this._Product(productID, {})
-            const sku: SKU = await product.SKUs.doc(skuID, this._SKU).fetch()
+        if (skuID) {
+            const sku: SKU = await new this._SKU(skuID, {}).fetch()
             if (!sku) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
             }
@@ -72,12 +65,10 @@ export class StockManager
         const skuID: string = tradeInformation.sku
         const purchasedBy: string = tradeInformation.purchasedBy
         const selledBy: string = tradeInformation.selledBy
-        const productID: string | undefined = tradeInformation.product
 
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const product: Product = new this._Product(productID, {})
-        const sku: SKU = product.SKUs.doc(skuID, this._SKU)
+        const sku: SKU = await new this._SKU(skuID, {})
         const inventoryStockQuery = sku.inventoryStocks.reference.where("isAvailabled", "==", true).limit(quantity)
         const snapshot: FirebaseFirestore.QuerySnapshot = await transaction.get(inventoryStockQuery)
         const inventoryStocks: FirebaseFirestore.QueryDocumentSnapshot[] = snapshot.docs
@@ -104,7 +95,7 @@ export class StockManager
         tradeTransaction.selledBy = selledBy
         tradeTransaction.purchasedBy = purchasedBy
         tradeTransaction.order = orderID
-        tradeTransaction.product = productID
+        tradeTransaction.product = tradeInformation.product
         tradeTransaction.sku = skuID
 
         for (let i = 0; i < quantity; i++) {
@@ -131,12 +122,9 @@ export class StockManager
         const skuID: string = tradeInformation.sku
         const purchasedBy: string = tradeInformation.purchasedBy
         const selledBy: string = tradeInformation.selledBy
-        const productID: string | undefined = tradeInformation.product
-
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const product: Product = new this._Product(productID, {})
-        const sku: SKU = product.SKUs.doc(skuID, this._SKU)
+        const sku: SKU = await new this._SKU(skuID, {})
         const inventoryStockQuery = sku.inventoryStocks.reference.where("item", "==", itemID).limit(1)
         const snapshot: FirebaseFirestore.QuerySnapshot = await transaction.get(inventoryStockQuery)
         const inventoryStocks: FirebaseFirestore.QueryDocumentSnapshot[] = snapshot.docs
@@ -156,7 +144,7 @@ export class StockManager
         tradeTransaction.selledBy = selledBy
         tradeTransaction.purchasedBy = purchasedBy
         tradeTransaction.order = orderID
-        tradeTransaction.product = productID
+        tradeTransaction.product = tradeInformation.product
         tradeTransaction.sku = skuID
         tradeTransaction.items.push(itemID)
         tradeTransaction.inventoryStocks.push(inventoryStockSnapshot.id)
@@ -180,12 +168,10 @@ export class StockManager
         const skuID: string = tradeInformation.sku
         const purchasedBy: string = tradeInformation.purchasedBy
         const selledBy: string = tradeInformation.selledBy
-        const productID: string | undefined = tradeInformation.product
 
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
-        const product: Product = new this._Product(productID, {})
-        const sku: SKU = product.SKUs.doc(skuID, this._SKU)
+        const sku: SKU = await new this._SKU(skuID, {})
         const inventoryStockQuery = sku.inventoryStocks.reference.where("order", "==", orderID)
         const snapshot: FirebaseFirestore.QuerySnapshot = await transaction.get(inventoryStockQuery)
         const inventoryStocks: FirebaseFirestore.QueryDocumentSnapshot[] = snapshot.docs
@@ -204,7 +190,7 @@ export class StockManager
         tradeTransaction.selledBy = selledBy
         tradeTransaction.purchasedBy = purchasedBy
         tradeTransaction.order = orderID
-        tradeTransaction.product = productID
+        tradeTransaction.product = tradeInformation.product
         tradeTransaction.sku = skuID
 
         for (let i = 0; i < quantity; i++) {
@@ -219,6 +205,7 @@ export class StockManager
                 "order": FirebaseFirestore.FieldValue.delete()
             }, { merge: true })
         }
+
         transaction.set(tradeTransaction.reference, tradeTransaction.value(), { merge: true })
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })

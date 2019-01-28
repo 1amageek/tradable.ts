@@ -9,7 +9,7 @@ export class SKU extends Pring.Base implements tradable.SKUProtocol<InventorySto
     @property selledBy!: string
     @property createdBy!: string
     @property currency: tradable.Currency = tradable.Currency.JPY
-    @property product!: string
+    @property product!: FirebaseFirestore.DocumentReference
     @property title!: string
     @property body!: string
     @property amount: number = 0

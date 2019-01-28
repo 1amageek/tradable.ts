@@ -60,7 +60,7 @@ export interface TradeTransactionProtocol extends Pring.Base {
     selledBy: string
     purchasedBy: string
     order: string
-    product?: string
+    product?: FirebaseFirestore.DocumentReference
     sku: string
     inventoryStocks: string[]
     items: string[]
@@ -95,15 +95,6 @@ export interface BalanceTransactionProtocol extends Pring.Base {
     transactionResults: TransactionResult[]
 }
 
-export interface ProductProtocol <InventoryStock extends InventoryStockProtocol, SKU extends SKUProtocol<InventoryStock>> extends Pring.Base {
-    name?: string
-    caption?: string
-    selledBy: string
-    createdBy: string
-    isAvailabled: boolean
-    SKUs: Pring.NestedCollection<SKU>
-}
-
 export enum StockType {
     bucket = 'bucket',
     finite = 'finite',
@@ -136,7 +127,7 @@ export interface SKUProtocol <InventoryStock extends InventoryStockProtocol> ext
     selledBy: string
     createdBy: string
     currency: Currency
-    product?: string
+    product?: FirebaseFirestore.DocumentReference
     amount: number
     inventory: Inventory
     isAvailabled: boolean
@@ -199,7 +190,7 @@ export interface OrderItemProtocol extends Pring.Base {
     purchasedBy: string
     selledBy: string
     type: OrderItemType
-    product?: string
+    product?: FirebaseFirestore.DocumentReference
     sku?: string
     quantity: number
     currency: Currency
@@ -228,7 +219,7 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
 export interface ItemProtocol extends Pring.Base {
     selledBy: string
     order: string
-    product?: string
+    product?: FirebaseFirestore.DocumentReference
     sku: string
     inventoryStock?: string
     isCancelled: boolean
@@ -283,7 +274,7 @@ export type TradeInformation = {
     selledBy: string
     purchasedBy: string
     order: string
-    product?: string
+    product?: FirebaseFirestore.DocumentReference
     sku: string
 }
 
