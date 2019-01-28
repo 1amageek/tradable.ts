@@ -76,14 +76,9 @@ export class OrderValidator
 
     private validateOrderItem(order: Order, orderItems: OrderItem[]): void | Error {
         for (const orderItem of orderItems) {
-            const productID: string | undefined = orderItem.product
             const skuID: string | undefined = orderItem.sku
 
             if (orderItem.type === OrderItemType.sku) {
-                if (!productID) {
-                    return new TradableError(TradableErrorCode.internal, `[Failure] ORDER/${order.id} Order requires productID.`)
-                }
-        
                 if (!skuID) {
                     return new TradableError(TradableErrorCode.internal, `[Failure] ORDER/${order.id} Order requires skuID.`)
                 }

@@ -48,26 +48,26 @@ describe("Manager", () => {
         sku.title = "sku"
         sku.selledBy = shop.id
         sku.createdBy = shop.id
-        sku.product = product.id
+        sku.product = product.reference
         sku.amount = 100
         sku.currency = Tradable.Currency.JPY
         sku.inventory = {
             type: Tradable.StockType.finite,
             quantity: 5
         }
-        product.SKUs.insert(sku)
+
         for (let i = 0; i < sku.inventory.quantity!; i++) {
             const shard: InventoryStock = new InventoryStock(`${i}`)
             sku.inventoryStocks.insert(shard)
         }
 
-        await Promise.all([product.save(), shop.save(), user.save()])
+        await Promise.all([product.save(), sku.save(), shop.save(), user.save()])
     })
 
     describe("orderChange", async () => {
         test("Success", async () => {
 
-            const manager: Tradable.Manager<InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
+            const manager: Tradable.Manager<InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
             manager.delegate = new StripePaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -75,7 +75,7 @@ describe("Manager", () => {
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
 
-            orderItem.product = product.id
+            orderItem.product = product.reference
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.purchasedBy = user.id
@@ -97,7 +97,7 @@ describe("Manager", () => {
                 vendorType: "stripe",
                 refundFeeRate: 0
             }
-            const result = await manager.checkout(order, [orderItem], paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+            const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
             const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
             const _order = await Order.get(order.id) as Order
             const changeResult = await manager.checkoutChange(_order, orderItem, itemID, paymentOptions) as Tradable.CheckoutChangeResult<TradeTransaction>
@@ -105,7 +105,7 @@ describe("Manager", () => {
             const shopTradeTransaction = await shop.tradeTransactions.doc(changeResult.tradeTransactions[0].id, TradeTransaction).fetch() as TradeTransaction
             const userTradeTransaction = await user.tradeTransactions.doc(changeResult.tradeTransactions[0].id, TradeTransaction).fetch() as TradeTransaction
             const _product: Product = new Product(product.id, {})
-            const _sku = await _product.SKUs.doc(sku.id, SKU).fetch()
+            const _sku = await new SKU(sku.id, {}).fetch()
             const _item = await user.items.doc(itemID, Item).fetch() as Item
             const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
             const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get()])
@@ -117,7 +117,7 @@ describe("Manager", () => {
             expect(shopTradeTransaction.selledBy).toEqual(shop.id)
             expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
             expect(shopTradeTransaction.order).toEqual(order.id)
-            expect(shopTradeTransaction.product).toEqual(product.id)
+            expect(shopTradeTransaction.product).toEqual(product.reference)
             expect(shopTradeTransaction.sku).toEqual(sku.id)
 
             // User Trade Transaction
@@ -126,7 +126,7 @@ describe("Manager", () => {
             expect(userTradeTransaction.selledBy).toEqual(shop.id)
             expect(userTradeTransaction.purchasedBy).toEqual(user.id)
             expect(userTradeTransaction.order).toEqual(order.id)
-            expect(userTradeTransaction.product).toEqual(product.id)
+            expect(userTradeTransaction.product).toEqual(product.reference)
             expect(userTradeTransaction.sku).toEqual(sku.id)
 
             // SKU
@@ -137,7 +137,7 @@ describe("Manager", () => {
             // Item
             expect(_item.order).toEqual(order.id)
             expect(_item.selledBy).toEqual(shop.id)
-            expect(_item.product).toEqual(product.id)
+            expect(_item.product).toEqual(product.reference)
             expect(_item.sku).toEqual(sku.id)
 
             const account = new Account(user.id, {})
@@ -168,7 +168,7 @@ describe("Manager", () => {
 
         test("Invalid Delegate", async () => {
 
-            const manager: Tradable.Manager<InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
+            const manager: Tradable.Manager<InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
             manager.delegate = new StripePaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -176,7 +176,7 @@ describe("Manager", () => {
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
 
-            orderItem.product = product.id
+            orderItem.product = product.reference
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.purchasedBy = user.id
@@ -198,11 +198,11 @@ describe("Manager", () => {
                 vendorType: "stripe",
                 refundFeeRate: 0
             }
-            const result = await manager.checkout(order, [orderItem], paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+            const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
             const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
             const _order = await Order.get(order.id) as Order
             try {
-                const manager: Tradable.Manager<InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
+                const manager: Tradable.Manager<InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
                 const changeResult = await manager.checkoutChange(_order, orderItem, itemID, paymentOptions) as Tradable.CheckoutChangeResult<TradeTransaction>
                 expect(changeResult).toBeUndefined()
             } catch (error) {
@@ -213,7 +213,7 @@ describe("Manager", () => {
 
         test("Invalid Status", async () => {
 
-            const manager: Tradable.Manager<InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
+            const manager: Tradable.Manager<InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
             manager.delegate = new StripePaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -221,7 +221,7 @@ describe("Manager", () => {
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
 
-            orderItem.product = product.id
+            orderItem.product = product.reference
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.purchasedBy = user.id
@@ -244,7 +244,7 @@ describe("Manager", () => {
                 vendorType: "stripe",
                 refundFeeRate: 0
             }
-            const result = await manager.checkout(order, [orderItem], paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+            const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
             const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
             const _order = await Order.get(order.id) as Order
             _order.paymentStatus = Tradable.OrderPaymentStatus.none
@@ -259,7 +259,7 @@ describe("Manager", () => {
 
         test("Invalid Stripe refund", async () => {
 
-            const manager: Tradable.Manager<InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
+            const manager: Tradable.Manager<InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
             manager.delegate = new StripePaymentDelegate()
             manager.tradeDelegate = new TradeDelegate()
 
@@ -267,7 +267,7 @@ describe("Manager", () => {
             const date: Date = new Date()
             const orderItem: OrderItem = new OrderItem()
 
-            orderItem.product = product.id
+            orderItem.product = product.reference
             orderItem.order = order.id
             orderItem.selledBy = shop.id
             orderItem.purchasedBy = user.id
@@ -290,11 +290,11 @@ describe("Manager", () => {
                 vendorType: "stripe",
                 refundFeeRate: 0
             }
-            const result = await manager.checkout(order, [orderItem], paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+            const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
             const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
             const _order = await Order.get(order.id) as Order
             try {
-                const manager: Tradable.Manager<InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, Product, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
+                const manager: Tradable.Manager<InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
                 manager.delegate = new StripeInvalidPaymentDelegate()
                 manager.tradeDelegate = new TradeDelegate()
                 const changeResult = await manager.checkoutChange(_order, orderItem, itemID, paymentOptions) as Tradable.CheckoutChangeResult<TradeTransaction>

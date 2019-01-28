@@ -40,7 +40,7 @@ describe("StockManager", () => {
 
     let transactionID: string
 
-    const stockManager: StockManager<Order, OrderItem, User, Product, InventoryStock, SKU, TradeTransaction> = new StockManager(User, Product, InventoryStock, SKU, TradeTransaction)
+    const stockManager: StockManager<Order, OrderItem, User, InventoryStock, SKU, TradeTransaction> = new StockManager(User, InventoryStock, SKU, TradeTransaction)
 
     beforeAll(async () => {
 
@@ -51,14 +51,13 @@ describe("StockManager", () => {
         sku.title = "sku"
         sku.selledBy = shop.id
         sku.createdBy = shop.id
-        sku.product = product.id
+        sku.product = product.reference
         sku.amount = 100
         sku.currency = Tradable.Currency.JPY
         sku.inventory = {
             type: Tradable.StockType.finite,
             quantity: 2
         }
-        product.SKUs.insert(sku)
         for (let i = 0; i < sku.inventory.quantity!; i++) {
             const inventoryStock: InventoryStock = new InventoryStock(`${i}`)
             sku.inventoryStocks.insert(inventoryStock)
@@ -81,7 +80,7 @@ describe("StockManager", () => {
         order.items.append(orderItem)
 
         user.orders.insert(order)
-        await Promise.all([user.save(), product.save(), shop.save()])
+        await Promise.all([user.save(), sku.save(), product.save(), shop.save()])
 
         stockManager.delegate = new TradeDelegate()
     })
@@ -96,7 +95,7 @@ describe("StockManager", () => {
                             purchasedBy: user.id,
                             order: order.id,
                             sku: sku.id,
-                            product: product.id
+                            product: product.reference
                         }
                         const result = await stockManager.order(tradeInformation, 1, transaction)
                         resolve(result)
@@ -108,7 +107,7 @@ describe("StockManager", () => {
                 const shopTradeTransaction = (await shop.tradeTransactions.query(TradeTransaction).orderBy("createdAt").dataSource().get())[0]
                 const userTradeTransaction = (await user.tradeTransactions.query(TradeTransaction).orderBy("createdAt").dataSource().get())[0]
                 const _product: Product = new Product(product.id, {})
-                const _sku = _product.SKUs.doc(sku.id, SKU)
+                const _sku = new SKU(sku.id, {})
                 const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("order", "==", result.order).dataSource()
                 const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get(), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
                 const inventoryStocks: InventoryStock[] = promiseResult[1]
@@ -121,7 +120,7 @@ describe("StockManager", () => {
                 expect(shopTradeTransaction.selledBy).toEqual(shop.id)
                 expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(shopTradeTransaction.order).toEqual(order.id)
-                expect(shopTradeTransaction.product).toEqual(product.id)
+                expect(shopTradeTransaction.product).toEqual(product.reference)
                 expect(shopTradeTransaction.sku).toEqual(sku.id)
                 expect(shopTradeTransaction.items).toEqual([_item.id])
 
@@ -132,7 +131,7 @@ describe("StockManager", () => {
                 expect(userTradeTransaction.selledBy).toEqual(shop.id)
                 expect(userTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(userTradeTransaction.order).toEqual(order.id)
-                expect(userTradeTransaction.product).toEqual(product.id)
+                expect(userTradeTransaction.product).toEqual(product.reference)
                 expect(userTradeTransaction.sku).toEqual(sku.id)
                 expect(userTradeTransaction.items).toEqual([_item.id])
 
@@ -144,7 +143,7 @@ describe("StockManager", () => {
                 // Item
                 expect(_item.order).toEqual(order.id)
                 expect(_item.selledBy).toEqual(shop.id)
-                expect(_item.product).toEqual(product.id)
+                expect(_item.product).toEqual(product.reference)
                 expect(_item.sku).toEqual(sku.id)
 
             } catch (error) {
@@ -162,7 +161,7 @@ describe("StockManager", () => {
                                 purchasedBy: user.id,
                                 order: order.id,
                                 sku: sku.id,
-                                product: product.id
+                                product: product.reference
                             }
                             const result = await stockManager.order(tradeInformation, 2, transaction)
                         } catch (error) {
@@ -176,7 +175,7 @@ describe("StockManager", () => {
                 const shopTradeTransaction = (await shop.tradeTransactions.query(TradeTransaction).orderBy("createdAt").dataSource().get())[0]
                 const userTradeTransaction = (await user.tradeTransactions.query(TradeTransaction).orderBy("createdAt").dataSource().get())[0]
                 const _product: Product = new Product(product.id, {})
-                const _sku = _product.SKUs.doc(sku.id, SKU)
+                const _sku = new SKU(sku.id, {})
                 const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
                 const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get(), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
                 const inventoryStocks: InventoryStock[] = promiseResult[1]
@@ -188,7 +187,7 @@ describe("StockManager", () => {
                 expect(shopTradeTransaction.selledBy).toEqual(shop.id)
                 expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(shopTradeTransaction.order).toEqual(order.id)
-                expect(shopTradeTransaction.product).toEqual(product.id)
+                expect(shopTradeTransaction.product).toEqual(product.reference)
                 expect(shopTradeTransaction.sku).toEqual(sku.id)
                 expect(shopTradeTransaction.items).toEqual([_item.id])
 
@@ -198,7 +197,7 @@ describe("StockManager", () => {
                 expect(userTradeTransaction.selledBy).toEqual(shop.id)
                 expect(userTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(userTradeTransaction.order).toEqual(order.id)
-                expect(userTradeTransaction.product).toEqual(product.id)
+                expect(userTradeTransaction.product).toEqual(product.reference)
                 expect(userTradeTransaction.sku).toEqual(sku.id)
                 expect(userTradeTransaction.items).toEqual([_item.id])
 
@@ -210,7 +209,7 @@ describe("StockManager", () => {
                 // Item
                 expect(_item.order).toEqual(order.id)
                 expect(_item.selledBy).toEqual(shop.id)
-                expect(_item.product).toEqual(product.id)
+                expect(_item.product).toEqual(product.reference)
                 expect(_item.sku).toEqual(sku.id)
             }
         }, 15000)
@@ -231,14 +230,14 @@ describe("StockManager", () => {
             sku.isAvailabled = false
             sku.selledBy = shop.id
             sku.createdBy = shop.id
-            sku.product = product.id
+            sku.product = product.reference
             sku.amount = 100
             sku.currency = Tradable.Currency.JPY
             sku.inventory = {
                 type: Tradable.StockType.finite,
                 quantity: 5
             }
-            product.SKUs.insert(sku)
+
             for (let i = 0; i < sku.inventory.quantity!; i++) {
                 const inventoryStock: InventoryStock = new InventoryStock(`${i}`)
                 sku.inventoryStocks.insert(inventoryStock)
@@ -260,7 +259,7 @@ describe("StockManager", () => {
             order.items.append(orderItem)
 
             user.orders.insert(order)
-            await Promise.all([user.save(), product.save(), shop.save()])
+            await Promise.all([user.save(), sku.save(), product.save(), shop.save()])
 
             try {
                 await Pring.firestore.runTransaction(async (transaction) => {
@@ -271,7 +270,7 @@ describe("StockManager", () => {
                                 purchasedBy: user.id,
                                 order: order.id,
                                 sku: sku.id,
-                                product: product.id
+                                product: product.reference
                             }
                             const result = await stockManager.order(tradeInformation, 1, transaction)
                         } catch (error) {
@@ -285,7 +284,7 @@ describe("StockManager", () => {
                 const shopTradeTransaction = (await shop.tradeTransactions.query(TradeTransaction).orderBy("createdAt").dataSource().get())[0]
                 const userTradeTransaction = (await user.tradeTransactions.query(TradeTransaction).orderBy("createdAt").dataSource().get())[0]
                 const _product: Product = new Product(product.id, {})
-                const _sku = _product.SKUs.doc(sku.id, SKU)
+                const _sku = new SKU(sku.id, {})
                 const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
                 const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get()])
                 const inventoryStocks: InventoryStock[] = promiseResult[1]
@@ -325,7 +324,7 @@ describe("StockManager", () => {
                         purchasedBy: user.id,
                         order: order.id,
                         sku: sku.id,
-                        product: product.id
+                        product: product.reference
                     }
                     const result = await stockManager.orderCancel(tradeInformation, transaction)
                     resolve(result)
@@ -335,7 +334,7 @@ describe("StockManager", () => {
             const shopTradeTransaction = (await shop.tradeTransactions.doc(result.id, TradeTransaction).fetch())
             const userTradeTransaction = (await user.tradeTransactions.doc(result.id, TradeTransaction).fetch())
             const _product: Product = new Product(product.id, {})
-            const _sku = _product.SKUs.doc(sku.id, SKU)
+            const _sku = new SKU(sku.id, {})
             const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
             const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get(), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
             const inventoryStocks: InventoryStock[] = promiseResult[1]
@@ -347,7 +346,7 @@ describe("StockManager", () => {
             expect(shopTradeTransaction.selledBy).toEqual(shop.id)
             expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
             expect(shopTradeTransaction.order).toEqual(order.id)
-            expect(shopTradeTransaction.product).toEqual(product.id)
+            expect(shopTradeTransaction.product).toEqual(product.reference)
             expect(shopTradeTransaction.sku).toEqual(sku.id)
             expect(shopTradeTransaction.items).toEqual([_item.id])
 
@@ -357,7 +356,7 @@ describe("StockManager", () => {
             expect(userTradeTransaction.selledBy).toEqual(shop.id)
             expect(userTradeTransaction.purchasedBy).toEqual(user.id)
             expect(userTradeTransaction.order).toEqual(order.id)
-            expect(userTradeTransaction.product).toEqual(product.id)
+            expect(userTradeTransaction.product).toEqual(product.reference)
             expect(userTradeTransaction.sku).toEqual(sku.id)
             expect(userTradeTransaction.items).toEqual([_item.id])
 
@@ -369,7 +368,7 @@ describe("StockManager", () => {
             // Item
             expect(_item.order).toEqual(order.id)
             expect(_item.selledBy).toEqual(shop.id)
-            expect(_item.product).toEqual(product.id)
+            expect(_item.product).toEqual(product.reference)
             expect(_item.sku).toEqual(sku.id)
             expect(_item.isCancelled).toEqual(true)
 
@@ -385,7 +384,7 @@ describe("StockManager", () => {
                                 purchasedBy: user.id,
                                 order: order.id,
                                 sku: "sku.id",
-                                product: product.id
+                                product: product.reference
                             }
                             await stockManager.orderCancel(tradeInformation, transaction)
                         } catch (error) {
@@ -400,7 +399,7 @@ describe("StockManager", () => {
                 const shopTradeTransaction = (await shop.tradeTransactions.query(TradeTransaction).orderBy("createdAt").dataSource().get())[0]
                 const userTradeTransaction = (await user.tradeTransactions.query(TradeTransaction).orderBy("createdAt").dataSource().get())[0]
                 const _product: Product = new Product(product.id, {})
-                const _sku = _product.SKUs.doc(sku.id, SKU)
+                const _sku = new SKU(sku.id, {})
                 const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
                 const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get(), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
                 const inventoryStocks: InventoryStock[] = promiseResult[1]
@@ -412,7 +411,7 @@ describe("StockManager", () => {
                 expect(shopTradeTransaction.selledBy).toEqual(shop.id)
                 expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(shopTradeTransaction.order).toEqual(order.id)
-                expect(shopTradeTransaction.product).toEqual(product.id)
+                expect(shopTradeTransaction.product).toEqual(product.reference)
                 expect(shopTradeTransaction.sku).toEqual(sku.id)
                 expect(shopTradeTransaction.items).toEqual([_item.id])
 
@@ -422,7 +421,7 @@ describe("StockManager", () => {
                 expect(userTradeTransaction.selledBy).toEqual(shop.id)
                 expect(userTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(userTradeTransaction.order).toEqual(order.id)
-                expect(userTradeTransaction.product).toEqual(product.id)
+                expect(userTradeTransaction.product).toEqual(product.reference)
                 expect(userTradeTransaction.sku).toEqual(sku.id)
                 expect(userTradeTransaction.items).toEqual([_item.id])
 
@@ -434,7 +433,7 @@ describe("StockManager", () => {
                 // Item
                 expect(_item.order).toEqual(order.id)
                 expect(_item.selledBy).toEqual(shop.id)
-                expect(_item.product).toEqual(product.id)
+                expect(_item.product).toEqual(product.reference)
                 expect(_item.sku).toEqual(sku.id)
                 expect(_item.isCancelled).toEqual(true)
             }
@@ -453,7 +452,7 @@ describe("StockManager", () => {
                         purchasedBy: user.id,
                         order: order.id,
                         sku: sku.id,
-                        product: product.id
+                        product: product.reference
                     }
                     const result = await stockManager.order(tradeInformation, 1, transaction)
                     resolve(result)
@@ -468,7 +467,7 @@ describe("StockManager", () => {
                         purchasedBy: user.id,
                         order: order.id,
                         sku: sku.id,
-                        product: product.id
+                        product: product.reference
                     }
                     const result = await stockManager.itemCancel(tradeInformation, item, transaction)
                     resolve(result)
@@ -481,7 +480,7 @@ describe("StockManager", () => {
             const userTradeTransaction = (await user.tradeTransactions.doc(result.id, TradeTransaction).fetch())
 
             const _product: Product = new Product(product.id, {})
-            const _sku = _product.SKUs.doc(sku.id, SKU)
+            const _sku = new SKU(sku.id, {})
             const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
             const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get(), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
             const inventoryStocks: InventoryStock[] = promiseResult[1]
@@ -493,7 +492,7 @@ describe("StockManager", () => {
             expect(shopTradeTransaction.selledBy).toEqual(shop.id)
             expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
             expect(shopTradeTransaction.order).toEqual(order.id)
-            expect(shopTradeTransaction.product).toEqual(product.id)
+            expect(shopTradeTransaction.product).toEqual(product.reference)
             expect(shopTradeTransaction.sku).toEqual(sku.id)
             expect(shopTradeTransaction.items).toEqual([item])
 
@@ -503,7 +502,7 @@ describe("StockManager", () => {
             expect(userTradeTransaction.selledBy).toEqual(shop.id)
             expect(userTradeTransaction.purchasedBy).toEqual(user.id)
             expect(userTradeTransaction.order).toEqual(order.id)
-            expect(userTradeTransaction.product).toEqual(product.id)
+            expect(userTradeTransaction.product).toEqual(product.reference)
             expect(userTradeTransaction.sku).toEqual(sku.id)
             expect(userTradeTransaction.items).toEqual([item])
 
@@ -515,7 +514,7 @@ describe("StockManager", () => {
             // Item
             expect(_item.order).toEqual(order.id)
             expect(_item.selledBy).toEqual(shop.id)
-            expect(_item.product).toEqual(product.id)
+            expect(_item.product).toEqual(product.reference)
             expect(_item.sku).toEqual(sku.id)
             expect(_item.isCancelled).toEqual(true)
 
@@ -531,7 +530,7 @@ describe("StockManager", () => {
                                 purchasedBy: user.id,
                                 order: order.id,
                                 sku: sku.id,
-                                product: product.id
+                                product: product.reference
                             }
                             await stockManager.itemCancel(tradeInformation, "item.id", transaction)
                         } catch (error) {
@@ -545,7 +544,7 @@ describe("StockManager", () => {
                 const shopTradeTransaction = (await shop.tradeTransactions.doc(cancelResult.id, TradeTransaction).fetch())
                 const userTradeTransaction = (await user.tradeTransactions.doc(cancelResult.id, TradeTransaction).fetch())
                 const _product: Product = new Product(product.id, {})
-                const _sku = _product.SKUs.doc(sku.id, SKU)
+                const _sku = new SKU(sku.id, {})
                 const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
                 const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get(), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
                 const inventoryStocks: InventoryStock[] = promiseResult[1]
@@ -557,7 +556,7 @@ describe("StockManager", () => {
                 expect(shopTradeTransaction.selledBy).toEqual(shop.id)
                 expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(shopTradeTransaction.order).toEqual(order.id)
-                expect(shopTradeTransaction.product).toEqual(product.id)
+                expect(shopTradeTransaction.product).toEqual(product.reference)
                 expect(shopTradeTransaction.sku).toEqual(sku.id)
                 expect(shopTradeTransaction.items).toEqual([_item.id])
 
@@ -567,7 +566,7 @@ describe("StockManager", () => {
                 expect(userTradeTransaction.selledBy).toEqual(shop.id)
                 expect(userTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(userTradeTransaction.order).toEqual(order.id)
-                expect(userTradeTransaction.product).toEqual(product.id)
+                expect(userTradeTransaction.product).toEqual(product.reference)
                 expect(userTradeTransaction.sku).toEqual(sku.id)
                 expect(userTradeTransaction.items).toEqual([_item.id])
                 
@@ -579,7 +578,7 @@ describe("StockManager", () => {
                 // Item
                 expect(_item.order).toEqual(order.id)
                 expect(_item.selledBy).toEqual(shop.id)
-                expect(_item.product).toEqual(product.id)
+                expect(_item.product).toEqual(product.reference)
                 expect(_item.sku).toEqual(sku.id)
                 expect(_item.isCancelled).toEqual(true)
             }

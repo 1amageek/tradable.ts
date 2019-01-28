@@ -47,14 +47,13 @@ describe("BalanceManager", () => {
         sku.title = "sku"
         sku.selledBy = shop.id
         sku.createdBy = shop.id
-        sku.product = product.id
+        sku.product = product.reference
         sku.amount = 100
         sku.currency = Tradable.Currency.JPY
         sku.inventory = {
             type: Tradable.StockType.finite,
             quantity: 1
         }
-        product.SKUs.insert(sku)
 
         for (let i = 0; i < sku.inventory.quantity!; i++) {
             const shard: InventoryStock = new InventoryStock(`${i}`)
@@ -76,7 +75,7 @@ describe("BalanceManager", () => {
         order.shippingTo = { address: "address" }
         order.expirationDate = admin.firestore.Timestamp.fromDate(new Date(date.setDate(date.getDate() + 14)))
         order.items.append(orderItem)
-        await Promise.all([order.save(), await product.save(), await shop.save(), await user.save()])
+        await Promise.all([order.save(), sku.save(), product.save(), shop.save(), user.save()])
     })
 
     describe("payment", async () => {

@@ -48,14 +48,14 @@ describe("OrderManager", () => {
         sku.title = "sku"
         sku.selledBy = shop.id
         sku.createdBy = shop.id
-        sku.product = product.id
+        sku.product = product.reference
         sku.amount = 100
         sku.currency = Tradable.Currency.JPY
         sku.inventory = {
             type: Tradable.StockType.finite,
             quantity: 1
         }
-        product.SKUs.insert(sku)
+
         for (let i = 0; i < 1; i++) {
             const shard: InventoryStock = new InventoryStock(`${i}`)
             sku.inventoryStocks.insert(shard)
@@ -78,7 +78,7 @@ describe("OrderManager", () => {
         order.items.append(orderItem)
 
         user.orders.insert(order)
-        await Promise.all([user.save(), product.save(), shop.save()])
+        await Promise.all([user.save(), sku.save(), product.save(), shop.save()])
     })
 
     describe("update", async () => {
