@@ -253,6 +253,7 @@ export type PaymentOptions = {
     vendorType: string
     refundFeeRate: number   // 0 ~ 1 
     reason?: RefundReason
+    metadata?: any
 }
 
 export enum RefundReason {

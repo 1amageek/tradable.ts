@@ -546,7 +546,8 @@ export class Manager
                             purchasedBy: order.purchasedBy,
                             order: order.id,
                             sku: skuID,
-                            product: productID
+                            product: productID,
+                            metadata: paymentOptions.metadata
                         }
                         const task = this.stockManager.order(tradeInformation, quantity, transaction)
                         tasks.push(task)
@@ -644,7 +645,8 @@ export class Manager
                                     purchasedBy: order.purchasedBy,
                                     order: order.id,
                                     sku: skuID,
-                                    product: productID
+                                    product: productID,
+                                    metadata: paymentOptions.metadata
                                 }
                                 orderItem.status = OrderItemStatus.changed
                                 const tradeTransaction = await this.stockManager.itemCancel(tradeInformation, itemID, transaction)
@@ -684,7 +686,8 @@ export class Manager
                                         purchasedBy: order.purchasedBy,
                                         order: order.id,
                                         sku: skuID,
-                                        product: productID
+                                        product: productID,
+                                        metadata: paymentOptions.metadata
                                     }
                                     orderItem.status = OrderItemStatus.changed
                                     const tradeTransaction = await this.stockManager.itemCancel(tradeInformation, itemID, transaction)
@@ -772,7 +775,8 @@ export class Manager
                                         purchasedBy: order.purchasedBy,
                                         order: order.id,
                                         sku: skuID,
-                                        product: productID
+                                        product: productID,
+                                        metadata: paymentOptions.metadata
                                     }
                                     orderItem.status = OrderItemStatus.cancelled
                                     const task = this.stockManager.orderCancel(tradeInformation, transaction)
@@ -816,7 +820,8 @@ export class Manager
                                             purchasedBy: order.purchasedBy,
                                             order: order.id,
                                             sku: skuID,
-                                            product: productID
+                                            product: productID,
+                                            metadata: paymentOptions.metadata
                                         }
                                         orderItem.status = OrderItemStatus.cancelled
                                         const task = this.stockManager.orderCancel(tradeInformation, transaction)
