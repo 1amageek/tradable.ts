@@ -276,6 +276,7 @@ export type TradeInformation = {
     order: string
     product?: FirebaseFirestore.DocumentReference
     sku: string
+    metadata?: any
 }
 
 export interface TradeDelegate {
