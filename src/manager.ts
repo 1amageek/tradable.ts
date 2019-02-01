@@ -185,10 +185,12 @@ export class Manager
                                 const tasks = []
                                 for (const orderItem of orderItems) {
                                     const skuID = orderItem.sku
-                                    if (orderItem.type === OrderItemType.sku && skuID) {
+                                    if (orderItem.type === OrderItemType.sku) {
+                                        if (!skuID) {
+                                            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order item is sku required.`)
+                                        }
                                         const task = this.stockManager.reserve(order, orderItem, transaction)
                                         tasks.push(task)
-
                                     }
                                 }
                                 await Promise.all(tasks)
@@ -213,7 +215,10 @@ export class Manager
                                 const tasks = []
                                 for (const orderItem of orderItems) {
                                     const skuID = orderItem.sku
-                                    if (orderItem.type === OrderItemType.sku && skuID) {
+                                    if (orderItem.type === OrderItemType.sku) {
+                                        if (!skuID) {
+                                            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order item is sku required.`)
+                                        }
                                         const task = this.stockManager.reserve(order, orderItem, transaction)
                                         tasks.push(task)
                                     }
@@ -353,7 +358,10 @@ export class Manager
                                 const productID = orderItem.product
                                 const skuID = orderItem.sku
                                 const quantity = orderItem.quantity
-                                if (orderItem.type === OrderItemType.sku && skuID) {
+                                if (orderItem.type === OrderItemType.sku) {
+                                    if (!skuID) {
+                                        throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order item is sku required.`)
+                                    }
                                     const tradeInformation: TradeInformation = {
                                         selledBy: order.selledBy,
                                         purchasedBy: order.purchasedBy,
@@ -540,7 +548,10 @@ export class Manager
                     const productID = orderItem.product
                     const skuID = orderItem.sku
                     const quantity = orderItem.quantity
-                    if (orderItem.type === OrderItemType.sku && skuID) {
+                    if (orderItem.type === OrderItemType.sku) {
+                        if (!skuID) {
+                            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order item is sku required.`)
+                        }
                         const tradeInformation: TradeInformation = {
                             selledBy: order.selledBy,
                             purchasedBy: order.purchasedBy,
@@ -565,7 +576,7 @@ export class Manager
                     if (!paymentResult) {
                         paymentResult = await delegate.pay(order.currency, order.amount, order, paymentOptions)
                     }
-                    
+
                     // payment
                     const balanceTransaction = this.balanceManager.pay(order.purchasedBy,
                         order.id,
@@ -639,7 +650,10 @@ export class Manager
                             const tradeTransactions = []
                             const productID = orderItem.product
                             const skuID = orderItem.sku
-                            if (orderItem.type === OrderItemType.sku && skuID) {
+                            if (orderItem.type === OrderItemType.sku) {
+                                if (!skuID) {
+                                    throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order item is sku required.`)
+                                }
                                 const tradeInformation: TradeInformation = {
                                     selledBy: order.selledBy,
                                     purchasedBy: order.purchasedBy,
@@ -680,7 +694,10 @@ export class Manager
                                 const tradeTransactions = []
                                 const productID = orderItem.product
                                 const skuID = orderItem.sku
-                                if (orderItem.type === OrderItemType.sku && skuID) {
+                                if (orderItem.type === OrderItemType.sku) {
+                                    if (!skuID) {
+                                        throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order item is sku required.`)
+                                    }
                                     const tradeInformation: TradeInformation = {
                                         selledBy: order.selledBy,
                                         purchasedBy: order.purchasedBy,
@@ -769,7 +786,10 @@ export class Manager
                             for (const orderItem of orderItems) {
                                 const productID = orderItem.product
                                 const skuID = orderItem.sku
-                                if (orderItem.type === OrderItemType.sku && skuID) {
+                                if (orderItem.type === OrderItemType.sku) {
+                                    if (!skuID) {
+                                        throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order item is sku required.`)
+                                    }
                                     const tradeInformation: TradeInformation = {
                                         selledBy: order.selledBy,
                                         purchasedBy: order.purchasedBy,
@@ -814,7 +834,10 @@ export class Manager
                                 for (const orderItem of orderItems) {
                                     const productID = orderItem.product
                                     const skuID = orderItem.sku
-                                    if (orderItem.type === OrderItemType.sku && skuID) {
+                                    if (orderItem.type === OrderItemType.sku) {
+                                        if (!skuID) {
+                                            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order item is sku required.`)
+                                        }
                                         const tradeInformation: TradeInformation = {
                                             selledBy: order.selledBy,
                                             purchasedBy: order.purchasedBy,
