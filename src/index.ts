@@ -251,6 +251,7 @@ export type PaymentOptions = {
     source?: string
     customer?: string
     vendorType: string
+    numberOfShards?: number
     refundFeeRate: number   // 0 ~ 1 
     reason?: RefundReason
     metadata?: any
@@ -277,6 +278,7 @@ export type TradeInformation = {
     order: string
     product?: FirebaseFirestore.DocumentReference
     sku: string
+    numberOfShards?: number
     metadata?: any
 }
 
@@ -321,6 +323,7 @@ export enum TradableErrorCode {
     lessMinimumAmount = 'lessMinimumAmount',
     invalidCurrency = 'invalidCurrency',
     invalidAmount = 'invalidAmount',
+    invalidShard = 'invalidShard',
     outOfStock = 'outOfStock',
     invalidStatus = 'invalidStatus',
     internal = 'internal'

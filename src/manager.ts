@@ -558,7 +558,8 @@ export class Manager
                             order: order.id,
                             sku: skuID,
                             product: productID,
-                            metadata: paymentOptions.metadata
+                            metadata: paymentOptions.metadata,
+                            numberOfShards: paymentOptions.numberOfShards
                         }
                         const task = this.stockManager.order(tradeInformation, quantity, transaction)
                         tasks.push(task)
