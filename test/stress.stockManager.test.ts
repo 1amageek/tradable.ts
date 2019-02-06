@@ -56,7 +56,7 @@ describe("StockManager", () => {
 		sku.currency = Tradable.Currency.JPY
 		sku.inventory = {
 			type: Tradable.StockType.finite,
-			quantity: 100
+			quantity: 10
 		}
 		for (let i = 0; i < sku.inventory.quantity!; i++) {
 			const inventoryStock: InventoryStock = new InventoryStock(`${i}`)
@@ -72,12 +72,9 @@ describe("StockManager", () => {
 	describe("Order Stress test", async () => {
 		test("Success", async () => {
 			let successCount: number = 0
-			const sec = 1000
-			const n = 100
+			const n = 10
 			const interval = 0
 			try {
-				console.log(interval)
-
 				let tasks = []
 				for (let i = 0; i < n; i++) {
 					const test = async () => {
@@ -103,7 +100,6 @@ describe("StockManager", () => {
 						user.orders.insert(order)
 
 						await order.save()
-						console.log("TEST", i)
 
 						try {
 							await new Promise((resolve, reject) => {
@@ -119,7 +115,8 @@ describe("StockManager", () => {
 													product: product.reference
 												}
 												try {
-													const result = await stockManager.order(tradeInformation, 1, transaction)
+													const stockTransaction = await stockManager.order(tradeInformation, 1, transaction)
+													const result = await stockTransaction.commit()
 													resolve(result)
 												} catch(error) {
 													reject(error)
@@ -145,9 +142,7 @@ describe("StockManager", () => {
 
 				const result = await sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", false).dataSource().get()
 				expect(successCount).toEqual(result.length)
-
-				console.log("Suceesses count", successCount)
-
+				console.log(successCount)
 			} catch (error) {
 				const result = await sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", false).dataSource().get()
 				expect(successCount).toEqual(result.length)
@@ -156,7 +151,7 @@ describe("StockManager", () => {
 		}, 15000)
 	})
 
-	// afterAll(async () => {
-	//     await Promise.all([shop.delete(), user.delete(), product.delete(), sku.delete()])
-	// })
+	afterAll(async () => {
+	    await Promise.all([shop.delete(), user.delete(), product.delete(), sku.delete()])
+	})
 })

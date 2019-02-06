@@ -373,7 +373,8 @@ export class Manager
                                     tasks.push(task)
                                 }
                             }
-                            const tradeTransactions = await Promise.all(tasks)
+                            const stockTransactions = await Promise.all(tasks)
+                            const tradeTransactions = await Promise.all(stockTransactions.map(stockTransaction => stockTransaction.commit()))
                             this.orderManager.update(order, orderItems, {}, transaction)
                             const reuslt: TradeResult<TradeTransaction> = {
                                 tradeTransactions: tradeTransactions
@@ -565,7 +566,8 @@ export class Manager
                         tasks.push(task)
                     }
                 }
-                const tradeTransactions = await Promise.all(tasks)
+                const stockTransactions = await Promise.all(tasks)
+                const tradeTransactions = await Promise.all(stockTransactions.map(stockTransaction => stockTransaction.commit()))
                 if (order.amount === 0) {
                     order.paymentStatus = OrderPaymentStatus.paid
                     this.orderManager.update(order, orderItems, {}, transaction)
