@@ -79,12 +79,12 @@ export class StockTransaction
         for (let i = 0; i < inventoryStocks.length; i++) {
             const inventoryStock = inventoryStocks[i]
             if (inventoryStock.isAvailabled) {
-                const itemID = this.delegate.createItem(tradeInformation, inventoryStock.id, transaction)
-                tradeTransaction.items.push(itemID)
+                const item = this.delegate.createItem(tradeInformation, inventoryStock.id, transaction)
+                tradeTransaction.item = item
                 tradeTransaction.inventoryStocks.push(inventoryStock.id)
                 transaction.set(inventoryStock.reference, {
                     "isAvailabled": false,
-                    "item": itemID,
+                    "item": item,
                     "order": orderID
                 }, { merge: true })
             } else {
@@ -211,70 +211,9 @@ export class StockManager
         stockTransaction.setInformation(tradeInformation, quantity, transaction)
         stockTransaction.inventoryStocks = result
         return stockTransaction
-
-        // for (let i = 0; i < quantity; i++) {
-        //     const inventoryStock = result[i]
-        //     if (inventoryStock.isAvailabled) {
-        //         const itemID = this.delegate.createItem(tradeInformation, inventoryStock.id, transaction)
-        //         tradeTransaction.items.push(itemID)
-        //         tradeTransaction.inventoryStocks.push(inventoryStock.id)
-        //         transaction.set(inventoryStock.reference, {
-        //             "isAvailabled": false,
-        //             "item": itemID,
-        //             "order": orderID
-        //         }, { merge: true })
-        //     } else {
-        //         throw new TradableError(TradableErrorCode.invalidShard, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} InventoryStock/${inventoryStock.id} InventoryStock is not availabled`)
-        //     }
-        // }
-
-        // transaction.set(tradeTransaction.reference, tradeTransaction.value(), { merge: true })
-        // transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
-        // transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
-        // return tradeTransaction
     }
 
-    // async commit<InventoryStock extends InventoryStockProtocol>(tradeInformation: TradeInformation, inventoryStocks: InventoryStock[], transaction: FirebaseFirestore.Transaction) {
-
-    //     const orderID: string = tradeInformation.order
-    //     const skuID: string = tradeInformation.sku
-    //     const purchasedBy: string = tradeInformation.purchasedBy
-    //     const selledBy: string = tradeInformation.selledBy
-    //     const seller: User = new this._User(selledBy, {})
-    //     const purchaser: User = new this._User(purchasedBy, {})
-
-    //     const tradeTransaction: TradeTransaction = new this._TradeTransaction()
-    //     tradeTransaction.type = TradeTransactionType.order
-    //     tradeTransaction.quantity = inventoryStocks.length
-    //     tradeTransaction.selledBy = selledBy
-    //     tradeTransaction.purchasedBy = purchasedBy
-    //     tradeTransaction.order = orderID
-    //     tradeTransaction.product = tradeInformation.product
-    //     tradeTransaction.sku = skuID
-
-    //     for (let i = 0; i < inventoryStocks.length; i++) {
-    //         const inventoryStock = inventoryStocks[i]
-    //         if (inventoryStock.isAvailabled) {
-    //             const itemID = this.delegate.createItem(tradeInformation, inventoryStock.id, transaction)
-    //             tradeTransaction.items.push(itemID)
-    //             tradeTransaction.inventoryStocks.push(inventoryStock.id)
-    //             transaction.set(inventoryStock.reference, {
-    //                 "isAvailabled": false,
-    //                 "item": itemID,
-    //                 "order": orderID
-    //             }, { merge: true })
-    //         } else {
-    //             throw new TradableError(TradableErrorCode.invalidShard, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} InventoryStock/${inventoryStock.id} InventoryStock is not availabled`)
-    //         }
-    //     }
-
-    //     transaction.set(tradeTransaction.reference, tradeTransaction.value(), { merge: true })
-    //     transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
-    //     transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
-    //     return tradeTransaction
-    // }
-
-    async itemCancel(tradeInformation: TradeInformation, itemID: string, transaction: FirebaseFirestore.Transaction) {
+    async itemCancel(tradeInformation: TradeInformation, item: FirebaseFirestore.DocumentReference, transaction: FirebaseFirestore.Transaction) {
 
         const orderID: string = tradeInformation.order
         const skuID: string = tradeInformation.sku
@@ -283,7 +222,7 @@ export class StockManager
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
         const sku: SKU = await new this._SKU(skuID, {})
-        const inventoryStockQuery = sku.inventoryStocks.reference.where("item", "==", itemID).limit(1)
+        const inventoryStockQuery = sku.inventoryStocks.reference.where("item", "==", item).limit(1)
         const snapshot: FirebaseFirestore.QuerySnapshot = await transaction.get(inventoryStockQuery)
         const inventoryStocks: FirebaseFirestore.QueryDocumentSnapshot[] = snapshot.docs
 
@@ -304,7 +243,7 @@ export class StockManager
         tradeTransaction.order = orderID
         tradeTransaction.product = tradeInformation.product
         tradeTransaction.sku = skuID
-        tradeTransaction.items.push(itemID)
+        tradeTransaction.item = item
         tradeTransaction.inventoryStocks.push(inventoryStockSnapshot.id)
 
         transaction.set(inventoryStockSnapshot.ref, {
@@ -316,7 +255,7 @@ export class StockManager
         transaction.set(tradeTransaction.reference, tradeTransaction.value(), { merge: true })
         transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
         transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
-        this.delegate.cancelItem(tradeInformation, itemID, transaction)
+        this.delegate.cancelItem(tradeInformation, item, transaction)
         return tradeTransaction
     }
 
@@ -353,10 +292,10 @@ export class StockManager
 
         for (let i = 0; i < quantity; i++) {
             const inventoryStockSnapshot: FirebaseFirestore.QueryDocumentSnapshot = inventoryStocks[i]
-            const itemID: string = inventoryStockSnapshot.data()["item"]
-            tradeTransaction.items.push(itemID)
+            const item: FirebaseFirestore.DocumentReference = inventoryStockSnapshot.data()["item"]
+            tradeTransaction.item = item
             tradeTransaction.inventoryStocks.push(inventoryStocks[i].id)
-            this.delegate.cancelItem(tradeInformation, itemID, transaction)
+            this.delegate.cancelItem(tradeInformation, item, transaction)
             transaction.set(inventoryStockSnapshot.ref, {
                 "isAvailabled": true,
                 "item": FirebaseFirestore.FieldValue.delete(),

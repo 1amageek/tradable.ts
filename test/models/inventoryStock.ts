@@ -8,6 +8,6 @@ const property = Pring.property
 export class InventoryStock extends Pring.Base implements tradable.InventoryStockProtocol {
     @property isAvailabled: boolean = true
     @property SKU!: string
-    @property item?: string
+    @property item?: FirebaseFirestore.DocumentReference
     @property order?: string
 }

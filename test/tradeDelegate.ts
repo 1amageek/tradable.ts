@@ -9,7 +9,7 @@ export class TradeDelegate implements tradable.TradeDelegate {
 
     }
 
-    createItem(information: tradable.TradeInformation, inventoryStock: string, transaction: FirebaseFirestore.Transaction): string {
+    createItem(information: tradable.TradeInformation, inventoryStock: string, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference {
         const purchaser: User = new User(information.purchasedBy, {})
         const item: Item = new Item()
         item.selledBy = information.selledBy
@@ -18,12 +18,12 @@ export class TradeDelegate implements tradable.TradeDelegate {
         item.sku = information.sku
         item.inventoryStock = inventoryStock
         transaction.set(purchaser.items.reference.doc(item.id), item.value(), { merge: true })
-        return item.id
+        return item.reference
     }
 
-    cancelItem(information: tradable.TradeInformation, itemID: string, transaction: FirebaseFirestore.Transaction): void {
+    cancelItem(information: tradable.TradeInformation, item: FirebaseFirestore.DocumentReference, transaction: FirebaseFirestore.Transaction): void {
         const purchaser: User = new User(information.purchasedBy, {})
-        transaction.set(purchaser.items.reference.doc(itemID), {
+        transaction.set(purchaser.items.reference.doc(item.id), {
             isCancelled: true
         }, { merge: true })
     }

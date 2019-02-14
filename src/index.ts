@@ -63,7 +63,7 @@ export interface TradeTransactionProtocol extends Pring.Base {
     product?: FirebaseFirestore.DocumentReference
     sku: string
     inventoryStocks: string[]
-    items: string[]
+    item: FirebaseFirestore.DocumentReference
 }
 
 export enum BalanceTransactionType {
@@ -118,7 +118,7 @@ export interface InventoryStockProtocol extends Pring.Base {
     isAvailabled: boolean
     SKU: string
     order?: string
-    item?: string
+    item?: FirebaseFirestore.DocumentReference
 }
 
 // SKU
@@ -286,11 +286,11 @@ export interface TradeDelegate {
 
     reserve<OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>>(order: Order, orderItem: OrderItem, transaction: FirebaseFirestore.Transaction): void
 
-    createItem(information: TradeInformation, invetoryStock: string, transaction: FirebaseFirestore.Transaction): string
+    createItem(information: TradeInformation, invetoryStock: string, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference
 
     getItems(information: TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<string[]>
 
-    cancelItem(information: TradeInformation, itemID: string, transaction: FirebaseFirestore.Transaction): void
+    cancelItem(information: TradeInformation, item: FirebaseFirestore.DocumentReference, transaction: FirebaseFirestore.Transaction): void
 }
 
 export interface TransactionDelegate {

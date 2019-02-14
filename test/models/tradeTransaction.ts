@@ -13,5 +13,5 @@ export class TradeTransaction extends Pring.Base implements tradable.TradeTransa
     @property product?: FirebaseFirestore.DocumentReference
     @property sku: string = ''
     @property inventoryStocks: string[] = []
-    @property items: string[] = []
+    @property item!: FirebaseFirestore.DocumentReference
 }

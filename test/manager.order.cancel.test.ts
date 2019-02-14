@@ -109,8 +109,8 @@ describe("Manager", () => {
             const _product: Product = new Product(product.id, {})
             const _sku = new SKU(sku.id, {})
 
-            const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
-            const _item = user.items.doc(itemID, Item) as Item
+            const item = (result.tradeTransactions[0].value() as any)["item"]
+            const _item = user.items.doc(item.id, Item) as Item
             const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
             const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get()])
             const inventoryStocks: InventoryStock[] = promiseResult[1]
@@ -301,6 +301,6 @@ describe("Manager", () => {
     })
 
     afterAll(async () => {
-        await Promise.all([account.delete(), shop.delete(), user.delete(), product.delete(), sku.delete()])
+        // await Promise.all([account.delete(), shop.delete(), user.delete(), product.delete(), sku.delete()])
     })
 })

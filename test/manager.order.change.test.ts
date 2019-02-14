@@ -98,15 +98,15 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
             const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
-            const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
+            const item = (result.tradeTransactions[0].value() as any)["item"]
             const _order = await Order.get(order.id) as Order
-            const changeResult = await manager.checkoutChange(_order, orderItem, itemID, paymentOptions) as Tradable.CheckoutChangeResult<TradeTransaction>
+            const changeResult = await manager.checkoutChange(_order, orderItem, item, paymentOptions) as Tradable.CheckoutChangeResult<TradeTransaction>
 
             const shopTradeTransaction = await shop.tradeTransactions.doc(changeResult.tradeTransactions[0].id, TradeTransaction).fetch() as TradeTransaction
             const userTradeTransaction = await user.tradeTransactions.doc(changeResult.tradeTransactions[0].id, TradeTransaction).fetch() as TradeTransaction
             const _product: Product = new Product(product.id, {})
             const _sku = await new SKU(sku.id, {}).fetch()
-            const _item = await user.items.doc(itemID, Item).fetch() as Item
+            const _item = await user.items.doc(item.id, Item).fetch() as Item
             const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
             const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get()])
             const inventoryStocks: InventoryStock[] = promiseResult[1]
@@ -199,11 +199,11 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
             const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
-            const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
+            const item = (result.tradeTransactions[0].value() as any)["item"]
             const _order = await Order.get(order.id) as Order
             try {
                 const manager: Tradable.Manager<InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
-                const changeResult = await manager.checkoutChange(_order, orderItem, itemID, paymentOptions) as Tradable.CheckoutChangeResult<TradeTransaction>
+                const changeResult = await manager.checkoutChange(_order, orderItem, item, paymentOptions) as Tradable.CheckoutChangeResult<TradeTransaction>
                 expect(changeResult).toBeUndefined()
             } catch (error) {
                 expect(error).not.toBeUndefined()
@@ -245,11 +245,11 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
             const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
-            const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
+            const item = (result.tradeTransactions[0].value() as any)["item"]
             const _order = await Order.get(order.id) as Order
             _order.paymentStatus = Tradable.OrderPaymentStatus.none
             try {
-                const changeResult = await manager.checkoutChange(_order, orderItem, itemID, paymentOptions) as Tradable.CheckoutChangeResult<TradeTransaction>
+                const changeResult = await manager.checkoutChange(_order, orderItem, item, paymentOptions) as Tradable.CheckoutChangeResult<TradeTransaction>
                 expect(changeResult).toBeUndefined()
             } catch (error) {
                 expect(error).not.toBeUndefined()
@@ -291,13 +291,13 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
             const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
-            const itemID = (result.tradeTransactions[0].value() as any)["items"][0]
+            const item = (result.tradeTransactions[0].value() as any)["item"]
             const _order = await Order.get(order.id) as Order
             try {
                 const manager: Tradable.Manager<InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account> = new Tradable.Manager(InventoryStock, SKU, OrderItem, Order, TradeTransaction, BalanceTransaction, Payout, User, Account)
                 manager.delegate = new StripeInvalidPaymentDelegate()
                 manager.tradeDelegate = new TradeDelegate()
-                const changeResult = await manager.checkoutChange(_order, orderItem, itemID, paymentOptions) as Tradable.CheckoutChangeResult<TradeTransaction>
+                const changeResult = await manager.checkoutChange(_order, orderItem, item, paymentOptions) as Tradable.CheckoutChangeResult<TradeTransaction>
                 expect(changeResult).toBeUndefined()
             } catch (error) {
                 expect(error).not.toBeUndefined()
