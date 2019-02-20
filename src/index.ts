@@ -62,7 +62,7 @@ export interface TradeTransactionProtocol extends Pring.Base {
     order: string
     product?: FirebaseFirestore.DocumentReference
     sku: string
-    inventoryStocks: string[]
+    inventoryStock?: string
     item: FirebaseFirestore.DocumentReference
 }
 
@@ -278,6 +278,8 @@ export type TradeInformation = {
     order: string
     product?: FirebaseFirestore.DocumentReference
     sku: string
+    stockType?: StockType
+    stockValue?: StockValue
     numberOfShards?: number
     metadata?: any
 }
@@ -286,7 +288,7 @@ export interface TradeDelegate {
 
     reserve<OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>>(order: Order, orderItem: OrderItem, transaction: FirebaseFirestore.Transaction): void
 
-    createItem(information: TradeInformation, invetoryStock: string, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference
+    createItem(information: TradeInformation, invetoryStock: string | undefined, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference
 
     getItems(information: TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<string[]>
 

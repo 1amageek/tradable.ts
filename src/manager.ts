@@ -40,7 +40,7 @@ export type ReserveCancelResult = {
 }
 
 export type TradeResult<T extends TradeTransactionProtocol> = {
-    tradeTransactions: T[]
+    tradeTransactions: T[][]
 }
 
 export type CaptureResult = {
@@ -51,7 +51,7 @@ export type CaptureResult = {
 
 export type CheckoutResult<T extends TradeTransactionProtocol> = {
     balanceTransaction?: BalanceTransactionProtocol
-    tradeTransactions: T[]
+    tradeTransactions: T[][]
     paymentResult?: any
     refundResult?: any
 }
@@ -369,7 +369,7 @@ export class Manager
                                         sku: skuID,
                                         product: productID
                                     }
-                                    const task = this.stockManager.order(tradeInformation, quantity, transaction)
+                                    const task = this.stockManager.trade(tradeInformation, quantity, transaction)
                                     tasks.push(task)
                                 }
                             }
@@ -562,7 +562,7 @@ export class Manager
                             metadata: paymentOptions.metadata,
                             numberOfShards: paymentOptions.numberOfShards
                         }
-                        const task = this.stockManager.order(tradeInformation, quantity, transaction)
+                        const task = this.stockManager.trade(tradeInformation, quantity, transaction)
                         tasks.push(task)
                     }
                 }

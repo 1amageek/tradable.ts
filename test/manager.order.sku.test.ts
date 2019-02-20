@@ -168,14 +168,14 @@ describe("Manager", () => {
                 const _order = await Order.get(order.id) as Order
                 const cancelResult = await manager.checkoutCancel(_order, [orderItem], paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
 
-                const shopTradeTransaction = shop.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction)
-                const userTradeTransaction = user.tradeTransactions.doc(cancelResult.tradeTransactions[0].id, TradeTransaction)
+                const shopTradeTransaction = shop.tradeTransactions.doc(cancelResult.tradeTransactions[0][0].id, TradeTransaction)
+                const userTradeTransaction = user.tradeTransactions.doc(cancelResult.tradeTransactions[0][0].id, TradeTransaction)
                 const _product: Product = new Product(product.id, {})
                 const _sku = new SKU(sku.id, {})
                 const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
                 const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get()])
                 const inventoryStocks: InventoryStock[] = promiseResult[1]
-                const item = (result.tradeTransactions[0].value() as any)["item"]
+                const item = (result.tradeTransactions[0][0].value() as any)["item"]
                 const _item = user.items.doc(item.id, Item) as Item
 
 

@@ -100,21 +100,21 @@ describe("StockManager", () => {
                             sku: sku.id,
                             product: product.reference
                         }
-                        const stockTransaction = await stockManager.order(tradeInformation, 1, transaction)
+                        const stockTransaction = await stockManager.trade(tradeInformation, 1, transaction)
                         const result = await stockTransaction.commit()
                         resolve(result)
                     })
-                }) as TradeTransaction
+                }) as TradeTransaction[]
 
-                transactionID = result.id
+                transactionID = result[0].id
 
-                orderResult = result
+                orderResult = result[0]
 
                 const shopTradeTransaction = (await shop.tradeTransactions.query(TradeTransaction).orderBy("createdAt").dataSource().get())[0]
                 const userTradeTransaction = (await user.tradeTransactions.query(TradeTransaction).orderBy("createdAt").dataSource().get())[0]
                 const _product: Product = new Product(product.id, {})
                 const _sku = new SKU(sku.id, {})
-                const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("order", "==", result.order).dataSource()
+                const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("order", "==", orderResult.order).dataSource()
                 const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get(), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
                 const inventoryStocks: InventoryStock[] = promiseResult[1]
 
@@ -168,7 +168,7 @@ describe("StockManager", () => {
                                 sku: sku.id,
                                 product: product.reference
                             }
-                            const stockTransaction = await stockManager.order(tradeInformation, 1, transaction)
+                            const stockTransaction = await stockManager.trade(tradeInformation, 1, transaction)
                             const result = await stockTransaction.commit()
                             resolve(result)
                         } catch (error) {
@@ -279,7 +279,7 @@ describe("StockManager", () => {
                                 sku: sku.id,
                                 product: product.reference
                             }
-                            const stockTransaction = await stockManager.order(tradeInformation, 1, transaction)
+                            const stockTransaction = await stockManager.trade(tradeInformation, 1, transaction)
                             const result = await stockTransaction.commit()
                             resolve(result)
                         } catch (error) {
