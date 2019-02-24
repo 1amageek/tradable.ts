@@ -185,7 +185,7 @@ export class StockManager
                 tradeTransaction.sku = skuID
                 switch (stockType) {
                     case StockType.finite: {
-                        const inventoryStock = inventoryStocks[i]
+                        const inventoryStock = stockTransaction.inventoryStocks[i]
                         if (inventoryStock.isAvailabled) {
                             const item = this.delegate.createItem(tradeInformation, inventoryStock.id, transaction)
                             tradeTransaction.item = item

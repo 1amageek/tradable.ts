@@ -63,9 +63,7 @@ describe("StockManager", () => {
 			sku.inventoryStocks.insert(inventoryStock)
 		}
 
-
 		await Promise.all([user.save(), sku.save(), product.save(), shop.save()])
-
 		stockManager.delegate = new TradeDelegate()
 	})
 
@@ -113,7 +111,6 @@ describe("StockManager", () => {
 											const stockTransaction = await stockManager.trade(tradeInformation, 1, transaction)
 											return await stockTransaction.commit()
 										})
-										console.log(result[0].inventoryStock, result[0])
 										resolve(result)
 									} catch (error) {
 										reject(error)
@@ -129,16 +126,11 @@ describe("StockManager", () => {
 					}
 					tasks.push(test())
 				}
-
-				console.log(await Promise.all(tasks))
-
+				await Promise.all(tasks)
 				const result = await sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", false).dataSource().get()
-				console.log(result)
 				expect(successCount).toEqual(result.length)
-				console.log(successCount)
 			} catch (error) {
 				const result = await sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", false).dataSource().get()
-				console.log(result)
 				expect(successCount).toEqual(result.length)
 				console.log(error)
 			}
