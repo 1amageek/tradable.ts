@@ -56,7 +56,6 @@ export enum TradeTransactionType {
 
 export interface TradeTransactionProtocol extends Pring.Base {
     type: TradeTransactionType
-    quantity: number
     selledBy: string
     purchasedBy: string
     order: string
@@ -278,8 +277,6 @@ export type TradeInformation = {
     order: string
     product?: FirebaseFirestore.DocumentReference
     sku: string
-    stockType?: StockType
-    stockValue?: StockValue
     numberOfShards?: number
     metadata?: any
 }
@@ -290,7 +287,7 @@ export interface TradeDelegate {
 
     createItem(information: TradeInformation, invetoryStock: string | undefined, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference
 
-    getItems(information: TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<string[]>
+    getItems(information: TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<FirebaseFirestore.QuerySnapshot>
 
     cancelItem(information: TradeInformation, item: FirebaseFirestore.DocumentReference, transaction: FirebaseFirestore.Transaction): void
 }

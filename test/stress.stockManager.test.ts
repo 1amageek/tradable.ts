@@ -72,7 +72,7 @@ describe("StockManager", () => {
 	describe("Order Stress test", async () => {
 		test("Success", async () => {
 			let successCount: number = 0
-			const n = 10
+			const n = 5
 			const interval = 0
 			try {
 				let tasks = []
@@ -96,55 +96,49 @@ describe("StockManager", () => {
 						order.shippingTo = { address: "address" }
 						order.expirationDate = admin.firestore.Timestamp.fromDate(new Date(date.setDate(date.getDate() + 14)))
 						order.items.append(orderItem)
-
 						user.orders.insert(order)
-
 						await order.save()
-
 						try {
 							await new Promise((resolve, reject) => {
 								setTimeout(async () => {
 									try {
 										const result = await Pring.firestore.runTransaction(async (transaction) => {
-											return new Promise(async (resolve, reject) => {
-												const tradeInformation = {
-													selledBy: shop.id,
-													purchasedBy: user.id,
-													order: order.id,
-													sku: sku.id,
-													product: product.reference
-												}
-												try {
-													const stockTransaction = await stockManager.trade(tradeInformation, 1, transaction)
-													const result = await stockTransaction.commit()
-													resolve(result)
-												} catch(error) {
-													reject(error)
-												}
-											})
+											const tradeInformation = {
+												selledBy: shop.id,
+												purchasedBy: user.id,
+												order: order.id,
+												sku: sku.id,
+												product: product.reference
+											}
+											const stockTransaction = await stockManager.trade(tradeInformation, 1, transaction)
+											return await stockTransaction.commit()
 										})
+										console.log(result[0].inventoryStock, result[0])
 										resolve(result)
-									} catch(error) {
+									} catch (error) {
 										reject(error)
 									}
 
 								}, i * interval)
 							})
 							successCount += 1
+							console.log(successCount)
 						} catch (error) {
-
+							console.log(error)
 						}
 					}
 					tasks.push(test())
 				}
 
-				await Promise.all(tasks)
+				console.log(await Promise.all(tasks))
 
 				const result = await sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", false).dataSource().get()
+				console.log(result)
 				expect(successCount).toEqual(result.length)
 				console.log(successCount)
 			} catch (error) {
 				const result = await sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", false).dataSource().get()
+				console.log(result)
 				expect(successCount).toEqual(result.length)
 				console.log(error)
 			}
@@ -152,6 +146,6 @@ describe("StockManager", () => {
 	})
 
 	afterAll(async () => {
-	    await Promise.all([shop.delete(), user.delete(), product.delete(), sku.delete()])
+		await Promise.all([shop.delete(), user.delete(), product.delete(), sku.delete()])
 	})
 })

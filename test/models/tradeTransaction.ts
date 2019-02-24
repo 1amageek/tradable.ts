@@ -6,7 +6,6 @@ const property = Pring.property
 
 export class TradeTransaction extends Pring.Base implements tradable.TradeTransactionProtocol {
     @property type: tradable.TradeTransactionType = tradable.TradeTransactionType.unknown
-    @property quantity: number = 0
     @property selledBy: string = ''
     @property purchasedBy: string = ''
     @property order: string = ''

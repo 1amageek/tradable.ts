@@ -102,8 +102,8 @@ describe("Manager", () => {
             const _order = await Order.get(order.id) as Order
             const changeResult = await manager.checkoutChange(_order, orderItem, item, paymentOptions) as Tradable.CheckoutChangeResult<TradeTransaction>
 
-            const shopTradeTransaction = await shop.tradeTransactions.doc(changeResult.tradeTransactions[0].id, TradeTransaction).fetch() as TradeTransaction
-            const userTradeTransaction = await user.tradeTransactions.doc(changeResult.tradeTransactions[0].id, TradeTransaction).fetch() as TradeTransaction
+            const shopTradeTransaction = await shop.tradeTransactions.doc(changeResult.tradeTransactions[0][0].id, TradeTransaction).fetch() as TradeTransaction
+            const userTradeTransaction = await user.tradeTransactions.doc(changeResult.tradeTransactions[0][0].id, TradeTransaction).fetch() as TradeTransaction
             const _product: Product = new Product(product.id, {})
             const _sku = await new SKU(sku.id, {}).fetch()
             const _item = await user.items.doc(item.id, Item).fetch() as Item
@@ -113,7 +113,6 @@ describe("Manager", () => {
 
             // Shop Trade Transaction
             expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderChange)
-            expect(shopTradeTransaction.quantity).toEqual(1)
             expect(shopTradeTransaction.selledBy).toEqual(shop.id)
             expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
             expect(shopTradeTransaction.order).toEqual(order.id)
@@ -122,7 +121,6 @@ describe("Manager", () => {
 
             // User Trade Transaction
             expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderChange)
-            expect(userTradeTransaction.quantity).toEqual(1)
             expect(userTradeTransaction.selledBy).toEqual(shop.id)
             expect(userTradeTransaction.purchasedBy).toEqual(user.id)
             expect(userTradeTransaction.order).toEqual(order.id)

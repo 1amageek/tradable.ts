@@ -92,18 +92,15 @@ describe("StockManager", () => {
         test("Success", async () => {
             try {
                 const result = await Pring.firestore.runTransaction(async (transaction) => {
-                    return new Promise(async (resolve, reject) => {
-                        const tradeInformation = {
-                            selledBy: shop.id,
-                            purchasedBy: user.id,
-                            order: order.id,
-                            sku: sku.id,
-                            product: product.reference
-                        }
-                        const stockTransaction = await stockManager.trade(tradeInformation, 1, transaction)
-                        const result = await stockTransaction.commit()
-                        resolve(result)
-                    })
+                    const tradeInformation = {
+                        selledBy: shop.id,
+                        purchasedBy: user.id,
+                        order: order.id,
+                        sku: sku.id,
+                        product: product.reference
+                    }
+                    const stockTransaction = await stockManager.trade(tradeInformation, 1, transaction)
+                    return await stockTransaction.commit()
 				}) as TradeTransaction[]
 				
 				orderResult = result[0]
@@ -122,7 +119,6 @@ describe("StockManager", () => {
 
                 // Shop Trade Transaction
                 expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-                expect(shopTradeTransaction.quantity).toEqual(1)
                 expect(shopTradeTransaction.selledBy).toEqual(shop.id)
                 expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(shopTradeTransaction.order).toEqual(order.id)
@@ -133,7 +129,6 @@ describe("StockManager", () => {
 
                 // User Trade Transaction
                 expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-                expect(userTradeTransaction.quantity).toEqual(1)
                 expect(userTradeTransaction.selledBy).toEqual(shop.id)
                 expect(userTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(userTradeTransaction.order).toEqual(order.id)
@@ -159,34 +154,31 @@ describe("StockManager", () => {
         test("Success", async () => {			
             const item = orderResult!.item
             const result = await Pring.firestore.runTransaction(async (transaction) => {
-                return new Promise(async (resolve, reject) => {
-                    const tradeInformation = {
-                        selledBy: shop.id,
-                        purchasedBy: user.id,
-                        order: order.id,
-                        sku: sku.id,
-                        product: product.reference
-                    }
-                    const result = await stockManager.itemCancel(tradeInformation, item, transaction)
-                    resolve(result)
-                })
-			}) as TradeTransaction
+                const tradeInformation = {
+                    selledBy: shop.id,
+                    purchasedBy: user.id,
+                    order: order.id,
+                    sku: sku.id,
+                    product: product.reference
+                }
+                const stockTransaction = await stockManager.itemCancel(tradeInformation, item, transaction)
+                return await stockTransaction.commit()
+			}) as TradeTransaction[]
 			
-			orderResult = result
+			orderResult = result[0]
 
-            const shopTradeTransaction = (await shop.tradeTransactions.doc(result.id, TradeTransaction).fetch())
-            const userTradeTransaction = (await user.tradeTransactions.doc(result.id, TradeTransaction).fetch())
+            const shopTradeTransaction = (await shop.tradeTransactions.doc(orderResult.id, TradeTransaction).fetch())
+            const userTradeTransaction = (await user.tradeTransactions.doc(orderResult.id, TradeTransaction).fetch())
 
             const _product: Product = new Product(product.id, {})
             const _sku = new SKU(sku.id, {})
             const inventoryStocksDataSource = _sku.inventoryStocks.query(InventoryStock).where("isAvailabled", "==", true).dataSource()
             const promiseResult = await Promise.all([_sku.fetch(), inventoryStocksDataSource.get(), shopTradeTransaction.fetch(), userTradeTransaction.fetch()])
             const inventoryStocks: InventoryStock[] = promiseResult[1]
-            const _item = await user.items.doc(result!.item.id, Item).fetch()
+            const _item = await user.items.doc(orderResult!.item.id, Item).fetch()
 
             // Shop Trade Transaction
             expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderChange)
-            expect(shopTradeTransaction.quantity).toEqual(1)
             expect(shopTradeTransaction.selledBy).toEqual(shop.id)
             expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
             expect(shopTradeTransaction.order).toEqual(order.id)
@@ -196,7 +188,6 @@ describe("StockManager", () => {
 
             // User Trade Transaction
             expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderChange)
-            expect(userTradeTransaction.quantity).toEqual(1)
             expect(userTradeTransaction.selledBy).toEqual(shop.id)
             expect(userTradeTransaction.purchasedBy).toEqual(user.id)
             expect(userTradeTransaction.order).toEqual(order.id)
@@ -250,7 +241,6 @@ describe("StockManager", () => {
 
                 // Shop Trade Transaction
                 expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderChange)
-                expect(shopTradeTransaction.quantity).toEqual(1)
                 expect(shopTradeTransaction.selledBy).toEqual(shop.id)
                 expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(shopTradeTransaction.order).toEqual(order.id)
@@ -260,7 +250,6 @@ describe("StockManager", () => {
 
                 // User Trade Transaction
                 expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderChange)
-                expect(userTradeTransaction.quantity).toEqual(1)
                 expect(userTradeTransaction.selledBy).toEqual(shop.id)
                 expect(userTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(userTradeTransaction.order).toEqual(order.id)

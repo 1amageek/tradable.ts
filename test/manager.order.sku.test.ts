@@ -113,7 +113,6 @@ describe("Manager", () => {
             
             // Shop Trade Transaction
             expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-            expect(shopTradeTransaction.quantity).toEqual(5)
             expect(shopTradeTransaction.selledBy).toEqual(shop.id)
             expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
             expect(shopTradeTransaction.order).toEqual(order.id)
@@ -122,7 +121,6 @@ describe("Manager", () => {
 
             // User Trade Transaction
             expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.order)
-            expect(userTradeTransaction.quantity).toEqual(5)
             expect(userTradeTransaction.selledBy).toEqual(shop.id)
             expect(userTradeTransaction.purchasedBy).toEqual(user.id)
             expect(userTradeTransaction.order).toEqual(order.id)
@@ -183,7 +181,6 @@ describe("Manager", () => {
 
                 // Shop Trade Transaction
                 expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderCancel)
-                expect(shopTradeTransaction.quantity).toEqual(5)
                 expect(shopTradeTransaction.selledBy).toEqual(shop.id)
                 expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(shopTradeTransaction.order).toEqual(order.id)
@@ -192,7 +189,6 @@ describe("Manager", () => {
 
                 // User Trade Transaction
                 expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderCancel)
-                expect(userTradeTransaction.quantity).toEqual(5)
                 expect(userTradeTransaction.selledBy).toEqual(shop.id)
                 expect(userTradeTransaction.purchasedBy).toEqual(user.id)
                 expect(userTradeTransaction.order).toEqual(order.id)

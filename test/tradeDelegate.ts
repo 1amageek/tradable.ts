@@ -28,9 +28,10 @@ export class TradeDelegate implements tradable.TradeDelegate {
         }, { merge: true })
     }
 
-    async getItems(information: tradable.TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<string[]> {
+    async getItems(information: tradable.TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<FirebaseFirestore.QuerySnapshot> {
         const purchaser: User = new User(information.purchasedBy, {})
-        const items = await purchaser.items.get(Item, transaction)
-        return  items.map((value) => { return value.id})
+        const query = purchaser.items.reference.where("order", "==", information.order)
+        const items = await transaction.get(query)
+        return items
     }
 }

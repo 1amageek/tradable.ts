@@ -120,7 +120,6 @@ describe("Manager", () => {
 
             // Shop Trade Transaction
             expect(shopTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderCancel)
-            expect(shopTradeTransaction.quantity).toEqual(1)
             expect(shopTradeTransaction.selledBy).toEqual(shop.id)
             expect(shopTradeTransaction.purchasedBy).toEqual(user.id)
             expect(shopTradeTransaction.order).toEqual(order.id)
@@ -129,7 +128,6 @@ describe("Manager", () => {
 
             // User Trade Transaction
             expect(userTradeTransaction.type).toEqual(Tradable.TradeTransactionType.orderCancel)
-            expect(userTradeTransaction.quantity).toEqual(1)
             expect(userTradeTransaction.selledBy).toEqual(shop.id)
             expect(userTradeTransaction.purchasedBy).toEqual(user.id)
             expect(userTradeTransaction.order).toEqual(order.id)
@@ -284,7 +282,6 @@ describe("Manager", () => {
             order.paymentStatus = Tradable.OrderPaymentStatus.paid
             await order.save()
 
-
             const paymentOptions: Tradable.PaymentOptions = {
                 vendorType: "stripe",
                 refundFeeRate: 0
@@ -295,12 +292,12 @@ describe("Manager", () => {
                 expect(cancelResult).toBeUndefined()
             } catch (error) {
                 expect(error).not.toBeUndefined()
-                expect(error instanceof Tradable.TradableError).toEqual(true)
+                expect(error instanceof Tradable.TradableError).toEqual(false)
             }
         }, 15000)
     })
 
     afterAll(async () => {
-        // await Promise.all([account.delete(), shop.delete(), user.delete(), product.delete(), sku.delete()])
+        await Promise.all([account.delete(), shop.delete(), user.delete(), product.delete(), sku.delete()])
     })
 })

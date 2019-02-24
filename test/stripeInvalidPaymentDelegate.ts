@@ -20,7 +20,7 @@ export class StripeInvalidPaymentDelegate implements tradable.TransactionDelegat
     }
 
     async refund<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, options: tradable.PaymentOptions, reason?: string | undefined) {
-        
+        throw new Error("Method not implemented.");
     }
     
     async partRefund<U extends tradable.OrderItemProtocol, T extends tradable.OrderProtocol<U>>(currency: tradable.Currency, amount: number, order: T, orderItem: U, options: tradable.PaymentOptions, reason?: string | undefined) {
