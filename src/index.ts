@@ -249,6 +249,7 @@ export interface PayoutProtocol extends Pring.Base {
 export type PaymentOptions = {
     source?: string
     customer?: string
+    shipping?: string
     vendorType: string
     numberOfShards?: number
     refundFeeRate: number   // 0 ~ 1 
