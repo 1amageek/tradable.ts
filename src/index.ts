@@ -246,10 +246,25 @@ export interface PayoutProtocol extends Pring.Base {
     isCancelled: boolean
 }
 
+export type ShppingInformation = {
+    address: {
+        line1: string
+        line2?: string
+        city?: string
+        state?: string
+        postal_code?: string
+        country?: string
+    }
+    name: string
+    carrier?: string
+    phone?: string
+    tracking_number?: string
+}
+
 export type PaymentOptions = {
     source?: string
     customer?: string
-    shipping?: string
+    shipping?: ShppingInformation
     vendorType: string
     numberOfShards?: number
     refundFeeRate: number   // 0 ~ 1 
