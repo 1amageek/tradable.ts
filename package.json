@@ -38,6 +38,9 @@
   },
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "files": [
+    "lib/*"
+  ],
   "devDependencies": {
     "@firebase/testing": "^0.7.1",
     "@google-cloud/firestore": "^1.0.1",
