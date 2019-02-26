@@ -99,7 +99,7 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
 
-            const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+            const result = await manager.checkout(order.reference, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
 
             const _order = await Order.get(order.id) as Order
             const cancelResult = await manager.checkoutCancel(_order, [orderItem], paymentOptions) as Tradable.CheckoutResult<TradeTransaction>

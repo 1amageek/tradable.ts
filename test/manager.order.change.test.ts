@@ -97,7 +97,7 @@ describe("Manager", () => {
                 vendorType: "stripe",
                 refundFeeRate: 0
             }
-            const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+            const result = await manager.checkout(order.reference, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
             const item = (result.tradeTransactions[0][0].value() as any)["item"]
             const _order = await Order.get(order.id) as Order
             const changeResult = await manager.checkoutChange(_order, orderItem, item, paymentOptions) as Tradable.CheckoutChangeResult<TradeTransaction>
@@ -196,7 +196,7 @@ describe("Manager", () => {
                 vendorType: "stripe",
                 refundFeeRate: 0
             }
-            const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+            const result = await manager.checkout(order.reference, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
             const item = (result.tradeTransactions[0][0].value() as any)["item"]
             const _order = await Order.get(order.id) as Order
             try {
@@ -242,7 +242,7 @@ describe("Manager", () => {
                 vendorType: "stripe",
                 refundFeeRate: 0
             }
-            const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+            const result = await manager.checkout(order.reference, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
             const item = (result.tradeTransactions[0][0].value() as any)["item"]
             const _order = await Order.get(order.id) as Order
             _order.paymentStatus = Tradable.OrderPaymentStatus.none
@@ -288,7 +288,7 @@ describe("Manager", () => {
                 vendorType: "stripe",
                 refundFeeRate: 0
             }
-            const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+            const result = await manager.checkout(order.reference, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
             const item = (result.tradeTransactions[0][0].value() as any)["item"]
             const _order = await Order.get(order.id) as Order
             try {

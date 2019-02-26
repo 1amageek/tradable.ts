@@ -99,7 +99,7 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
 
-            const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+            const result = await manager.checkout(order.reference, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
 
             const shopTradeTransaction = (await shop.tradeTransactions.get(TradeTransaction))[0]
             const userTradeTransaction = (await user.tradeTransactions.get(TradeTransaction))[0]
@@ -196,7 +196,7 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
             try {
-                const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+                const result = await manager.checkout(order.reference, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
                 console.log(result)
             } catch (error) {
                 expect(error).not.toBeUndefined()
@@ -244,7 +244,7 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
             try {
-                const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+                const result = await manager.checkout(order.reference, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
             } catch (error) {
                 expect(error).not.toBeUndefined()
                 const _product: Product = new Product(product.id, {})
@@ -287,7 +287,7 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
             try {
-                const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+                const result = await manager.checkout(order.reference, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
             } catch (error) {
                 expect(error).not.toBeUndefined()
                 const _product: Product = new Product(product.id, {})
@@ -333,7 +333,7 @@ describe("Manager", () => {
                 refundFeeRate: 0
             }
             try {
-                const result = await manager.checkout(order.id, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
+                const result = await manager.checkout(order.reference, paymentOptions) as Tradable.CheckoutResult<TradeTransaction>
             } catch (error) {
                 expect(error).not.toBeUndefined()
                 const _product: Product = new Product(product.id, {})

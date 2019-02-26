@@ -29,6 +29,7 @@ import {
     PayoutStatus,
     OrderItemType
 } from "./index"
+import { DocumentReference } from 'pring-admin/lib/base';
 
 
 export type ReserveResult = {
@@ -515,16 +516,16 @@ export class Manager
      * @param orderItems 
      * @param paymentOptions 
      */
-    async checkout(orderID: string, paymentOptions: PaymentOptions) {
+    async checkout(orderReference: DocumentReference, paymentOptions: PaymentOptions) {
 
         const delegate: TransactionDelegate | undefined = this.delegate
         if (!delegate) {
-            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}, Manager required delegate.`)
+            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ${orderReference.path}, Manager required delegate.`)
         }
 
         const tradeDelegate: TradeDelegate | undefined = this.tradeDelegate
         if (!tradeDelegate) {
-            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}, Manager required trade delegate.`)
+            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ${orderReference.path}, Manager required trade delegate.`)
         }
 
         this.stockManager.delegate = tradeDelegate
@@ -534,8 +535,8 @@ export class Manager
         try {
             return await firestore.runTransaction(async (transaction) => {
 
-                const order: Order = await new this._Order(orderID, {}).fetch(transaction)
-
+                const orderSnapshot = await transaction.get(orderReference)
+                const order: Order = new this._Order(orderSnapshot.id, orderSnapshot.data()).setData(orderSnapshot.data()!)
                 if (!(order.paymentStatus === OrderPaymentStatus.none)) {
                     throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order paymentStatus is invalid.`)
                 }
