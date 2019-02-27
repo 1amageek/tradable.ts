@@ -125,8 +125,8 @@ export interface InventoryStockProtocol extends Pring.Base {
 export interface SKUProtocol <InventoryStock extends InventoryStockProtocol> extends Pring.Base {
     selledBy: string
     createdBy: string
-    currency: Currency
     product?: FirebaseFirestore.DocumentReference
+    currency: Currency
     amount: number
     inventory: Inventory
     isAvailabled: boolean
@@ -188,6 +188,7 @@ export interface OrderItemProtocol extends Pring.Base {
     order: string
     purchasedBy: string
     selledBy: string
+    createdBy: string
     type: OrderItemType
     product?: FirebaseFirestore.DocumentReference
     sku?: string
@@ -216,8 +217,9 @@ export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Prin
 }
 
 export interface ItemProtocol extends Pring.Base {
-    selledBy: string
     order: string
+    selledBy: string
+    purchasedBy: string
     product?: FirebaseFirestore.DocumentReference
     sku: string
     inventoryStock?: string
@@ -301,7 +303,7 @@ export interface TradeDelegate {
 
     reserve<OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>>(order: Order, orderItem: OrderItem, transaction: FirebaseFirestore.Transaction): void
 
-    createItem(information: TradeInformation, invetoryStock: string | undefined, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference
+    createItem<T extends OrderItemProtocol>(information: TradeInformation, orderItem: T, invetoryStock: string | undefined, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference
 
     getItems(information: TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<FirebaseFirestore.QuerySnapshot>
 

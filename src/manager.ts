@@ -548,7 +548,7 @@ export class Manager
                 const orderItems: OrderItem[] = order.items.objects()
                 const tasks = []
                 for (const orderItem of orderItems) {
-                    const productID = orderItem.product
+                    const product = orderItem.product
                     const skuID = orderItem.sku
                     const quantity = orderItem.quantity
                     if (orderItem.type === OrderItemType.sku) {
@@ -560,11 +560,11 @@ export class Manager
                             purchasedBy: order.purchasedBy,
                             order: order.id,
                             sku: skuID,
-                            product: productID,
+                            product: product,
                             metadata: paymentOptions.metadata,
                             numberOfShards: paymentOptions.numberOfShards
                         }
-                        const task = this.stockManager.trade(tradeInformation, quantity, transaction)
+                        const task = this.stockManager.trade(tradeInformation, orderItem, transaction)
                         tasks.push(task)
                     }
                 }

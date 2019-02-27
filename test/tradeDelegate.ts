@@ -9,7 +9,7 @@ export class TradeDelegate implements tradable.TradeDelegate {
 
     }
 
-    createItem(information: tradable.TradeInformation, inventoryStock: string | undefined, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference {
+    createItem<T extends tradable.OrderItemProtocol>(information: tradable.TradeInformation, orderItem: T, inventoryStock: string | undefined, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference {
         const purchaser: User = new User(information.purchasedBy, {})
         const item: Item = new Item()
         item.selledBy = information.selledBy

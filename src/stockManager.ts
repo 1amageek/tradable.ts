@@ -99,8 +99,9 @@ export class StockManager
         }
     }
 
-    async trade(tradeInformation: TradeInformation, quantity: number, transaction: FirebaseFirestore.Transaction) {
+    async trade(tradeInformation: TradeInformation, orderItem: OrderItem, transaction: FirebaseFirestore.Transaction) {
 
+        const quantity: number = orderItem.quantity
         const numberOfShards: number = (tradeInformation.numberOfShards || 5) * quantity
         const orderID: string = tradeInformation.order
         const skuID: string = tradeInformation.sku
@@ -164,7 +165,7 @@ export class StockManager
         }
 
         const purchasedBy: string = tradeInformation.purchasedBy
-        const selledBy: string = tradeInformation.selledBy
+        const selledBy: string | undefined = tradeInformation.selledBy
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
         const stockValue: StockValue | undefined = sku.inventory.value
@@ -187,7 +188,7 @@ export class StockManager
                     case StockType.finite: {
                         const inventoryStock = stockTransaction.inventoryStocks[i]
                         if (inventoryStock.isAvailabled) {
-                            const item = this.delegate.createItem(tradeInformation, inventoryStock.id, transaction)
+                            const item = this.delegate.createItem(tradeInformation, orderItem, inventoryStock.id, transaction)
                             tradeTransaction.item = item
                             tradeTransaction.inventoryStock = inventoryStock.id
                             transaction.set(inventoryStock.reference, {
@@ -201,7 +202,7 @@ export class StockManager
                         break
                     }
                     case StockType.infinite: {
-                        const item = this.delegate.createItem(tradeInformation, undefined, transaction)
+                        const item = this.delegate.createItem(tradeInformation, orderItem, undefined, transaction)
                         tradeTransaction.item = item
                         break
                     }
@@ -210,7 +211,7 @@ export class StockManager
                             throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] ORDER/${orderID}. SKU: ${skuID}. Invalid StockValue.`)
                         }
                         if (stockValue !== StockValue.outOfStock) {
-                            const item = this.delegate.createItem(tradeInformation, undefined, transaction)
+                            const item = this.delegate.createItem(tradeInformation, orderItem, undefined, transaction)
                             tradeTransaction.item = item
                         } else {
                             throw new TradableError(TradableErrorCode.invalidShard, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} StockValue is out of stock.`)

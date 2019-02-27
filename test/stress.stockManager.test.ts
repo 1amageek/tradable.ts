@@ -108,7 +108,7 @@ describe("StockManager", () => {
 												sku: sku.id,
 												product: product.reference
 											}
-											const stockTransaction = await stockManager.trade(tradeInformation, 1, transaction)
+											const stockTransaction = await stockManager.trade(tradeInformation, orderItem, transaction)
 											return await stockTransaction.commit()
 										})
 										resolve(result)
