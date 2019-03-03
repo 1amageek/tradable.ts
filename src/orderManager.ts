@@ -28,7 +28,7 @@ export class OrderManager
 
     update(order: Order, orderItems: OrderItem[], transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
     
-        const orderValue = order.updateValue()
+        const orderValue = order.value()
         orderValue.updatedAt = FirebaseFirestore.FieldValue.serverTimestamp()
 
         if (Object.keys(transactionResult).length > 0) {
