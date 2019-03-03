@@ -82,7 +82,7 @@ describe("BalanceManager", () => {
         test("Success", async () => {
             const result = await Pring.firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
-                    const result = await balanceManager.pay(user.id, order.id, order.currency, order.amount, {"result": "result"}, transaction)
+                    const result = await balanceManager.charge(user.id, order.id, order.currency, order.amount, {"result": "result"}, transaction)
                     resolve(result)
                 })
             }) as BalanceTransaction

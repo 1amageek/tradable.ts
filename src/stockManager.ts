@@ -353,34 +353,5 @@ export class StockManager
             return tradeTransactions
         }
         return stockTransaction
-
-        // if (inventoryStocks.length == 0) {
-        //     throw new TradableError(TradableErrorCode.internal, `[Manager] Invalid order ORDER/${orderID}. SKU/${skuID} Inventory Stock is empty`)
-        // }
-
-        // const inventoryStockSnapshot: FirebaseFirestore.QueryDocumentSnapshot = inventoryStocks[0]
-        // const tradeTransaction: TradeTransaction = new this._TradeTransaction()
-        // tradeTransaction.type = TradeTransactionType.orderChange
-        // tradeTransaction.quantity = 1
-        // tradeTransaction.selledBy = selledBy
-        // tradeTransaction.purchasedBy = purchasedBy
-        // tradeTransaction.order = orderID
-        // tradeTransaction.product = tradeInformation.product
-        // tradeTransaction.sku = skuID
-        // tradeTransaction.item = item
-        // tradeTransaction.inventoryStock = inventoryStockSnapshot.id
-
-        // transaction.set(inventoryStockSnapshot.ref, {
-        //     "isAvailabled": true,
-        //     "item": FirebaseFirestore.FieldValue.delete(),
-        //     "order": FirebaseFirestore.FieldValue.delete()
-        // }, { merge: true })
-
-        // transaction.set(tradeTransaction.reference, tradeTransaction.value(), { merge: true })
-        // transaction.set(seller.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
-        // transaction.set(purchaser.tradeTransactions.reference.doc(tradeTransaction.id), tradeTransaction.value(), { merge: true })
-        // this.delegate.cancelItem(tradeInformation, item, transaction)
-        // return tradeTransaction
     }
-
 }

@@ -108,13 +108,13 @@ export class Manager
     private _User: { new(id?: string, value?: { [key: string]: any }): User }
     private _Account: { new(id?: string, value?: { [key: string]: any }): Account }
 
-    private stockManager: StockManager<Order, OrderItem, User, InventoryStock, SKU, TradeTransaction>
+    public stockManager: StockManager<Order, OrderItem, User, InventoryStock, SKU, TradeTransaction>
 
-    private balanceManager: BalanceManager<BalanceTransaction, Payout, Account>
+    public balanceManager: BalanceManager<BalanceTransaction, Payout, Account>
 
-    private orderManager: OrderManager<Order, OrderItem, User, TradeTransaction>
+    public orderManager: OrderManager<Order, OrderItem, User, TradeTransaction>
 
-    private payoutManager: PayoutManager<BalanceTransaction, Payout, Account>
+    public payoutManager: PayoutManager<BalanceTransaction, Payout, Account>
 
     public delegate?: TransactionDelegate
 
@@ -145,6 +145,27 @@ export class Manager
         this.balanceManager = new BalanceManager(this._BalanceTransaction, this._Account)
         this.orderManager = new OrderManager(this._User, this._Order)
         this.payoutManager = new PayoutManager(this._BalanceTransaction, this._Payout, this._Account)
+    }
+
+    public async runTransaction(orderReference: DocumentReference, option: any, block: (order: Order, option: any, transaction: FirebaseFirestore.Transaction) => Promise<any>) {
+        const delegate: TransactionDelegate | undefined = this.delegate
+        if (!delegate) {
+            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ${orderReference.path}, Manager required delegate.`)
+        }
+        const tradeDelegate: TradeDelegate | undefined = this.tradeDelegate
+        if (!tradeDelegate) {
+            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ${orderReference.path}, Manager required trade delegate.`)
+        }
+        this.stockManager.delegate = tradeDelegate
+        try {
+            return await firestore.runTransaction(async (transaction) => {
+                const orderSnapshot = await transaction.get(orderReference)
+                const order: Order = new this._Order(orderSnapshot.id, orderSnapshot.data()).setData(orderSnapshot.data()!)
+                return await block(order, option, transaction)
+            })
+        } catch (error) {
+            throw error
+        }
     }
 
     // /**
@@ -583,7 +604,7 @@ export class Manager
                     }
 
                     // payment
-                    const balanceTransaction = this.balanceManager.pay(order.purchasedBy,
+                    const balanceTransaction = this.balanceManager.charge(order.purchasedBy,
                         order.id,
                         order.currency,
                         order.amount,
@@ -622,12 +643,12 @@ export class Manager
     }
 
     /**
- * 支払い後、支払いをキャンセルする
- * 
- * @param order 
- * @param orderItems 
- * @param paymentOptions 
- */
+     * 支払い後、支払いをキャンセルする
+     * 
+     * @param order 
+     * @param orderItems 
+     * @param paymentOptions 
+     */
     async checkoutCancel(order: Order, orderItems: OrderItem[], paymentOptions: PaymentOptions) {
         try {
             const delegate: TransactionDelegate | undefined = this.delegate
