@@ -85,7 +85,7 @@ describe("OrderManager", () => {
         test("Success", async () => {
             const result = await Pring.firestore.runTransaction(async (transaction) => {
                 return new Promise(async (resolve, reject) => {
-                    orderManager.update(order, [orderItem], {}, transaction)
+                    orderManager.update(order, {}, {}, transaction)
                     resolve()
                 })
             }) as BalanceTransaction

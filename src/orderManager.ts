@@ -26,13 +26,17 @@ export class OrderManager
         this._Order = order
     }
 
-    update(order: Order, orderItems: OrderItem[], transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
-    
+    update(order: Order, updateParams: { [key: string]: any }, transactionResult: TransactionResult, transaction: FirebaseFirestore.Transaction) {
+
         const orderValue = order.value()
         orderValue.updatedAt = FirebaseFirestore.FieldValue.serverTimestamp()
 
         if (Object.keys(transactionResult).length > 0) {
             orderValue["transactionResults"] = FirebaseFirestore.FieldValue.arrayUnion(transactionResult)
+        }
+
+        for (const key in updateParams) {
+            orderValue[key] = updateParams[key]
         }
 
         const orderReference = new this._Order(order.id, {}).reference

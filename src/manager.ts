@@ -217,7 +217,7 @@ export class Manager
     //                             }
     //                             await Promise.all(tasks)
     //                             order.paymentStatus = OrderPaymentStatus.authorized
-    //                             this.orderManager.update(order, orderItems, {}, transaction)
+    //                             this.orderManager.update(order, {}, {}, transaction)
     //                             const reuslt: ReserveResult = {}
     //                             resolve(reuslt)
     //                         } catch (error) {
@@ -250,7 +250,7 @@ export class Manager
     //                                 authorizeResult = await delegate.authorize(order.currency, order.amount, order, paymentOptions)
     //                             }
     //                             order.paymentStatus = OrderPaymentStatus.authorized
-    //                             this.orderManager.update(order, orderItems,
+    //                             this.orderManager.update(order, {},
     //                                 { [paymentOptions.vendorType]: authorizeResult }
     //                                 , transaction)
     //                             const result: ReserveResult = {
@@ -303,7 +303,7 @@ export class Manager
     //                         try {
     //                             order.paymentStatus = OrderPaymentStatus.cancelled
     //                             order.isCancelled = true
-    //                             this.orderManager.update(order, orderItems, {}, transaction)
+    //                             this.orderManager.update(order, {}, {}, transaction)
     //                             resolve({})
     //                         } catch (error) {
     //                             reject(error)
@@ -324,7 +324,7 @@ export class Manager
     //                             }
     //                             order.paymentStatus = OrderPaymentStatus.cancelled
     //                             order.isCancelled = true
-    //                             this.orderManager.update(order, orderItems,
+    //                             this.orderManager.update(order, {},
     //                                 { [paymentOptions.vendorType]: authorizeCancelResult }
     //                                 , transaction)
     //                             const result: ReserveCancelResult = {
@@ -398,7 +398,7 @@ export class Manager
     //                         }
     //                         const stockTransactions = await Promise.all(tasks)
     //                         const tradeTransactions = await Promise.all(stockTransactions.map(stockTransaction => stockTransaction.commit()))
-    //                         this.orderManager.update(order, orderItems, {}, transaction)
+    //                         this.orderManager.update(order, {}, {}, transaction)
     //                         const reuslt: TradeResult<TradeTransaction> = {
     //                             tradeTransactions: tradeTransactions
     //                         }
@@ -449,7 +449,7 @@ export class Manager
     //                         try {
     //                             // payment
     //                             order.paymentStatus = OrderPaymentStatus.paid
-    //                             this.orderManager.update(order, orderItems, {}, transaction)
+    //                             this.orderManager.update(order, {}, {}, transaction)
     //                             const reuslt: CaptureResult = {
     //                                 paymentResult: {}
     //                             }
@@ -480,7 +480,7 @@ export class Manager
     //                                 , transaction)
 
     //                             order.paymentStatus = OrderPaymentStatus.paid
-    //                             this.orderManager.update(order, orderItems,
+    //                             this.orderManager.update(order, {},
     //                                 { [paymentOptions.vendorType]: paymentResult }
     //                                 , transaction)
     //                             resolve({
@@ -593,7 +593,7 @@ export class Manager
                 const tradeTransactions = await Promise.all(stockTransactions.map(stockTransaction => stockTransaction.commit()))
                 if (order.amount === 0) {
                     order.paymentStatus = OrderPaymentStatus.paid
-                    this.orderManager.update(order, orderItems, {}, transaction)
+                    this.orderManager.update(order, {}, {}, transaction)
                     const reuslt: CheckoutResult<TradeTransaction> = {
                         tradeTransactions: tradeTransactions
                     }
@@ -612,7 +612,7 @@ export class Manager
                         , transaction)
 
                     order.paymentStatus = OrderPaymentStatus.paid
-                    this.orderManager.update(order, orderItems,
+                    this.orderManager.update(order, {},
                         { [paymentOptions.vendorType]: paymentResult }
                         , transaction)
                     return {
@@ -697,7 +697,7 @@ export class Manager
 
                         order.isCancelled = true
                         order.paymentStatus = OrderPaymentStatus.cancelled
-                        this.orderManager.update(order, orderItems,
+                        this.orderManager.update(order, {},
                             {}
                             , transaction)
                         return ({
@@ -750,7 +750,7 @@ export class Manager
                                 , transaction)
                             order.isCancelled = true
                             order.paymentStatus = OrderPaymentStatus.cancelled
-                            this.orderManager.update(order, orderItems,
+                            this.orderManager.update(order, {},
                                 { [paymentOptions.vendorType]: refundResult }
                                 , transaction)
                             return ({
@@ -840,7 +840,7 @@ export class Manager
                         const stockTransactions = await Promise.all(tasks)
                         const tradeTransactions = await Promise.all(stockTransactions.map(stockTransaction => stockTransaction.commit()))
 
-                        this.orderManager.update(order, [orderItem],
+                        this.orderManager.update(order, {},
                             {}
                             , transaction)
                         return ({
@@ -892,7 +892,7 @@ export class Manager
                                 { [paymentOptions.vendorType]: refundResult }
                                 , transaction)
 
-                            this.orderManager.update(order, [orderItem],
+                            this.orderManager.update(order, {},
                                 { [paymentOptions.vendorType]: refundResult }
                                 , transaction)
 

@@ -5,6 +5,7 @@ import "reflect-metadata";
 const property = Pring.property
 
 export class Item extends Pring.Base implements tradable.ItemProtocol {
+    @property purchasedBy!: string 
     @property order: string = ''
     @property selledBy: string = ''
     @property product?: FirebaseFirestore.DocumentReference
