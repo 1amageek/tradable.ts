@@ -29,8 +29,7 @@ import {
     PayoutStatus,
     OrderItemType
 } from "./index"
-import { DocumentReference } from 'pring-admin/lib/base';
-
+import { DocumentReference } from '@google-cloud/firestore';
 
 export type ReserveResult = {
     authorizeResult?: any
@@ -147,24 +146,48 @@ export class Manager
         this.payoutManager = new PayoutManager(this._BalanceTransaction, this._Payout, this._Account)
     }
 
-    public async runTransaction(orderReference: DocumentReference, option: any, block: (order: Order, option: any, transaction: FirebaseFirestore.Transaction) => Promise<any>) {
-        const delegate: TransactionDelegate | undefined = this.delegate
-        if (!delegate) {
-            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ${orderReference.path}, Manager required delegate.`)
+
+    public async runTransaction(order: FirebaseFirestore.DocumentReference | Order, option: any, block: (order: Order, option: any, transaction: FirebaseFirestore.Transaction) => Promise<any>) {
+        
+        if (order instanceof this._Order) {
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ${order.path}, Manager required delegate.`)
+            }
+            const tradeDelegate: TradeDelegate | undefined = this.tradeDelegate
+            if (!tradeDelegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ${order.path}, Manager required trade delegate.`)
+            }
+            this.stockManager.delegate = tradeDelegate
+            try {
+                return await firestore.runTransaction(async (transaction) => {
+                    return await block(order, option, transaction)
+                })
+            } catch (error) {
+                throw error
+            }
         }
-        const tradeDelegate: TradeDelegate | undefined = this.tradeDelegate
-        if (!tradeDelegate) {
-            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ${orderReference.path}, Manager required trade delegate.`)
-        }
-        this.stockManager.delegate = tradeDelegate
-        try {
-            return await firestore.runTransaction(async (transaction) => {
-                const orderSnapshot = await transaction.get(orderReference)
-                const order: Order = new this._Order(orderSnapshot.id, orderSnapshot.data()).setData(orderSnapshot.data()!)
-                return await block(order, option, transaction)
-            })
-        } catch (error) {
-            throw error
+
+        if (order instanceof FirebaseFirestore.DocumentReference) {
+            const delegate: TransactionDelegate | undefined = this.delegate
+            if (!delegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ${order.path}, Manager required delegate.`)
+            }
+            const tradeDelegate: TradeDelegate | undefined = this.tradeDelegate
+            if (!tradeDelegate) {
+                throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ${order.path}, Manager required trade delegate.`)
+            }
+            this.stockManager.delegate = tradeDelegate
+            const reference: DocumentReference = order
+            try {
+                return await firestore.runTransaction(async (transaction) => {
+                    const orderSnapshot = await transaction.get(reference)
+                    const order: Order = new this._Order(orderSnapshot.id, orderSnapshot.data()).setData(orderSnapshot.data()!)
+                    return await block(order, option, transaction)
+                })
+            } catch (error) {
+                throw error
+            }
         }
     }
 
