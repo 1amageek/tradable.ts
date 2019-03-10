@@ -17,6 +17,6 @@ export class SKU extends Pring.Base implements tradable.SKUProtocol<InventorySto
     @property inventory: tradable.Inventory = { type: tradable.StockType.finite, quantity: 1 }
     @property isOutOfStock: boolean = false
     @property isAvailabled: boolean = true
-    @property numberOfFetchCount: number = 2
+    @property numberOfFetch: number = 2
     @property inventoryStocks: Pring.NestedCollection<InventoryStock> = new Pring.NestedCollection(this)
 }

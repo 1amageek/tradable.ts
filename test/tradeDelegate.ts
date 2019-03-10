@@ -9,13 +9,13 @@ export class TradeDelegate implements tradable.TradeDelegate {
 
     }
 
-    createItem<T extends tradable.OrderItemProtocol>(information: tradable.TradeInformation, orderItem: T, inventoryStock: string | undefined, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference {
-        const purchaser: User = new User(information.purchasedBy, {})
+    createItem<T extends tradable.OrderItemProtocol, U extends tradable.OrderProtocol<T>>(order: U, orderItem: T, inventoryStock: string | undefined, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference {
+        const purchaser: User = new User(order.purchasedBy, {})
         const item: Item = new Item()
-        item.selledBy = information.selledBy
-        item.order = information.order
-        item.product = information.product
-        item.sku = information.sku
+        item.selledBy = orderItem.selledBy
+        item.order = order.id
+        item.product = orderItem.product
+        item.sku = orderItem.sku!
         item.inventoryStock = inventoryStock
         transaction.set(purchaser.items.reference.doc(item.id), item.value(), { merge: true })
         return item.reference

@@ -584,35 +584,10 @@ export class Manager
                 if (!(order.paymentStatus === OrderPaymentStatus.none)) {
                     throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order paymentStatus is invalid.`)
                 }
-
                 if (order.amount < 0) {
                     throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order amount is invalid.`)
                 }
-
-                const orderItems: OrderItem[] = order.items.objects()
-                const tasks = []
-                for (const orderItem of orderItems) {
-                    const product = orderItem.product
-                    const skuID = orderItem.sku
-                    const quantity = orderItem.quantity
-                    if (orderItem.type === OrderItemType.sku) {
-                        if (!skuID) {
-                            throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order item is sku required.`)
-                        }
-                        const tradeInformation: TradeInformation = {
-                            selledBy: order.selledBy,
-                            purchasedBy: order.purchasedBy,
-                            order: order.id,
-                            sku: skuID,
-                            product: product,
-                            metadata: paymentOptions.metadata,
-                            numberOfShards: paymentOptions.numberOfShards
-                        }
-                        const task = this.stockManager.trade(tradeInformation, orderItem, transaction)
-                        tasks.push(task)
-                    }
-                }
-                const stockTransactions = await Promise.all(tasks)
+                const stockTransactions = await this.stockManager.trade(order, transaction)
                 const tradeTransactions = await Promise.all(stockTransactions.map(stockTransaction => stockTransaction.commit()))
                 if (order.amount === 0) {
                     order.paymentStatus = OrderPaymentStatus.paid

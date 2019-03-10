@@ -132,7 +132,7 @@ export interface SKUProtocol <InventoryStock extends InventoryStockProtocol> ext
     isAvailabled: boolean
 
     /// Maximum number of fetches to acquire at one time
-    numberOfFetchCount: number
+    numberOfFetch: number
     inventoryStocks: Pring.NestedCollection<InventoryStock>
 }
 
@@ -303,7 +303,7 @@ export interface TradeDelegate {
 
     reserve<OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>>(order: Order, orderItem: OrderItem, transaction: FirebaseFirestore.Transaction): void
 
-    createItem<T extends OrderItemProtocol>(information: TradeInformation, orderItem: T, invetoryStock: string | undefined, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference
+    createItem<T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, orderItem: T, invetoryStock: string | undefined, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference
 
     getItems(information: TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<FirebaseFirestore.QuerySnapshot>
 

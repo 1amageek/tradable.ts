@@ -86,6 +86,7 @@ describe("StockManager", () => {
 						orderItem.currency = sku.currency
 						orderItem.amount = sku.amount
 						orderItem.quantity = 1
+						orderItem.product = product.reference
 
 						order.amount = sku.amount
 						order.currency = sku.currency
@@ -108,7 +109,7 @@ describe("StockManager", () => {
 												sku: sku.id,
 												product: product.reference
 											}
-											const stockTransaction = await stockManager.trade(tradeInformation, orderItem, transaction)
+											const stockTransaction = await stockManager._trade(order, orderItem, transaction)
 											return await stockTransaction.commit()
 										})
 										resolve(result)
