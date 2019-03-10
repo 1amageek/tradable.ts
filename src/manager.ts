@@ -2,7 +2,7 @@ import { StockManager } from './StockManager'
 import { BalanceManager } from './BalanceManager'
 import { OrderManager } from './OrderManager'
 import { PayoutManager } from './PayoutManager'
-import { OrderValidator } from './OrderValidator'
+
 import {
     firestore,
     SKUProtocol,
@@ -29,7 +29,7 @@ import {
     PayoutStatus,
     OrderItemType
 } from "./index"
-import { DocumentReference } from '@google-cloud/firestore';
+import { DocumentReference, Transaction } from '@google-cloud/firestore';
 
 export type ReserveResult = {
     authorizeResult?: any
@@ -146,8 +146,7 @@ export class Manager
         this.payoutManager = new PayoutManager(this._BalanceTransaction, this._Payout, this._Account)
     }
 
-
-    public async runTransaction(order: FirebaseFirestore.DocumentReference | Order, option: any, block: (order: Order, option: any, transaction: FirebaseFirestore.Transaction) => Promise<any>) {
+    public async runTransaction(order: DocumentReference | Order, option: any, block: (order: Order, option: any, transaction: Transaction) => Promise<any>) {
         
         if (order instanceof this._Order) {
             const delegate: TransactionDelegate | undefined = this.delegate
@@ -168,7 +167,7 @@ export class Manager
             }
         }
 
-        if (order instanceof FirebaseFirestore.DocumentReference) {
+        if (order instanceof DocumentReference) {
             const delegate: TransactionDelegate | undefined = this.delegate
             if (!delegate) {
                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ${order.path}, Manager required delegate.`)
