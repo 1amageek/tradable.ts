@@ -23,7 +23,6 @@ import {
     PayoutOptions,
     TransactionDelegate,
     TradeDelegate,
-    TradeInformation,
     InventoryStockProtocol,
     PayoutProtocol,
     PayoutStatus,
@@ -676,16 +675,16 @@ export class Manager
                                 if (!skuID) {
                                     throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order item is sku required.`)
                                 }
-                                const tradeInformation: TradeInformation = {
-                                    selledBy: order.selledBy,
-                                    purchasedBy: order.purchasedBy,
-                                    order: order.id,
-                                    sku: skuID,
-                                    product: productID,
-                                    metadata: paymentOptions.metadata
-                                }
+                                // const tradeInformation: TradeInformation = {
+                                //     selledBy: order.selledBy,
+                                //     purchasedBy: order.purchasedBy,
+                                //     order: order.id,
+                                //     sku: skuID,
+                                //     product: productID,
+                                //     metadata: paymentOptions.metadata
+                                // }
                                 orderItem.status = OrderItemStatus.cancelled
-                                const task = this.stockManager.cancel(tradeInformation, transaction)
+                                const task = this.stockManager.cancel(order, orderItem, transaction)
                                 tasks.push(task)
                             }
                         }
@@ -723,16 +722,16 @@ export class Manager
                                     if (!skuID) {
                                         throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order item is sku required.`)
                                     }
-                                    const tradeInformation: TradeInformation = {
-                                        selledBy: order.selledBy,
-                                        purchasedBy: order.purchasedBy,
-                                        order: order.id,
-                                        sku: skuID,
-                                        product: productID,
-                                        metadata: paymentOptions.metadata
-                                    }
+                                    // const tradeInformation: TradeInformation = {
+                                    //     selledBy: order.selledBy,
+                                    //     purchasedBy: order.purchasedBy,
+                                    //     order: order.id,
+                                    //     sku: skuID,
+                                    //     product: productID,
+                                    //     metadata: paymentOptions.metadata
+                                    // }
                                     orderItem.status = OrderItemStatus.cancelled
-                                    const task = this.stockManager.cancel(tradeInformation, transaction)
+                                    const task = this.stockManager.cancel(order, orderItem, transaction)
                                     tasks.push(task)
                                 }
                             }
@@ -821,16 +820,16 @@ export class Manager
                             if (!skuID) {
                                 throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order item is sku required.`)
                             }
-                            const tradeInformation: TradeInformation = {
-                                selledBy: order.selledBy,
-                                purchasedBy: order.purchasedBy,
-                                order: order.id,
-                                sku: skuID,
-                                product: productID,
-                                metadata: paymentOptions.metadata
-                            }
+                            // const tradeInformation: TradeInformation = {
+                            //     selledBy: order.selledBy,
+                            //     purchasedBy: order.purchasedBy,
+                            //     order: order.id,
+                            //     sku: skuID,
+                            //     product: productID,
+                            //     metadata: paymentOptions.metadata
+                            // }
                             orderItem.status = OrderItemStatus.changed
-                            const task = this.stockManager.itemCancel(tradeInformation, item, transaction)
+                            const task = this.stockManager.itemCancel(order, orderItem, item, transaction)
                             tasks.push(task)
                         }
 
@@ -865,16 +864,16 @@ export class Manager
                                 if (!skuID) {
                                     throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${order.id}, This order item is sku required.`)
                                 }
-                                const tradeInformation: TradeInformation = {
-                                    selledBy: order.selledBy,
-                                    purchasedBy: order.purchasedBy,
-                                    order: order.id,
-                                    sku: skuID,
-                                    product: productID,
-                                    metadata: paymentOptions.metadata
-                                }
+                                // const tradeInformation: TradeInformation = {
+                                //     selledBy: order.selledBy,
+                                //     purchasedBy: order.purchasedBy,
+                                //     order: order.id,
+                                //     sku: skuID,
+                                //     product: productID,
+                                //     metadata: paymentOptions.metadata
+                                // }
                                 orderItem.status = OrderItemStatus.changed
-                                const task = this.stockManager.itemCancel(tradeInformation, item, transaction)
+                                const task = this.stockManager.itemCancel(order, orderItem, item, transaction)
                                 tasks.push(task)
                             }
 

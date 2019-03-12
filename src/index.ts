@@ -289,25 +289,15 @@ export type PayoutOptions = {
     vendorType: string
 }
 
-export type TradeInformation = {
-    selledBy: string
-    purchasedBy: string
-    order: string
-    product?: FirebaseFirestore.DocumentReference
-    sku: string
-    numberOfShards?: number
-    metadata?: any
-}
-
 export interface TradeDelegate {
 
     reserve<OrderItem extends OrderItemProtocol, Order extends OrderProtocol<OrderItem>>(order: Order, orderItem: OrderItem, transaction: FirebaseFirestore.Transaction): void
 
     createItem<T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, orderItem: T, invetoryStock: string | undefined, transaction: FirebaseFirestore.Transaction): FirebaseFirestore.DocumentReference
 
-    getItems(information: TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<FirebaseFirestore.QuerySnapshot>
+    getItems<T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, orderItem: T, transaction: FirebaseFirestore.Transaction): Promise<FirebaseFirestore.QuerySnapshot>
 
-    cancelItem(information: TradeInformation, item: FirebaseFirestore.DocumentReference, transaction: FirebaseFirestore.Transaction): void
+    cancelItem<T extends OrderItemProtocol, U extends OrderProtocol<T>>(order: U, orderItem: T, item: FirebaseFirestore.DocumentReference, transaction: FirebaseFirestore.Transaction): void
 }
 
 export interface TransactionDelegate {

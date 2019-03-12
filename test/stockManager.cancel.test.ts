@@ -166,7 +166,7 @@ describe("StockManager", () => {
                     sku: sku.id,
                     product: product.reference
                 };
-                const stockTransaction = await stockManager.cancel(tradeInformation, transaction)
+                const stockTransaction = await stockManager.cancel(order, orderItem, transaction)
                 return await stockTransaction.commit()
             }) as TradeTransaction[]
 

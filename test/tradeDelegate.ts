@@ -21,16 +21,16 @@ export class TradeDelegate implements tradable.TradeDelegate {
         return item.reference
     }
 
-    cancelItem(information: tradable.TradeInformation, item: FirebaseFirestore.DocumentReference, transaction: FirebaseFirestore.Transaction): void {
-        const purchaser: User = new User(information.purchasedBy, {})
+    cancelItem<T extends tradable.OrderItemProtocol, U extends tradable.OrderProtocol<T>>(order: U, orderItem: T, item: FirebaseFirestore.DocumentReference, transaction: FirebaseFirestore.Transaction): void {
+        const purchaser: User = new User(order.purchasedBy, {})
         transaction.set(purchaser.items.reference.doc(item.id), {
             isCancelled: true
         }, { merge: true })
     }
 
-    async getItems(information: tradable.TradeInformation, transaction: FirebaseFirestore.Transaction): Promise<FirebaseFirestore.QuerySnapshot> {
-        const purchaser: User = new User(information.purchasedBy, {})
-        const query = purchaser.items.reference.where("order", "==", information.order)
+    async getItems<T extends tradable.OrderItemProtocol, U extends tradable.OrderProtocol<T>>(order: U, orderItem: T, transaction: FirebaseFirestore.Transaction): Promise<FirebaseFirestore.QuerySnapshot> {
+        const purchaser: User = new User(order.purchasedBy, {})
+        const query = purchaser.items.reference.where("order", "==", order.id)
         const items = await transaction.get(query)
         return items
     }

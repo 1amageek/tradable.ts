@@ -9,7 +9,6 @@ import {
     TradeDelegate,
     TradableError,
     TradableErrorCode,
-    TradeInformation,
     InventoryStockProtocol,
     StockType,
     StockValue,
@@ -371,15 +370,15 @@ export class StockManager
     //     return stockTransaction
     // }
 
-    async cancel(tradeInformation: TradeInformation, transaction: FirebaseFirestore.Transaction) {
-        const orderID: string = tradeInformation.order
-        const skuID: string = tradeInformation.sku
-        const purchasedBy: string = tradeInformation.purchasedBy
-        const selledBy: string = tradeInformation.selledBy
+    async cancel(order: Order, orderItem: OrderItem, transaction: FirebaseFirestore.Transaction) {
+        const orderID: string = order.id
+        const skuID: string = orderItem.sku!
+        const purchasedBy: string = order.purchasedBy
+        const selledBy: string = orderItem.selledBy
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
         const sku: SKU = new this._SKU(skuID, {})
-        const result = await Promise.all([sku.fetch(transaction), this.delegate.getItems(tradeInformation, transaction)])
+        const result = await Promise.all([sku.fetch(transaction), this.delegate.getItems(order, orderItem, transaction)])
         if (!sku) {
             throw new TradableError(TradableErrorCode.invalidArgument, `[Manager] Invalid order ORDER/${orderID}. invalid SKU: ${skuID}`)
         }
@@ -409,11 +408,11 @@ export class StockManager
                 tradeTransaction.selledBy = selledBy
                 tradeTransaction.purchasedBy = purchasedBy
                 tradeTransaction.order = orderID
-                tradeTransaction.product = tradeInformation.product
+                tradeTransaction.product = orderItem.product
                 tradeTransaction.sku = skuID
                 tradeTransaction.item = item.ref
                 tradeTransaction.inventoryStock = stockID
-                this.delegate.cancelItem(tradeInformation, item.ref, transaction)
+                this.delegate.cancelItem(order, orderItem, item.ref, transaction)
                 if (stockType === StockType.finite) {
                     let inventoryStock: InventoryStock = new this._InventoryStock(stockID)
                     inventoryStock.setParent(sku.inventoryStocks)
@@ -433,16 +432,16 @@ export class StockManager
         return stockTransaction
     }
 
-    async itemCancel(tradeInformation: TradeInformation, item: FirebaseFirestore.DocumentReference, transaction: FirebaseFirestore.Transaction) {
+    async itemCancel(order: Order, orderItem: OrderItem, itemRef: FirebaseFirestore.DocumentReference, transaction: FirebaseFirestore.Transaction) {
 
-        const orderID: string = tradeInformation.order
-        const skuID: string = tradeInformation.sku
-        const purchasedBy: string = tradeInformation.purchasedBy
-        const selledBy: string = tradeInformation.selledBy
+        const orderID: string = order.id
+        const skuID: string = orderItem.sku!
+        const purchasedBy: string = order.purchasedBy
+        const selledBy: string = order.selledBy
         const seller: User = new this._User(selledBy, {})
         const purchaser: User = new this._User(purchasedBy, {})
         const sku: SKU = await new this._SKU(skuID, {})
-        const inventoryStockQuery = sku.inventoryStocks.reference.where("item", "==", item).limit(1)
+        const inventoryStockQuery = sku.inventoryStocks.reference.where("item", "==", itemRef).limit(1)
         const snapshot: FirebaseFirestore.QuerySnapshot = await transaction.get(inventoryStockQuery)
         const inventoryStocks: FirebaseFirestore.QueryDocumentSnapshot[] = snapshot.docs
 
@@ -472,10 +471,10 @@ export class StockManager
             tradeTransaction.selledBy = selledBy
             tradeTransaction.purchasedBy = purchasedBy
             tradeTransaction.order = orderID
-            tradeTransaction.product = tradeInformation.product
+            tradeTransaction.product = orderItem.product
             tradeTransaction.sku = skuID
-            tradeTransaction.item = item
-            this.delegate.cancelItem(tradeInformation, item, transaction)
+            tradeTransaction.item = itemRef
+            this.delegate.cancelItem(order, orderItem, itemRef, transaction)
             if (stockType === StockType.finite) {
                 const stockID = inventoryStocks[0].id
                 tradeTransaction.inventoryStock = stockID
