@@ -200,6 +200,8 @@ export interface OrderItemProtocol extends Pring.Base {
 
 export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Pring.Base {
     parentID?: string
+    title?: string
+    assets: File[]
     purchasedBy: string
     selledBy: string
     shippingTo: { [key: string]: string }
