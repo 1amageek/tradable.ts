@@ -185,6 +185,8 @@ export enum OrderPaymentStatus {
 }
 
 export interface OrderItemProtocol extends Pring.Base {
+    name?: string
+    thumbnailImage?: File
     order: string
     purchasedBy: string
     selledBy: string
