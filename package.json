@@ -47,7 +47,7 @@
     "@types/jest": "^23.3.13",
     "@types/node": "^10.12.19",
     "@types/stripe": "^6.19.8",
-    "firebase-admin": "^7.0.0",
+    "firebase-admin": "^11.4.1",
     "jest": "^24.0.0",
     "pring-admin": "^0.6.0",
     "reflect-metadata": "^0.1.13",
@@ -58,7 +58,7 @@
   },
   "peerDependencies": {
     "@google-cloud/firestore": "^1.0.1",
-    "firebase-admin": "^7.0.0"
+    "firebase-admin": "^11.4.1"
   },
   "jest": {
     "transform": {
