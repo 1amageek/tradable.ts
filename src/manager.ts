@@ -1,6 +1,6 @@
-import { StockManager } from './StockManager'
-import { BalanceManager } from './BalanceManager'
-import { OrderManager } from './OrderManager'
+import { StockManager } from './stockManager'
+import { BalanceManager } from './balanceManager'
+import { OrderManager } from './orderManager'
 import { PayoutManager } from './PayoutManager'
 
 import {

@@ -13,7 +13,7 @@ import { OrderItem } from './models/orderItem'
 import { Item } from './models/item'
 import { TradeTransaction } from './models/tradeTransaction'
 import { Account } from './models/account'
-import { BalanceManager } from '../src/BalanceManager'
+import { BalanceManager } from '../src/balanceManager'
 import { Payout } from './models/payout';
 import { BalanceTransaction } from './models/BalanceTransaction'
 import { StripePaymentDelegate } from './stripePaymentDelegate'

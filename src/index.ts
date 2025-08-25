@@ -1,9 +1,10 @@
 import * as Pring from 'pring-admin'
 import * as admin from 'firebase-admin'
 import * as FirebaseFirestore from '@google-cloud/firestore'
-import { Manager, ReserveResult, CheckoutResult, CheckoutChangeResult, CheckoutCancelResult, TransferResult, TransferCancelResult } from './Manager'
-import { Currency } from './Currency'
+import { Manager, ReserveResult, CheckoutResult, CheckoutChangeResult, CheckoutCancelResult, TransferResult, TransferCancelResult } from './manager'
+import { Currency } from './currency'
 export { Currency, Manager, ReserveResult, CheckoutResult, CheckoutChangeResult, CheckoutCancelResult, TransferResult, TransferCancelResult }
+export { File as PringFile } from 'pring-admin'
 
 export let firestore: FirebaseFirestore.Firestore
 
@@ -186,7 +187,7 @@ export enum OrderPaymentStatus {
 
 export interface OrderItemProtocol extends Pring.Base {
     name?: string
-    thumbnailImage?: File
+    thumbnailImage?: Pring.File
     order: string
     purchasedBy: string
     selledBy: string
@@ -203,7 +204,7 @@ export interface OrderItemProtocol extends Pring.Base {
 export interface OrderProtocol<OrderItem extends OrderItemProtocol> extends Pring.Base {
     parentID?: string
     title?: string
-    assets: File[]
+    assets: Pring.File[]
     purchasedBy: string
     selledBy: string
     shippingTo: { [key: string]: string }

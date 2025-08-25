@@ -6,11 +6,13 @@ import { } from "reflect-metadata"
 const property = Pring.property
 
 const isUndefined = (value: any): boolean => {
-    return (value === null || value === undefined || value == NaN)
+    return (value === null || value === undefined || Number.isNaN(value))
 }
 
 export class Order extends Pring.Base implements tradable.OrderProtocol<OrderItem> {
     @property parentID?: string
+    @property title?: string
+    @property assets: Pring.File[] = []
     @property purchasedBy!: string
     @property selledBy!: string
     @property shippingTo!: { [key: string]: string }

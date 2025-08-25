@@ -11,7 +11,7 @@ import { SKU } from './models/sku'
 import { Order } from './models/order'
 import { OrderItem } from './models/orderItem'
 import { Account } from './models/account'
-import { BalanceManager } from '../src/BalanceManager';
+import { BalanceManager } from '../src/balanceManager';
 import { BalanceTransaction } from './models/BalanceTransaction';
 import { Payout } from './models/payout';
 

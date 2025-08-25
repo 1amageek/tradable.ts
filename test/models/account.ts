@@ -1,6 +1,6 @@
 import * as Pring from 'pring-admin'
 import * as tradable from '../../src/index'
-import { BalanceTransaction } from './BalanceTransaction'
+import { BalanceTransaction } from './balanceTransaction'
 import { Payout } from './payout';
 
 const property = Pring.property

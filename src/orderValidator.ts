@@ -8,7 +8,7 @@ import {
 } from "./index"
 
 const isUndefined = (value: any): boolean => {
-    return (value === null || value === undefined || value === NaN)
+    return (value === null || value === undefined || Number.isNaN(value))
 }
 
 export class OrderValidator
@@ -38,7 +38,10 @@ export class OrderValidator
             const orderItemError = this.validateOrderItem(order, items)
             if (orderItemError) return orderItemError
         } catch (error) {
-            return error
+            if (error instanceof Error) {
+                return error
+            }
+            return new TradableError(TradableErrorCode.internal, `[Tradable] Error: ${String(error)}`)
         }
     }
 

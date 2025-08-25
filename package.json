@@ -42,23 +42,18 @@
     "lib/*"
   ],
   "devDependencies": {
-    "@firebase/testing": "^0.7.1",
-    "@google-cloud/firestore": "^1.0.1",
-    "@types/jest": "^23.3.13",
-    "@types/node": "^10.12.19",
-    "@types/stripe": "^6.19.8",
-    "firebase-admin": "^7.0.0",
-    "jest": "^24.0.0",
-    "pring-admin": "^0.6.0",
-    "reflect-metadata": "^0.1.13",
-    "stripe": "^6.25.1",
-    "ts-jest": "^23.10.5",
-    "tslint": "^5.13.1",
-    "typescript": "^3.3.3333"
+    "@firebase/testing": "^0.20.11",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.3.0",
+    "firebase-admin": "^13.4.0",
+    "jest": "^30.0.5",
+    "pring-admin": "^1.0.0",
+    "reflect-metadata": "^0.2.2",
+    "stripe": "^18.4.0",
+    "typescript": "^5.9.2"
   },
   "peerDependencies": {
-    "@google-cloud/firestore": "^1.0.1",
-    "firebase-admin": "^7.0.0"
+    "firebase-admin": "^13.4.0"
   },
   "jest": {
     "transform": {

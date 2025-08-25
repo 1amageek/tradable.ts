@@ -1,4 +1,4 @@
-import * as FirebaseFirestore from '@google-cloud/firestore'
+import * as FirebaseFirestore from 'firebase-admin/firestore'
 import {
     BalanceTransactionProtocol,
     AccountProtocol,
